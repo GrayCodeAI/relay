@@ -47,8 +47,11 @@ func TestFetchAnthropic_MockHTTPServer(t *testing.T) {
 	if sonnet.DisplayName != "Claude Sonnet 4" {
 		t.Fatalf("display name = %q", sonnet.DisplayName)
 	}
-	if sonnet.ContextWindow != 200000 || sonnet.MaxOutput != 8192 {
-		t.Fatalf("context/max = %d/%d", sonnet.ContextWindow, sonnet.MaxOutput)
+	if sonnet.ContextWindow != 0 || sonnet.MaxOutput != 0 {
+		t.Fatalf("context/max = %d/%d (expected 0/0 — no hardcoded defaults)", sonnet.ContextWindow, sonnet.MaxOutput)
+	}
+	if len(sonnet.RawJSON) == 0 {
+		t.Fatal("expected RawJSON to be preserved")
 	}
 }
 
