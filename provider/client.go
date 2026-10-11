@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GrayCodeAI/mux/internal/buildversion"
+
 	"github.com/GrayCodeAI/mux/provider/core"
 
 	"github.com/GrayCodeAI/mux/catalog"
@@ -18,8 +20,8 @@ import (
 
 // Version mirrors core.Version; the canonical value lives in provider/core so
 // feature packages can build User-Agent strings.
-// Default is "dev" until the root package initialises.
-var Version = "dev"
+// Default is generated from the canonical VERSION file.
+var Version = buildversion.Version
 
 // SetVersion wires the canonical version from the VERSION file into the
 // provider runtime and provider/core.

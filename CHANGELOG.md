@@ -7,6 +7,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) · Versioning: 
 
 ## [Unreleased]
 
+### Version metadata
+
+- `VERSION` is the single source for runtime defaults, SDK manifests and OpenAPI metadata; `make version-sync` regenerates outputs and CI rejects drift.
+
 ### Changed
 
 - The module, public API names, SDKs, configuration prefixes and telemetry now use Mux; Go 1.27.2 is required.
