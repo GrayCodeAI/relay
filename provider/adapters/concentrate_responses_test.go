@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 func TestNewConcentrateResponsesClient(t *testing.T) {
@@ -87,10 +87,10 @@ func TestConcentrateResponsesClient_ChatUsesResponsesContract(t *testing.T) {
 	client.httpClient = &http.Client{Transport: transport}
 	resp, err := client.Chat(
 		context.Background(),
-		[]core.FluxMessage{{Role: "user", Content: "Hi"}},
+		[]core.MuxMessage{{Role: "user", Content: "Hi"}},
 		core.ChatOptions{
 			Model: "gpt-5",
-			Tools: []core.FluxTool{{
+			Tools: []core.MuxTool{{
 				Name: "read_file", Description: "Read a file",
 				Parameters: map[string]interface{}{"type": "object"},
 			}},
@@ -113,7 +113,7 @@ func TestConcentrateResponsesClient_ChatUsesResponsesContract(t *testing.T) {
 func TestConcentrateResponsesClient_BuildRequestPreservesToolTurn(t *testing.T) {
 	t.Parallel()
 	client := NewConcentrateResponsesClient("cn-key", "https://api.concentrate.ai/v1")
-	req, err := client.buildRequest([]core.FluxMessage{
+	req, err := client.buildRequest([]core.MuxMessage{
 		{Role: "user", Content: "Read main.go"},
 		{Role: "assistant", ToolUse: []core.ToolCall{{
 			ID: "call_1", Name: "read_file", Arguments: map[string]interface{}{"path": "main.go"},
@@ -123,7 +123,7 @@ func TestConcentrateResponsesClient_BuildRequestPreservesToolTurn(t *testing.T) 
 		}}},
 	}, core.ChatOptions{
 		Model: "gpt-5",
-		Tools: []core.FluxTool{{
+		Tools: []core.MuxTool{{
 			Name: "read_file", Parameters: map[string]interface{}{"type": "object"},
 		}},
 		ToolChoice: &core.ToolChoiceOption{Type: "tool", Name: "read_file", DisableParallelToolUse: true},
@@ -170,7 +170,7 @@ func TestConcentrateResponsesClient_StructuredOutputUsesTextFormat(t *testing.T)
 	if req.Text == nil || req.Text.Format["type"] != "json_schema" {
 		t.Fatalf("text format = %#v", req.Text)
 	}
-	if req.Text.Format["name"] != "rho_response" {
+	if req.Text.Format["name"] != "decoder_response" {
 		t.Fatalf("schema name = %#v", req.Text.Format["name"])
 	}
 	if _, ok := req.Text.Format["schema"].(map[string]interface{}); !ok {
@@ -246,7 +246,7 @@ func TestConcentrateResponsesClient_StreamTextUsageAndDone(t *testing.T) {
 	}
 	defer result.Close()
 
-	var got []core.FluxStreamEvent
+	var got []core.MuxStreamEvent
 	timeout := time.After(2 * time.Second)
 	for {
 		select {
@@ -296,7 +296,7 @@ func TestConcentrateResponsesClient_StreamToolCall(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer result.Close()
-	var got []core.FluxStreamEvent
+	var got []core.MuxStreamEvent
 	for event := range result.Events {
 		got = append(got, event)
 	}
@@ -360,7 +360,7 @@ func TestConcentrateResponsesClient_ChatRetriesOn500ThenSucceeds(t *testing.T) {
 	client.httpClient = &http.Client{Transport: transport}
 	client.SetRetry(core.NewRetryConfig(2, time.Millisecond, 2*time.Millisecond, 500))
 
-	resp, err := client.Chat(context.Background(), []core.FluxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "gpt-5"})
+	resp, err := client.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "gpt-5"})
 	if err != nil {
 		t.Fatalf("Chat: %v", err)
 	}
@@ -372,7 +372,7 @@ func TestConcentrateResponsesClient_ChatRetriesOn500ThenSucceeds(t *testing.T) {
 	}
 }
 
-func TestConcentrateResponsesClient_ChatErrorIsStructuredFluxError(t *testing.T) {
+func TestConcentrateResponsesClient_ChatErrorIsStructuredMuxError(t *testing.T) {
 	t.Parallel()
 	transport := roundTripFunc(func(*http.Request) (*http.Response, error) {
 		resp := jsonResponse(http.StatusUnauthorized, map[string]any{
@@ -385,35 +385,35 @@ func TestConcentrateResponsesClient_ChatErrorIsStructuredFluxError(t *testing.T)
 	client.httpClient = &http.Client{Transport: transport}
 	client.SetRetry(core.RetryConfig{}) // no retries: classify the terminal error
 
-	_, err := client.Chat(context.Background(), []core.FluxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "gpt-5"})
+	_, err := client.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "gpt-5"})
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	var fluxErr *core.FluxError
-	if !errors.As(err, &fluxErr) {
-		t.Fatalf("error is %T, want *core.FluxError (%v)", err, err)
+	var muxErr *core.MuxError
+	if !errors.As(err, &muxErr) {
+		t.Fatalf("error is %T, want *core.MuxError (%v)", err, err)
 	}
-	if fluxErr.Provider != "concentrate" || fluxErr.Op != "chat" {
-		t.Fatalf("provider/op = %s/%s", fluxErr.Provider, fluxErr.Op)
+	if muxErr.Provider != "concentrate" || muxErr.Op != "chat" {
+		t.Fatalf("provider/op = %s/%s", muxErr.Provider, muxErr.Op)
 	}
-	if fluxErr.StatusCode != http.StatusUnauthorized {
-		t.Fatalf("status = %d, want 401", fluxErr.StatusCode)
+	if muxErr.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want 401", muxErr.StatusCode)
 	}
-	if !fluxErr.IsAuthError() {
+	if !muxErr.IsAuthError() {
 		t.Error("IsAuthError() = false, want true")
 	}
-	if fluxErr.IsRetriable() {
+	if muxErr.IsRetriable() {
 		t.Error("IsRetriable() = true for 401, want false")
 	}
-	if fluxErr.RequestID != "req_abc" {
-		t.Errorf("request id = %q, want req_abc", fluxErr.RequestID)
+	if muxErr.RequestID != "req_abc" {
+		t.Errorf("request id = %q, want req_abc", muxErr.RequestID)
 	}
-	if !strings.Contains(fluxErr.Message, "bad key") {
-		t.Errorf("message = %q, want it to carry the provider detail", fluxErr.Message)
+	if !strings.Contains(muxErr.Message, "bad key") {
+		t.Errorf("message = %q, want it to carry the provider detail", muxErr.Message)
 	}
 }
 
-func TestConcentrateResponsesClient_StreamErrorIsStructuredFluxError(t *testing.T) {
+func TestConcentrateResponsesClient_StreamErrorIsStructuredMuxError(t *testing.T) {
 	t.Parallel()
 	transport := roundTripFunc(func(*http.Request) (*http.Response, error) {
 		resp := jsonResponse(http.StatusTooManyRequests, map[string]any{
@@ -430,19 +430,19 @@ func TestConcentrateResponsesClient_StreamErrorIsStructuredFluxError(t *testing.
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	var fluxErr *core.FluxError
-	if !errors.As(err, &fluxErr) {
-		t.Fatalf("error is %T, want *core.FluxError (%v)", err, err)
+	var muxErr *core.MuxError
+	if !errors.As(err, &muxErr) {
+		t.Fatalf("error is %T, want *core.MuxError (%v)", err, err)
 	}
-	if fluxErr.Op != "stream" {
-		t.Fatalf("op = %s, want stream", fluxErr.Op)
+	if muxErr.Op != "stream" {
+		t.Fatalf("op = %s, want stream", muxErr.Op)
 	}
-	if fluxErr.StatusCode != http.StatusTooManyRequests || !fluxErr.IsRateLimited() || !fluxErr.IsRetriable() {
+	if muxErr.StatusCode != http.StatusTooManyRequests || !muxErr.IsRateLimited() || !muxErr.IsRetriable() {
 		t.Fatalf("status = %d (rate-limited=%v, retriable=%v), want 429/true/true",
-			fluxErr.StatusCode, fluxErr.IsRateLimited(), fluxErr.IsRetriable())
+			muxErr.StatusCode, muxErr.IsRateLimited(), muxErr.IsRetriable())
 	}
-	if fluxErr.RequestID != "req_429" {
-		t.Errorf("request id = %q, want req_429", fluxErr.RequestID)
+	if muxErr.RequestID != "req_429" {
+		t.Errorf("request id = %q, want req_429", muxErr.RequestID)
 	}
 }
 

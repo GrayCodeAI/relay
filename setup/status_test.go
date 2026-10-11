@@ -7,23 +7,23 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	"github.com/GrayCodeAI/flux/config"
-	"github.com/GrayCodeAI/flux/credentials"
+	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/mux/config"
+	"github.com/GrayCodeAI/mux/credentials"
 )
 
 func TestFormatStatus_DisabledRouting(t *testing.T) {
 	report := StatusReport{
 		DeploymentRouting: false,
-		ProviderConfig:    "/home/user/.rho/adapters.json",
+		ProviderConfig:    "/home/user/.decoder/adapters.json",
 		ConfigVersion:     2,
 		Configured:        []string{},
-		CatalogCache:      "/home/user/.flux/model_catalog.json",
+		CatalogCache:      "/home/user/.mux/model_catalog.json",
 		CatalogExists:     false,
 		CatalogModels:     10,
 	}
 	out := FormatStatus(report)
-	if !strings.Contains(out, "disabled (single-route Flux transport)") {
+	if !strings.Contains(out, "disabled (single-route Mux transport)") {
 		t.Fatal("expected engine-owned disabled-routing description")
 	}
 	if strings.Contains(out, "legacy provider client") {
@@ -40,10 +40,10 @@ func TestFormatStatus_DisabledRouting(t *testing.T) {
 func TestFormatStatus_EnabledRouting(t *testing.T) {
 	report := StatusReport{
 		DeploymentRouting:  true,
-		ProviderConfig:     "/home/user/.rho/adapters.json",
+		ProviderConfig:     "/home/user/.decoder/adapters.json",
 		ConfigVersion:      2,
 		Configured:         []string{"anthropic-direct", "openai-direct"},
-		CatalogCache:       "/home/user/.flux/model_catalog.json",
+		CatalogCache:       "/home/user/.mux/model_catalog.json",
 		CatalogExists:      true,
 		CatalogModified:    time.Now().UTC().Add(-5 * time.Minute),
 		CatalogModels:      50,
@@ -71,8 +71,8 @@ func TestFormatStatus_EnabledRouting(t *testing.T) {
 func TestFormatStatus_StaleCatalog(t *testing.T) {
 	report := StatusReport{
 		DeploymentRouting: true,
-		ProviderConfig:    "/home/user/.rho/adapters.json",
-		CatalogCache:      "/home/user/.flux/model_catalog.json",
+		ProviderConfig:    "/home/user/.decoder/adapters.json",
+		CatalogCache:      "/home/user/.mux/model_catalog.json",
 		CatalogExists:     true,
 		CatalogModified:   time.Now().UTC().Add(-1 * time.Hour),
 		CatalogStale:      true,
@@ -86,8 +86,8 @@ func TestFormatStatus_StaleCatalog(t *testing.T) {
 func TestFormatStatus_ActiveModel(t *testing.T) {
 	report := StatusReport{
 		DeploymentRouting: true,
-		ProviderConfig:    "/home/user/.rho/adapters.json",
-		CatalogCache:      "/home/user/.flux/model_catalog.json",
+		ProviderConfig:    "/home/user/.decoder/adapters.json",
+		CatalogCache:      "/home/user/.mux/model_catalog.json",
 		ActiveModel:       "anthropic/claude-sonnet-4",
 		RoutingSource:     "model",
 		RoutingStages:     2,
@@ -104,8 +104,8 @@ func TestFormatStatus_ActiveModel(t *testing.T) {
 func TestFormatStatus_NoActiveModel(t *testing.T) {
 	report := StatusReport{
 		DeploymentRouting: true,
-		ProviderConfig:    "/home/user/.rho/adapters.json",
-		CatalogCache:      "/home/user/.flux/model_catalog.json",
+		ProviderConfig:    "/home/user/.decoder/adapters.json",
+		CatalogCache:      "/home/user/.mux/model_catalog.json",
 	}
 	out := FormatStatus(report)
 	if strings.Contains(out, "Active canonical model") {
@@ -116,7 +116,7 @@ func TestFormatStatus_NoActiveModel(t *testing.T) {
 func TestFormatStatus_ConfigVersion(t *testing.T) {
 	report := StatusReport{
 		DeploymentRouting: false,
-		ProviderConfig:    "/home/user/.rho/adapters.json",
+		ProviderConfig:    "/home/user/.decoder/adapters.json",
 		ConfigVersion:     2,
 	}
 	out := FormatStatus(report)
@@ -171,7 +171,7 @@ func TestDeploymentStatusFromPathsIgnoresAmbientRoutingAndCredentials(t *testing
 	if err := catalog.WriteCatalogCache(catalogPath, &seed); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("FLUX_DEPLOYMENT_ROUTING", "true")
+	t.Setenv("MUX_DEPLOYMENT_ROUTING", "true")
 	store := &credentials.MapStore{}
 	credentials.SetDefaultStore(store)
 	t.Cleanup(func() { credentials.SetDefaultStore(nil) })

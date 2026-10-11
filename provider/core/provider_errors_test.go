@@ -111,38 +111,38 @@ func TestFormatAPIError_OmitsRequestIDWhenEmpty(t *testing.T) {
 	}
 }
 
-// TestFormatAPIError_ReturnsFluxError: the returned error is a
-// concrete *FluxError, dispatchable via errors.As. This is the
+// TestFormatAPIError_ReturnsMuxError: the returned error is a
+// concrete *MuxError, dispatchable via errors.As. This is the
 // core contract that lets retry/fallback middleware use the
 // structured IsRetriable()/IsAuthError()/IsRateLimited() helpers
 // instead of regex-parsing the message.
-func TestFormatAPIError_ReturnsFluxError(t *testing.T) {
+func TestFormatAPIError_ReturnsMuxError(t *testing.T) {
 	t.Parallel()
 	err := FormatAPIError("openai", "chat", 429, "req_429",
 		ProviderErrorDetail{Message: "rate limited"}, nil)
-	var fluxErr *FluxError
-	if !errors.As(err, &fluxErr) {
-		t.Fatalf("FormatAPIError must return *FluxError, got %T (%v)", err, err)
+	var muxErr *MuxError
+	if !errors.As(err, &muxErr) {
+		t.Fatalf("FormatAPIError must return *MuxError, got %T (%v)", err, err)
 	}
-	if fluxErr.Provider != "openai" {
-		t.Errorf("Provider = %q, want openai", fluxErr.Provider)
+	if muxErr.Provider != "openai" {
+		t.Errorf("Provider = %q, want openai", muxErr.Provider)
 	}
-	if fluxErr.Op != "chat" {
-		t.Errorf("Op = %q, want chat", fluxErr.Op)
+	if muxErr.Op != "chat" {
+		t.Errorf("Op = %q, want chat", muxErr.Op)
 	}
-	if fluxErr.StatusCode != 429 {
-		t.Errorf("StatusCode = %d, want 429", fluxErr.StatusCode)
+	if muxErr.StatusCode != 429 {
+		t.Errorf("StatusCode = %d, want 429", muxErr.StatusCode)
 	}
-	if fluxErr.RequestID != "req_429" {
-		t.Errorf("RequestID = %q, want req_429", fluxErr.RequestID)
+	if muxErr.RequestID != "req_429" {
+		t.Errorf("RequestID = %q, want req_429", muxErr.RequestID)
 	}
-	if !fluxErr.IsRateLimited() {
+	if !muxErr.IsRateLimited() {
 		t.Errorf("IsRateLimited = false, want true for 429")
 	}
-	if !fluxErr.IsRetriable() {
+	if !muxErr.IsRetriable() {
 		t.Errorf("IsRetriable = false, want true for 429")
 	}
-	if fluxErr.IsAuthError() {
+	if muxErr.IsAuthError() {
 		t.Errorf("IsAuthError = true, want false for 429")
 	}
 }
@@ -154,14 +154,14 @@ func TestFormatAPIError_AuthError(t *testing.T) {
 	for _, status := range []int{401, 403} {
 		err := FormatAPIError("openai", "chat", status, "req",
 			ProviderErrorDetail{Message: "unauthorized", Code: "invalid_api_key"}, nil)
-		var fluxErr *FluxError
-		if !errors.As(err, &fluxErr) {
-			t.Fatalf("status %d: not *FluxError: %T", status, err)
+		var muxErr *MuxError
+		if !errors.As(err, &muxErr) {
+			t.Fatalf("status %d: not *MuxError: %T", status, err)
 		}
-		if !fluxErr.IsAuthError() {
+		if !muxErr.IsAuthError() {
 			t.Errorf("status %d: IsAuthError = false, want true", status)
 		}
-		if fluxErr.IsRetriable() {
+		if muxErr.IsRetriable() {
 			t.Errorf("status %d: IsRetriable = true, want false (auth errors don't retry)", status)
 		}
 	}
@@ -173,11 +173,11 @@ func TestFormatAPIError_RetriableCodes(t *testing.T) {
 	for _, status := range []int{408, 429, 500, 502, 503, 504, 529} {
 		err := FormatAPIError("openai", "chat", status, "req",
 			ProviderErrorDetail{Message: "try again"}, nil)
-		var fluxErr *FluxError
-		if !errors.As(err, &fluxErr) {
-			t.Fatalf("status %d: not *FluxError: %T", status, err)
+		var muxErr *MuxError
+		if !errors.As(err, &muxErr) {
+			t.Fatalf("status %d: not *MuxError: %T", status, err)
 		}
-		if !fluxErr.IsRetriable() {
+		if !muxErr.IsRetriable() {
 			t.Errorf("status %d: IsRetriable = false, want true", status)
 		}
 	}
@@ -185,7 +185,7 @@ func TestFormatAPIError_RetriableCodes(t *testing.T) {
 
 // TestFormatAPIError_InnerErrorUnwrap: a non-nil inner error passed
 // in (e.g. a body read error from ParseProviderError) is wired into
-// FluxError.Err, so errors.Is / errors.Unwrap traverse it. This
+// MuxError.Err, so errors.Is / errors.Unwrap traverse it. This
 // fixes the contract gap where Unwrap() always returned nil even
 // when the provider body failed to read.
 func TestFormatAPIError_InnerErrorUnwrap(t *testing.T) {
@@ -194,9 +194,9 @@ func TestFormatAPIError_InnerErrorUnwrap(t *testing.T) {
 	err := FormatAPIError("openai", "chat", 500, "req_inner",
 		ProviderErrorDetail{Message: "bad gateway"}, inner)
 
-	var fluxErr *FluxError
-	if !errors.As(err, &fluxErr) {
-		t.Fatalf("FormatAPIError must return *FluxError, got %T (%v)", err, err)
+	var muxErr *MuxError
+	if !errors.As(err, &muxErr) {
+		t.Fatalf("FormatAPIError must return *MuxError, got %T (%v)", err, err)
 	}
 	if !errors.Is(err, io.ErrUnexpectedEOF) {
 		t.Errorf("errors.Is(err, io.ErrUnexpectedEOF) = false, want true (Err field must be wired)")

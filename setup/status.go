@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	"github.com/GrayCodeAI/flux/config"
-	"github.com/GrayCodeAI/flux/router"
+	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/mux/config"
+	"github.com/GrayCodeAI/mux/router"
 )
 
-// StatusReport summarizes deployment routing readiness (flux provider status).
+// StatusReport summarizes deployment routing readiness (mux provider status).
 type StatusReport struct {
 	DeploymentRouting  bool
 	ProviderConfig     string
@@ -111,7 +111,7 @@ func FormatStatus(report StatusReport) string {
 	if report.DeploymentRouting {
 		b.WriteString("enabled\n")
 	} else {
-		b.WriteString("disabled (single-route Flux transport)\n")
+		b.WriteString("disabled (single-route Mux transport)\n")
 	}
 	fmt.Fprintf(&b, "Provider config: %s", report.ProviderConfig)
 	if report.ConfigVersion > 0 {
@@ -132,7 +132,7 @@ func FormatStatus(report StatusReport) string {
 		fmt.Fprintf(&b, "  cached: no (using embedded catalog: %d models)\n", report.CatalogModels)
 	}
 	if report.CatalogStale {
-		b.WriteString("  stale: yes — rho refreshes automatically; use `rho models refresh` or `/refresh-model-catalog` for a manual run\n")
+		b.WriteString("  stale: yes — decoder refreshes automatically; use `decoder models refresh` or `/refresh-model-catalog` for a manual run\n")
 	}
 	if report.ActiveModel != "" {
 		fmt.Fprintf(&b, "Active canonical model: %s\n", report.ActiveModel)

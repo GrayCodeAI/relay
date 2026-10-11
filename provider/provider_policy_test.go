@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 func TestApplyProviderChatDefaults(t *testing.T) {
@@ -24,7 +24,7 @@ func TestApplyProviderChatDefaults(t *testing.T) {
 }
 
 func TestIsContextOverflow(t *testing.T) {
-	typed := &core.FluxError{Provider: "openai", Message: "input exceeds the model's context window"}
+	typed := &core.MuxError{Provider: "openai", Message: "input exceeds the model's context window"}
 	if !IsContextOverflow(typed) {
 		t.Fatal("typed context error was not detected")
 	}

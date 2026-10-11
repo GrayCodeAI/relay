@@ -3,7 +3,7 @@ package catalog
 import (
 	"strings"
 
-	"github.com/GrayCodeAI/flux/catalog/registry"
+	"github.com/GrayCodeAI/mux/catalog/registry"
 )
 
 // EnsureCredentialRegistryInCatalog merges registry providers/deployments into catalog v1.

@@ -1,8 +1,8 @@
 {
-  "name": "flux-sdk",
+  "name": "mux-sdk",
   "version": "0.0.1",
-  "description": "Flux conversation DAG HTTP API client",
-  "main": "flux.ts",
-  "types": "flux.ts",
+  "description": "Mux conversation DAG HTTP API client",
+  "main": "mux.ts",
+  "types": "mux.ts",
   "license": "MIT"
 }

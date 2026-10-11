@@ -6,19 +6,19 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	"github.com/GrayCodeAI/flux/catalog/registry"
+	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/mux/catalog/registry"
 )
 
 func TestUserCatalog_GatewayCountsMatchDeploymentOfferings(t *testing.T) {
 	t.Parallel()
 	home, err := os.UserHomeDir()
 	if err != nil {
-		t.Skip(err) // TODO: https://github.com/GrayCodeAI/flux/issues/31
+		t.Skip(err) // TODO: https://github.com/GrayCodeAI/mux/issues/31
 	}
-	path := filepath.Join(home, ".flux", "model_catalog.json")
+	path := filepath.Join(home, ".mux", "model_catalog.json")
 	if _, err := os.Stat(path); err != nil {
-		t.Skip("no user catalog") // TODO: https://github.com/GrayCodeAI/flux/issues/31
+		t.Skip("no user catalog") // TODO: https://github.com/GrayCodeAI/mux/issues/31
 	}
 	compiled, err := catalog.LoadCatalog(context.Background(), catalog.LoadCatalogOptions{
 		CachePath:    path,

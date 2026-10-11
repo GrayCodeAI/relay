@@ -1,4 +1,4 @@
-# AGENTS.md — Flux
+# AGENTS.md — Mux
 
 Universal LLM provider runtime. One interface for every model. Authentication, routing, streaming, retries, caching — handled.
 
@@ -10,13 +10,13 @@ When starting any new work (feature, fix, refactor, chore), always create a feat
 
 - **Model-agnostic** — single interface for the 28 provider gateways in
   `catalog/registry/providers.go` (see README "Supported Providers")
-- **Host-neutral engine** — Flux owns provider routing, transport, caching,
+- **Host-neutral engine** — Mux owns provider routing, transport, caching,
   retry/fallback, and normalized telemetry; hosts own product UX and semantics
 - **Streaming-first** — all responses are streamed; blocking is opt-in
 
 ## Observability
 
-See [rho/docs/OTEL-CONVENTIONS.md](https://github.com/GrayCodeAI/rho/blob/main/docs/OTEL-CONVENTIONS.md) for the shared OpenTelemetry attribute vocabulary (`gen_ai.*`, `cost.usd`, etc.) used across all GrayCodeAI repos.
+See [decoder/docs/OTEL-CONVENTIONS.md](https://github.com/GrayCodeAI/decoder/blob/main/docs/OTEL-CONVENTIONS.md) for the shared OpenTelemetry attribute vocabulary (`gen_ai.*`, `cost.usd`, etc.) used across all GrayCodeAI repos.
 
 ## Build & Test
 
@@ -41,7 +41,7 @@ make ci                          # Full CI suite
 
 ## Conventions
 
-- Go 1.26+, pure Go, no CGO
+- Go 1.27.2+, pure Go, no CGO
 - Table-driven tests
 - Conventional Commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`
 - No `Co-authored-by:` trailers (auto-stripped by githook)
@@ -50,9 +50,9 @@ make ci                          # Full CI suite
 
 ## Common Pitfalls
 
-- `engine`, `llm`, `graph` and `tools` are the host contract surface. Rho
+- `engine`, `llm`, `graph` and `tools` are the host contract surface. Decoder
   must not assemble `provider`, `catalog`, `config`, `credentials`, `router` or
-  `runtime`. Six symbols Rho needs (`ChatOptions`, `ContinuationConfig`,
+  `runtime`. Six symbols Decoder needs (`ChatOptions`, `ContinuationConfig`,
   `StreamResult`, `ResponseFormat`, `ImageURLPart`, `InputAudioPart`) live in
   `llm` with no `engine` alias; widening the facade to cover them is a
   deliberate API change, not an incidental one.
@@ -66,27 +66,27 @@ make ci                          # Full CI suite
   method set stable and use it across feature packages
 - Streaming tests need careful goroutine management
 - `go.work` here should stay minimal; the `graycode-eco` workspace connects
-  this independent `flux` checkout beside Rho for local development.
+  this independent `mux` checkout beside Decoder for local development.
   Do not add extra local `replace` directives here without coordinating with
   the parent workspace.
 - There is usually **no** `go.work` in the parent folder, and that is expected.
   A parent `go.work` breaks every sibling it does not list, and exporting
-  `GOWORK` is worse: it is inherited by child `go` processes, so rho's own
+  `GOWORK` is worse: it is inherited by child `go` processes, so decoder's own
   tests that shell out to `go test` in temporary projects fail. To exercise
-  rho against this checkout, use a gitignored module overlay in rho instead —
-  `go test -modfile=go.local.mod ./...`. See rho/AGENTS.md
-  "Workspace workflow" for the setup. Without that overlay, rho compiles
-  against the *published* flux from the module cache, so a green rho suite
-  does not exercise local flux changes at all.
+  decoder against this checkout, use a gitignored module overlay in decoder instead —
+  `go test -modfile=go.local.mod ./...`. See decoder/AGENTS.md
+  "Workspace workflow" for the setup. Without that overlay, decoder compiles
+  against the *published* mux from the module cache, so a green decoder suite
+  does not exercise local mux changes at all.
 
 ## Naming Conventions
 
 - **Provider interface**: `provider/core.Provider` with `Chat()`, `StreamChat()`, `Ping()`, `Name()`
-- **Core request types**: `provider/core.FluxMessage`, `FluxResponse`, `FluxTool`, `FluxUsage`
-- **Config struct**: `provider/core.FluxConfig` with `Provider`, `APIKey`, `BaseURL`, `Model`, `MaxRetries`
+- **Core request types**: `provider/core.MuxMessage`, `MuxResponse`, `MuxTool`, `MuxUsage`
+- **Config struct**: `provider/core.MuxConfig` with `Provider`, `APIKey`, `BaseURL`, `Model`, `MaxRetries`
 - **Provider implementations**: `provider/adapters/anthropic.go` (`AnthropicClient`), `openai.go` (`OpenAIClient`), `gemini.go` (`GeminiClient`), etc.
 - **Compatibility configs**: `provider/adapters.OpenAICompat`, `GrokCompat`, `OpenRouterCompat`
-- **Error type**: `FluxError` with `Provider`, `Op`, `StatusCode`, `RequestID`, `Message`, `Err` fields
+- **Error type**: `MuxError` with `Provider`, `Op`, `StatusCode`, `RequestID`, `Message`, `Err` fields
 - **Stream types**: `StreamResult`, `SSEEvent`, `StreamEvent` — streaming is SSE-based
 - **Retry config**: `RetryConfig` embeds `types.RetryConfig` + adds `RetryOn []int` for HTTP status codes
 - **Version wiring**: `provider.Version` set via `SetVersion()` from root package — avoids circular import
@@ -94,15 +94,15 @@ make ci                          # Full CI suite
 ## API Patterns
 
 - **Provider auto-detection**: `DetectProvider()` checks env vars in priority order (ANTHROPIC_API_KEY, OPENAI_API_KEY, etc.)
-- **Client creation**: `provider.NewFluxClient(&core.FluxConfig{...})` or `provider.Client(&core.FluxConfig{...})`
-- **Chat method**: `c.Chat(ctx, messages, opts)` — non-streaming, returns `*FluxResponse`
+- **Client creation**: `provider.NewMuxClient(&core.MuxConfig{...})` or `provider.Client(&core.MuxConfig{...})`
+- **Chat method**: `c.Chat(ctx, messages, opts)` — non-streaming, returns `*MuxResponse`
 - **Stream method**: `c.StreamChat(ctx, messages, opts)` — returns `*StreamResult`, caller must `defer sr.Close()`
 - **Auto-continuation**: `StreamChatContinue()` transparently retries when `stop_reason == max_tokens`
 - **Provider fallback**: `fallback.go` implements fallback chains across providers
 - **Rate limiting**: `ratelimit.go` implements token bucket per provider — prevents hitting API limits
 - **Semantic caching**: `semantic_cache.go` caches similar prompts — optional, configurable TTL
 - **Retry with backoff**: `retry.go` — exponential backoff + jitter, respects `Retry-After` header, retries on 429/500/502/503/529
-- **Error hierarchy**: `FluxError` has `IsRetriable()`, `IsAuthError()`, `IsRateLimited()` methods for programmatic handling
+- **Error hierarchy**: `MuxError` has `IsRetriable()`, `IsAuthError()`, `IsRateLimited()` methods for programmatic handling
 - **SSE parsing**: `parseSSEStream()` reads `bufio.Scanner` with 2MB buffer, emits `SSEEvent` to channel
 
 ## Testing Patterns
@@ -125,9 +125,9 @@ make ci                          # Full CI suite
 - **Safe to refactor**: `fallback.go`, `weighted.go` — routing strategies, extend with new strategies
 - **Safe to refactor**: `cost_estimator.go`, `cache_analytics.go` — metrics and tracking
 - **Do not touch**: `Provider` interface (`Chat`, `StreamChat`, `Ping`, `Name`) — breaking change for all implementations
-- **Do not touch**: `FluxMessage`, `FluxResponse`, `ChatOptions` struct field names — serialization contract
-- **Do not touch**: `FluxError` struct — used by consumers for error type assertions
-- **Do not touch**: `provider/core.FluxConfig` — constructor contract for all consumers
+- **Do not touch**: `MuxMessage`, `MuxResponse`, `ChatOptions` struct field names — serialization contract
+- **Do not touch**: `MuxError` struct — used by consumers for error type assertions
+- **Do not touch**: `provider/core.MuxConfig` — constructor contract for all consumers
 - **Safe to extend**: add new provider implementations, new SSE event types, new cache strategies
 - **When adding a provider**: create `provider/<provider>.go`, implement `Provider` interface, register in `provider_registry.go`
 
@@ -135,7 +135,7 @@ make ci                          # Full CI suite
 
 | What | Where |
 |---|---|
-| Provider interface | `provider/core/core.go` (`Provider`, `FluxConfig`, `FluxMessage`, `ContentPart`) |
+| Provider interface | `provider/core/core.go` (`Provider`, `MuxConfig`, `MuxMessage`, `ContentPart`) |
 | Chat implementation | `provider/chat.go` (`Chat()`, `StreamChat()`, `StreamChatContinue()`) |
 | Host-facing engine facade | `engine/` |
 | Provider-neutral core | `provider/core/` |
@@ -153,7 +153,7 @@ make ci                          # Full CI suite
 | Caching | `provider/cache/cache.go`, `provider/cache/semantic_cache.go` |
 | Fallback chains | `router/router.go` (fallback providers), `router/deployment_router.go` (fallback deployment stages) |
 | Auto-continuation | `provider/resilience/continuation.go` |
-| Error types | `provider/core/errors.go` (`FluxError`, `IsRetriable()`, `IsAuthError()`) |
+| Error types | `provider/core/errors.go` (`MuxError`, `IsRetriable()`, `IsAuthError()`) |
 | Error constants | `types/errors.go` (API error messages, prompt-too-long parsing) |
 | Model catalog | `catalog/` (pricing, context windows, capabilities per provider) |
 | Credentials | `credentials/` (key storage, env detection, scrubbing) — `HasSecret` is silent on miss (boolean predicate); `LookupSecret` logs `Debug` on `ErrNotFound` and `Warn` on real backend errors |
@@ -161,7 +161,7 @@ make ci                          # Full CI suite
 | Main test file | `provider/client_test.go` (httptest servers, provider detection) |
 | Linter config | `.golangci.yml` (govet, ineffassign, misspell — minimal) |
 
-This is an independent repository consumed by Rho. In the local
-`graycode-eco` parent workspace it is checked out beside `rho` as `../flux`
+This is an independent repository consumed by Decoder. In the local
+`graycode-eco` parent workspace it is checked out beside `decoder` as `../mux`
 and connected through the parent `go.work`; publish changes here, then update
-Rho's module pin through a separate PR.
+Decoder's module pin through a separate PR.

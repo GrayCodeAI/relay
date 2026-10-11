@@ -8,13 +8,13 @@ import (
 func TestFilterRelationships_DropsEmpty(t *testing.T) {
 	t.Parallel()
 	in := []Relationship{
-		{Subject: "flux", Predicate: "part_of", Object: "graycode-eco"},
+		{Subject: "mux", Predicate: "part_of", Object: "graycode-eco"},
 		{Subject: "", Predicate: "x", Object: "y"},   // empty subject
 		{Subject: "a", Predicate: "  ", Object: "b"}, // blank predicate
 		{Subject: "c", Predicate: "rel", Object: ""}, // empty object
 	}
 	out := filterRelationships(in, nil)
-	if len(out) != 1 || out[0].Subject != "flux" {
+	if len(out) != 1 || out[0].Subject != "mux" {
 		t.Fatalf("expected only the complete triple, got %#v", out)
 	}
 }

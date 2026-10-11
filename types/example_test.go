@@ -3,7 +3,7 @@ package types_test
 import (
 	"fmt"
 
-	"github.com/GrayCodeAI/flux/types"
+	"github.com/GrayCodeAI/mux/types"
 )
 
 func ExampleCreateUserMessage() {

@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 // ClientOption and the adapter-level With* constructors live in provider/core
 // (see core.Configurable). Only WithCoalescing is defined locally — it
-// configures the FluxClient itself, which lives in this package.
+// configures the MuxClient itself, which lives in this package.
 
 // WithTimeout sets the HTTP client timeout.
 func WithTimeout(d time.Duration) core.ClientOption { return core.WithTimeout(d) }
@@ -69,5 +69,5 @@ func WithMimoAuth() core.ClientOption { return core.WithMimoAuth() }
 // The ttl parameter controls how long completed requests remain in the coalescer
 // for potential reuse. A typical value is 100-500ms.
 func WithCoalescing(ttl time.Duration) core.ClientOption {
-	return core.NewFluxOption(func(e core.FluxConfigurable) { e.SetCoalescingTTL(ttl) })
+	return core.NewMuxOption(func(e core.MuxConfigurable) { e.SetCoalescingTTL(ttl) })
 }

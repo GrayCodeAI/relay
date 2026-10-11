@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	graphcontracts "github.com/GrayCodeAI/flux/graph"
-	llmcontracts "github.com/GrayCodeAI/flux/llm"
-	"github.com/GrayCodeAI/flux/operationsgraph"
+	graphcontracts "github.com/GrayCodeAI/mux/graph"
+	llmcontracts "github.com/GrayCodeAI/mux/llm"
+	"github.com/GrayCodeAI/mux/operationsgraph"
 )
 
 func TestBuildPrivacySafeOperationsProjection(t *testing.T) {
@@ -18,7 +18,7 @@ func TestBuildPrivacySafeOperationsProjection(t *testing.T) {
 		Route: &llmcontracts.ResolvedRoute{
 			Provider: "private-provider", Model: "private/model", DeploymentRouting: true,
 		},
-		Usage: &llmcontracts.FluxUsage{
+		Usage: &llmcontracts.MuxUsage{
 			PromptTokens: 100, CompletionTokens: 20, TotalTokens: 120,
 		},
 		FinishReason: "stop", RequestID: "private-request-id",

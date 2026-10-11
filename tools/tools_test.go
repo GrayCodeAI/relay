@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/GrayCodeAI/flux/tools"
+	"github.com/GrayCodeAI/mux/tools"
 )
 
 // TestToolsParity pins the wire schema of tools.ToolCall and tools.ToolResult

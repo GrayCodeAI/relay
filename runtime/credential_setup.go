@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GrayCodeAI/flux/catalog/registry"
-	"github.com/GrayCodeAI/flux/catalog/xiaomi"
-	"github.com/GrayCodeAI/flux/config"
+	"github.com/GrayCodeAI/mux/catalog/registry"
+	"github.com/GrayCodeAI/mux/catalog/xiaomi"
+	"github.com/GrayCodeAI/mux/config"
 )
 
 // Credential types re-exported for host apps.

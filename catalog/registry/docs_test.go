@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/flux/catalog/registry"
+	"github.com/GrayCodeAI/mux/catalog/registry"
 )
 
 // These tests keep the provider facts that humans and agents read first
@@ -19,7 +19,7 @@ import (
 // repoRoot is the module root relative to this package directory.
 const repoRoot = "../.."
 
-// providerCountDocs are the files that may state how many providers Flux
+// providerCountDocs are the files that may state how many providers Mux
 // supports. Every count they state must equal len(registry.All()).
 var providerCountDocs = []string{
 	"README.md",
@@ -145,7 +145,7 @@ func TestEnvExampleListsRegistryCredentials(t *testing.T) {
 		t.Errorf(".env.example credential block drifted from the registry (SortOrder)\n got: %v\nwant: %v", block, want)
 	}
 
-	// No other API-key variable may appear: Flux reads none besides the
+	// No other API-key variable may appear: Mux reads none besides the
 	// registry credentials, so an extra one would be a key nothing uses.
 	for _, line := range strings.Split(readRepoFile(t, ".env.example"), "\n") {
 		if m := envAssignment.FindStringSubmatch(strings.TrimPrefix(strings.TrimSpace(line), "# ")); m != nil &&

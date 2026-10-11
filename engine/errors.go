@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GrayCodeAI/flux/catalog"
+	"github.com/GrayCodeAI/mux/catalog"
 )
 
 // ErrorCode is a stable, machine-readable engine failure category.
@@ -44,9 +44,9 @@ func (e *Error) Error() string {
 		return e.Message
 	}
 	if e.Operation != "" {
-		return fmt.Sprintf("flux engine: %s failed", e.Operation)
+		return fmt.Sprintf("mux engine: %s failed", e.Operation)
 	}
-	return "flux engine error"
+	return "mux engine error"
 }
 
 func (e *Error) Unwrap() error {

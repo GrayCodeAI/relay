@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	"github.com/GrayCodeAI/flux/config"
-	"github.com/GrayCodeAI/flux/credentials"
-	"github.com/GrayCodeAI/flux/provider/adapters"
+	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/mux/config"
+	"github.com/GrayCodeAI/mux/credentials"
+	"github.com/GrayCodeAI/mux/provider/adapters"
 )
 
 func TestProviderForDeploymentAnthropicBedrockFromConfig(t *testing.T) {
@@ -110,7 +110,7 @@ func TestProviderForDeploymentPoolsideUsesReasoningRecoveryClient(t *testing.T) 
 func TestUseDeploymentRouting_EnvOverrideTrue(t *testing.T) {
 	for _, val := range []string{"1", "true", "yes", "on", "TRUE", "Yes"} {
 		t.Run(val, func(t *testing.T) {
-			t.Setenv("FLUX_DEPLOYMENT_ROUTING", val)
+			t.Setenv("MUX_DEPLOYMENT_ROUTING", val)
 			if !UseDeploymentRouting(nil) {
 				t.Fatalf("expected true for env %q", val)
 			}
@@ -121,7 +121,7 @@ func TestUseDeploymentRouting_EnvOverrideTrue(t *testing.T) {
 func TestUseDeploymentRouting_EnvOverrideFalse(t *testing.T) {
 	for _, val := range []string{"0", "false", "no", "off", "FALSE", "No"} {
 		t.Run(val, func(t *testing.T) {
-			t.Setenv("FLUX_DEPLOYMENT_ROUTING", val)
+			t.Setenv("MUX_DEPLOYMENT_ROUTING", val)
 			if UseDeploymentRouting(&config.ProviderConfig{ConfigVersion: 2}) {
 				t.Fatalf("expected false for env %q", val)
 			}
@@ -130,14 +130,14 @@ func TestUseDeploymentRouting_EnvOverrideFalse(t *testing.T) {
 }
 
 func TestUseDeploymentRouting_NilConfig(t *testing.T) {
-	t.Setenv("FLUX_DEPLOYMENT_ROUTING", "")
+	t.Setenv("MUX_DEPLOYMENT_ROUTING", "")
 	if UseDeploymentRouting(nil) {
 		t.Fatal("expected false for nil config")
 	}
 }
 
 func TestUseDeploymentRouting_ConfigVersion2(t *testing.T) {
-	t.Setenv("FLUX_DEPLOYMENT_ROUTING", "")
+	t.Setenv("MUX_DEPLOYMENT_ROUTING", "")
 	cfg := &config.ProviderConfig{ConfigVersion: 2}
 	if !UseDeploymentRouting(cfg) {
 		t.Fatal("expected true for config_version >= 2")
@@ -145,7 +145,7 @@ func TestUseDeploymentRouting_ConfigVersion2(t *testing.T) {
 }
 
 func TestUseDeploymentRouting_WithDeployments(t *testing.T) {
-	t.Setenv("FLUX_DEPLOYMENT_ROUTING", "")
+	t.Setenv("MUX_DEPLOYMENT_ROUTING", "")
 	cfg := &config.ProviderConfig{
 		Deployments: map[string]config.DeploymentConfig{
 			"anthropic-direct": {APIKey: "key"},
@@ -157,7 +157,7 @@ func TestUseDeploymentRouting_WithDeployments(t *testing.T) {
 }
 
 func TestUseDeploymentRouting_WithRouting(t *testing.T) {
-	t.Setenv("FLUX_DEPLOYMENT_ROUTING", "")
+	t.Setenv("MUX_DEPLOYMENT_ROUTING", "")
 	cfg := &config.ProviderConfig{
 		Routing: &config.RoutingPolicy{},
 	}
@@ -167,7 +167,7 @@ func TestUseDeploymentRouting_WithRouting(t *testing.T) {
 }
 
 func TestUseDeploymentRouting_FlatConfig(t *testing.T) {
-	t.Setenv("FLUX_DEPLOYMENT_ROUTING", "")
+	t.Setenv("MUX_DEPLOYMENT_ROUTING", "")
 	cfg := &config.ProviderConfig{ConfigVersion: 0}
 	if UseDeploymentRouting(cfg) {
 		t.Fatal("expected false for flat config without deployments/routing")
@@ -175,7 +175,7 @@ func TestUseDeploymentRouting_FlatConfig(t *testing.T) {
 }
 
 func TestDeploymentRoutingFromStateIgnoresAmbientOverride(t *testing.T) {
-	t.Setenv("FLUX_DEPLOYMENT_ROUTING", "true")
+	t.Setenv("MUX_DEPLOYMENT_ROUTING", "true")
 	if DeploymentRoutingFromState(nil) {
 		t.Fatal("pure deployment routing read process environment")
 	}
@@ -750,7 +750,7 @@ func TestProviderForDeployment_XiaomiDirect(t *testing.T) {
 
 func TestProviderForDeployment_XiaomiTokenPlanDirect(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("FLUX_CONFIG_DIR", dir)
+	t.Setenv("MUX_CONFIG_DIR", dir)
 	cfg := &config.ProviderConfig{
 		Version:                    "1",
 		XiaomiMimoTokenPlanRegion:  "sgp",

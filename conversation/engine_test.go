@@ -8,22 +8,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/flux/provider/core"
-	"github.com/GrayCodeAI/flux/storage"
+	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/mux/storage"
 )
 
 type mockStreamProvider struct{}
 
 func (m *mockStreamProvider) Name() string                 { return "mock" }
 func (m *mockStreamProvider) Ping(_ context.Context) error { return nil }
-func (m *mockStreamProvider) Chat(_ context.Context, _ []core.FluxMessage, _ core.ChatOptions) (*core.FluxResponse, error) {
-	return &core.FluxResponse{Content: "hello", FinishReason: "end_turn", Usage: &core.FluxUsage{CompletionTokens: 5}}, nil
+func (m *mockStreamProvider) Chat(_ context.Context, _ []core.MuxMessage, _ core.ChatOptions) (*core.MuxResponse, error) {
+	return &core.MuxResponse{Content: "hello", FinishReason: "end_turn", Usage: &core.MuxUsage{CompletionTokens: 5}}, nil
 }
 
-func (m *mockStreamProvider) StreamChat(_ context.Context, _ []core.FluxMessage, _ core.ChatOptions) (*core.StreamResult, error) {
-	ch := make(chan core.FluxStreamEvent, 3)
-	ch <- core.FluxStreamEvent{Type: "content", Content: "hello"}
-	ch <- core.FluxStreamEvent{Type: "done", StopReason: "end_turn", Usage: &core.FluxUsage{CompletionTokens: 5}}
+func (m *mockStreamProvider) StreamChat(_ context.Context, _ []core.MuxMessage, _ core.ChatOptions) (*core.StreamResult, error) {
+	ch := make(chan core.MuxStreamEvent, 3)
+	ch <- core.MuxStreamEvent{Type: "content", Content: "hello"}
+	ch <- core.MuxStreamEvent{Type: "done", StopReason: "end_turn", Usage: &core.MuxUsage{CompletionTokens: 5}}
 	close(ch)
 	return &core.StreamResult{Events: ch}, nil
 }
@@ -139,17 +139,17 @@ type maxTokensMockProvider struct {
 func (m *maxTokensMockProvider) Name() string                 { return "max-tokens-mock" }
 func (m *maxTokensMockProvider) Ping(_ context.Context) error { return nil }
 
-func (m *maxTokensMockProvider) Chat(_ context.Context, _ []core.FluxMessage, _ core.ChatOptions) (*core.FluxResponse, error) {
+func (m *maxTokensMockProvider) Chat(_ context.Context, _ []core.MuxMessage, _ core.ChatOptions) (*core.MuxResponse, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.callCount++
 	if m.callCount == 1 {
-		return &core.FluxResponse{Content: "part 1 ", FinishReason: "max_tokens", Usage: &core.FluxUsage{CompletionTokens: 50}}, nil
+		return &core.MuxResponse{Content: "part 1 ", FinishReason: "max_tokens", Usage: &core.MuxUsage{CompletionTokens: 50}}, nil
 	}
-	return &core.FluxResponse{Content: "part 2", FinishReason: "end_turn", Usage: &core.FluxUsage{CompletionTokens: 30}}, nil
+	return &core.MuxResponse{Content: "part 2", FinishReason: "end_turn", Usage: &core.MuxUsage{CompletionTokens: 30}}, nil
 }
 
-func (m *maxTokensMockProvider) StreamChat(_ context.Context, msgs []core.FluxMessage, _ core.ChatOptions) (*core.StreamResult, error) {
+func (m *maxTokensMockProvider) StreamChat(_ context.Context, msgs []core.MuxMessage, _ core.ChatOptions) (*core.StreamResult, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.callCount++
@@ -161,9 +161,9 @@ func (m *maxTokensMockProvider) StreamChat(_ context.Context, msgs []core.FluxMe
 		content = "part 2"
 		stopReason = "end_turn"
 	}
-	ch := make(chan core.FluxStreamEvent, 4)
-	ch <- core.FluxStreamEvent{Type: "content", Content: content}
-	ch <- core.FluxStreamEvent{Type: "done", StopReason: stopReason, Usage: &core.FluxUsage{CompletionTokens: 30}}
+	ch := make(chan core.MuxStreamEvent, 4)
+	ch <- core.MuxStreamEvent{Type: "content", Content: content}
+	ch <- core.MuxStreamEvent{Type: "done", StopReason: stopReason, Usage: &core.MuxUsage{CompletionTokens: 30}}
 	close(ch)
 	sr := &core.StreamResult{Events: ch}
 	// Wrap Close so we can count invocations.
@@ -267,12 +267,12 @@ func (b *blockingMockProvider) Name() string {
 
 func (b *blockingMockProvider) Ping(_ context.Context) error { return nil }
 
-func (b *blockingMockProvider) Chat(_ context.Context, _ []core.FluxMessage, _ core.ChatOptions) (*core.FluxResponse, error) {
-	return &core.FluxResponse{Content: "done", FinishReason: "end_turn"}, nil
+func (b *blockingMockProvider) Chat(_ context.Context, _ []core.MuxMessage, _ core.ChatOptions) (*core.MuxResponse, error) {
+	return &core.MuxResponse{Content: "done", FinishReason: "end_turn"}, nil
 }
 
-func (b *blockingMockProvider) StreamChat(ctx context.Context, _ []core.FluxMessage, _ core.ChatOptions) (*core.StreamResult, error) {
-	ch := make(chan core.FluxStreamEvent)
+func (b *blockingMockProvider) StreamChat(ctx context.Context, _ []core.MuxMessage, _ core.ChatOptions) (*core.StreamResult, error) {
+	ch := make(chan core.MuxStreamEvent)
 	// Close the channel when the context is done — simulating a provider
 	// that respects context cancellation.
 	go func() {

@@ -99,7 +99,7 @@ func DefaultCategories() map[ModelCategory]CategoryConfig {
 }
 
 // GetCategoryRegistry returns the global category registry.
-// It loads overrides from Rho user config if present.
+// It loads overrides from Decoder user config if present.
 func GetCategoryRegistry() *CategoryRegistry {
 	registryOnce.Do(func() {
 		globalRegistry = &CategoryRegistry{
@@ -117,13 +117,13 @@ func ResetCategoryRegistry() {
 }
 
 func (r *CategoryRegistry) loadOverrides() {
-	configDir := os.Getenv("FLUX_CONFIG_DIR")
+	configDir := os.Getenv("MUX_CONFIG_DIR")
 	if configDir == "" {
 		dir, err := os.UserConfigDir()
 		if err != nil || dir == "" {
 			return
 		}
-		configDir = filepath.Join(dir, "flux")
+		configDir = filepath.Join(dir, "mux")
 	}
 	path := filepath.Join(configDir, "categories.json")
 	data, err := os.ReadFile(path) // #nosec G304 -- path is built from os.UserConfigDir(), not untrusted input

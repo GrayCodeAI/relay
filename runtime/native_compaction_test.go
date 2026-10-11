@@ -3,7 +3,7 @@ package runtime
 import (
 	"testing"
 
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 func TestSupportsAnthropicCompactionSelection(t *testing.T) {
@@ -25,7 +25,7 @@ func TestSupportsAnthropicCompactionSelection(t *testing.T) {
 }
 
 func TestAnthropicCompactionMessagesPreservesTools(t *testing.T) {
-	messages, system := anthropicCompactionMessages([]core.FluxMessage{
+	messages, system := anthropicCompactionMessages([]core.MuxMessage{
 		{Role: "system", Content: "system prompt"},
 		{Role: "assistant", Content: "calling", ToolUse: []core.ToolCall{{ID: "tool-1", Name: "read"}}},
 		{Role: "user", ToolResults: []core.ToolResult{{ToolUseID: "tool-1", Content: "result", IsError: true}}},

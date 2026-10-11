@@ -5,14 +5,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GrayCodeAI/flux/catalog/capabilities"
-	"github.com/GrayCodeAI/flux/llm"
-	"github.com/GrayCodeAI/flux/provider/adapters"
-	"github.com/GrayCodeAI/flux/provider/core"
-	"github.com/GrayCodeAI/flux/provider/embeddings"
-	"github.com/GrayCodeAI/flux/provider/extraction"
-	"github.com/GrayCodeAI/flux/provider/resilience"
-	"github.com/GrayCodeAI/flux/provider/testkit"
+	"github.com/GrayCodeAI/mux/catalog/capabilities"
+	"github.com/GrayCodeAI/mux/llm"
+	"github.com/GrayCodeAI/mux/provider/adapters"
+	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/mux/provider/embeddings"
+	"github.com/GrayCodeAI/mux/provider/extraction"
+	"github.com/GrayCodeAI/mux/provider/resilience"
+	"github.com/GrayCodeAI/mux/provider/testkit"
 )
 
 // Test-only names keep the pre-split root tests focused on behavior. These
@@ -48,11 +48,11 @@ const (
 
 func NewMockProvider(mode MockMode) *MockProvider { return testkit.NewMockProvider(mode) }
 
-func MergeConsecutiveRoles(messages []core.FluxMessage) []core.FluxMessage {
+func MergeConsecutiveRoles(messages []core.MuxMessage) []core.MuxMessage {
 	return core.MergeConsecutiveRoles(messages)
 }
 
-func SanitizeMessages(messages []core.FluxMessage) []core.FluxMessage {
+func SanitizeMessages(messages []core.MuxMessage) []core.MuxMessage {
 	return core.SanitizeMessages(messages)
 }
 
@@ -117,11 +117,11 @@ func NewCondensingProvider(inner core.Provider, c ConversationCondenser, opts Co
 	return resilience.NewCondensingProvider(inner, c, opts)
 }
 
-func ChatWithContinuation(ctx context.Context, p core.Provider, messages []core.FluxMessage, opts core.ChatOptions, cfg core.ContinuationConfig) (*core.FluxResponse, error) {
+func ChatWithContinuation(ctx context.Context, p core.Provider, messages []core.MuxMessage, opts core.ChatOptions, cfg core.ContinuationConfig) (*core.MuxResponse, error) {
 	return resilience.ChatWithContinuation(ctx, p, messages, opts, cfg)
 }
 
-func StreamChatWithContinuation(ctx context.Context, p core.Provider, messages []core.FluxMessage, opts core.ChatOptions, cfg core.ContinuationConfig) (*core.StreamResult, error) {
+func StreamChatWithContinuation(ctx context.Context, p core.Provider, messages []core.MuxMessage, opts core.ChatOptions, cfg core.ContinuationConfig) (*core.StreamResult, error) {
 	return resilience.StreamChatWithContinuation(ctx, p, messages, opts, cfg)
 }
 
@@ -144,28 +144,28 @@ func NormalizeThinkingOptions(opts core.ChatOptions) core.ChatOptions {
 type (
 	// Provider is the core interface for LLM providers.
 	Provider = core.Provider
-	// FluxConfig holds client configuration.
-	FluxConfig = core.FluxConfig
+	// MuxConfig holds client configuration.
+	MuxConfig = core.MuxConfig
 	// ContentPart represents a piece of content in a multi-modal message.
 	ContentPart = core.ContentPart
 	// ImageURLPart represents an image content part.
 	ImageURLPart = core.ImageURLPart
 	// InputAudioPart represents an audio content part (base64 encoded).
 	InputAudioPart = core.InputAudioPart
-	// FluxMessage represents a chat message.
-	FluxMessage = core.FluxMessage
+	// MuxMessage represents a chat message.
+	MuxMessage = core.MuxMessage
 	// ToolResult represents the result of a tool execution.
 	ToolResult = core.ToolResult
-	// FluxTool represents a tool definition.
-	FluxTool = core.FluxTool
-	// FluxUsage tracks token usage.
-	FluxUsage = core.FluxUsage
-	// FluxResponse is the response from a chat call.
-	FluxResponse = core.FluxResponse
+	// MuxTool represents a tool definition.
+	MuxTool = core.MuxTool
+	// MuxUsage tracks token usage.
+	MuxUsage = core.MuxUsage
+	// MuxResponse is the response from a chat call.
+	MuxResponse = core.MuxResponse
 	// ToolCall represents a tool invocation.
 	ToolCall = core.ToolCall
-	// FluxStreamEvent is a streaming event.
-	FluxStreamEvent = core.FluxStreamEvent
+	// MuxStreamEvent is a streaming event.
+	MuxStreamEvent = core.MuxStreamEvent
 	// StreamResult wraps a streaming response with cleanup.
 	StreamResult = core.StreamResult
 	// ResponseFormat specifies the desired output format for the model response.
@@ -176,9 +176,9 @@ type (
 	ToolChoiceOption = core.ToolChoiceOption
 	// ContinuationConfig controls output continuation behavior.
 	ContinuationConfig = core.ContinuationConfig
-	// FluxError is a structured error that preserves provider context,
+	// MuxError is a structured error that preserves provider context,
 	// HTTP metadata, and request identification for debugging.
-	FluxError = core.FluxError
+	MuxError = core.MuxError
 	// RetryConfig controls retry behavior for HTTP clients.
 	RetryConfig = core.RetryConfig
 	// SSEEvent is one server-sent event from a streaming response body.
@@ -277,7 +277,7 @@ func DetectResponseHealth(sig ResponseSignals) ResponseHealth {
 }
 
 // ResponseHasContent reports whether a response carries content or tool calls.
-func ResponseHasContent(resp *FluxResponse) bool {
+func ResponseHasContent(resp *MuxResponse) bool {
 	return core.ResponseHasContent(resp)
 }
 
@@ -353,13 +353,13 @@ var (
 // NewStreamResult creates a StreamResult with a cancel function for resource
 // cleanup. The request ID is optional; pass "" when it is not yet available.
 // The canonical constructor lives in
-// github.com/GrayCodeAI/flux/llm.
-func NewStreamResult(events <-chan FluxStreamEvent, cancel context.CancelFunc) *StreamResult {
+// github.com/GrayCodeAI/mux/llm.
+func NewStreamResult(events <-chan MuxStreamEvent, cancel context.CancelFunc) *StreamResult {
 	return llm.NewStreamResult(events, "", cancel)
 }
 
 // NewStreamResultWithRequestID is NewStreamResult carrying the provider's request ID.
-func NewStreamResultWithRequestID(events <-chan FluxStreamEvent, requestID string, cancel context.CancelFunc) *StreamResult {
+func NewStreamResultWithRequestID(events <-chan MuxStreamEvent, requestID string, cancel context.CancelFunc) *StreamResult {
 	return llm.NewStreamResult(events, requestID, cancel)
 }
 

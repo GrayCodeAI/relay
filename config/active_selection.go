@@ -3,7 +3,7 @@ package config
 import (
 	"strings"
 
-	"github.com/GrayCodeAI/flux/catalog"
+	"github.com/GrayCodeAI/mux/catalog"
 )
 
 // ActiveModel returns the user's selected model from provider.json (canonical when possible).

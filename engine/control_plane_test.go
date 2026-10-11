@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/flux/config"
-	"github.com/GrayCodeAI/flux/credentials"
+	"github.com/GrayCodeAI/mux/config"
+	"github.com/GrayCodeAI/mux/credentials"
 )
 
 func TestControlPlaneUsesInjectedCredentialStore(t *testing.T) {
@@ -50,7 +50,7 @@ func TestControlPlaneUsesInjectedCredentialStore(t *testing.T) {
 
 	if eng.catalogPath != filepath.Join(filepath.Dir(eng.providerConfigPath), "model_catalog.json") {
 		// Both paths must derive from the injected StateDir. The exact assertion
-		// catches accidental fallback to process-global Rho paths.
+		// catches accidental fallback to process-global Decoder paths.
 		t.Fatalf("control-plane paths escaped injected state dir: catalog=%q provider=%q", eng.catalogPath, eng.providerConfigPath)
 	}
 }

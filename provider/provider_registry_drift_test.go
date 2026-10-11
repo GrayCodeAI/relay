@@ -5,7 +5,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/GrayCodeAI/flux/catalog/registry"
+	"github.com/GrayCodeAI/mux/catalog/registry"
 )
 
 // staticProviderNames is a snapshot of every built-in provider, captured at

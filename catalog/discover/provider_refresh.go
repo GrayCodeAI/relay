@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	"github.com/GrayCodeAI/flux/catalog/live"
-	"github.com/GrayCodeAI/flux/catalog/registry"
-	fluxcfg "github.com/GrayCodeAI/flux/config"
+	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/mux/catalog/live"
+	"github.com/GrayCodeAI/mux/catalog/registry"
+	muxcfg "github.com/GrayCodeAI/mux/config"
 )
 
 // RefreshProvider fetches live models for one provider, merges into the catalog cache,
@@ -63,7 +63,7 @@ func refreshProvider(ctx context.Context, providerID string, opts ProviderRefres
 
 	env := opts.Credentials.Env()
 	if len(env) == 0 && !opts.DisableCredentialFallback {
-		env = fluxcfg.DiscoveryCredentials(ctx).Env()
+		env = muxcfg.DiscoveryCredentials(ctx).Env()
 	}
 	env = registry.ScopedProviderEnv(spec, env)
 	if !registry.CredentialPresent(spec, env) {

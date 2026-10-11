@@ -3,15 +3,15 @@ package observability
 import (
 	"context"
 
-	"github.com/GrayCodeAI/flux/llm"
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/llm"
+	"github.com/GrayCodeAI/mux/provider/core"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
-var clientTracer = otel.Tracer("flux/client")
+var clientTracer = otel.Tracer("mux/client")
 
 // TracingProvider wraps a Provider with OpenTelemetry spans for Chat and
 // StreamChat calls. Use NewTracingProvider to create one.
@@ -32,7 +32,7 @@ func (tp *TracingProvider) Ping(ctx context.Context) error {
 	return tp.inner.Ping(ctx)
 }
 
-func (tp *TracingProvider) Chat(ctx context.Context, messages []FluxMessage, opts ChatOptions) (*FluxResponse, error) {
+func (tp *TracingProvider) Chat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*MuxResponse, error) {
 	ctx, span := clientTracer.Start(
 		ctx, "provider.Chat",
 		trace.WithSpanKind(trace.SpanKindClient),
@@ -69,7 +69,7 @@ func (tp *TracingProvider) Chat(ctx context.Context, messages []FluxMessage, opt
 	return resp, nil
 }
 
-func (tp *TracingProvider) StreamChat(ctx context.Context, messages []FluxMessage, opts ChatOptions) (*StreamResult, error) {
+func (tp *TracingProvider) StreamChat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*StreamResult, error) {
 	ctx, span := clientTracer.Start(
 		ctx, "provider.StreamChat",
 		trace.WithSpanKind(trace.SpanKindClient),
@@ -92,7 +92,7 @@ func (tp *TracingProvider) StreamChat(ctx context.Context, messages []FluxMessag
 
 	streamCtx, cancel := context.WithCancel(ctx)
 	coordinated := core.CoordinateStreamResult(streamCtx, sr)
-	wrappedEvents := make(chan FluxStreamEvent, cap(coordinated.Events))
+	wrappedEvents := make(chan MuxStreamEvent, cap(coordinated.Events))
 	go func() {
 		defer span.End()
 		defer close(wrappedEvents)

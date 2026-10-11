@@ -1,4 +1,4 @@
-package flux
+package mux
 
 import (
 	"encoding/json"
@@ -336,13 +336,13 @@ func TestExportPrometheus(t *testing.T) {
 
 	// Check that it contains expected metric names.
 	expectedMetrics := []string{
-		"flux_requests_total",
-		"flux_input_tokens_total",
-		"flux_output_tokens_total",
-		"flux_request_duration_ms",
-		"flux_error_rate",
-		"flux_cost_usd_total",
-		"flux_cache_hit_rate",
+		"mux_requests_total",
+		"mux_input_tokens_total",
+		"mux_output_tokens_total",
+		"mux_request_duration_ms",
+		"mux_error_rate",
+		"mux_cost_usd_total",
+		"mux_cache_hit_rate",
 	}
 	for _, m := range expectedMetrics {
 		if !strings.Contains(prom, m) {

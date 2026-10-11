@@ -29,11 +29,11 @@ func TestCombinedStore_WritesKeychainOnly(t *testing.T) {
 func TestMigrateEnvFileCredentials(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
-	rhoDir := filepath.Join(dir, ".rho")
-	if err := os.MkdirAll(rhoDir, 0o700); err != nil {
+	decoderDir := filepath.Join(dir, ".decoder")
+	if err := os.MkdirAll(decoderDir, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	envPath := filepath.Join(rhoDir, "env")
+	envPath := filepath.Join(decoderDir, "env")
 	if err := os.WriteFile(envPath, []byte("export ANTHROPIC_API_KEY=sk-ant-test\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -47,7 +47,7 @@ func TestMigrateEnvFileCredentials(t *testing.T) {
 		t.Fatalf("migrated = %d, want 1", n)
 	}
 	if _, err := os.Stat(envPath); !os.IsNotExist(err) {
-		t.Fatal("old ~/.rho/env should be removed after migration")
+		t.Fatal("old ~/.decoder/env should be removed after migration")
 	}
 	store := NewCombinedStore()
 	got, err := store.Get(ctx, AccountForEnv("ANTHROPIC_API_KEY"))

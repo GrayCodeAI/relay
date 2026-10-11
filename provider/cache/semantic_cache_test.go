@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/flux/llm"
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/llm"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 type cacheMock struct {
@@ -33,7 +33,7 @@ func (m *cacheMock) Reset() {
 	m.mu.Unlock()
 }
 
-func (m *cacheMock) Chat(_ context.Context, messages []core.FluxMessage, _ core.ChatOptions) (*core.FluxResponse, error) {
+func (m *cacheMock) Chat(_ context.Context, messages []core.MuxMessage, _ core.ChatOptions) (*core.MuxResponse, error) {
 	m.mu.Lock()
 	m.calls++
 	m.mu.Unlock()
@@ -46,19 +46,19 @@ func (m *cacheMock) Chat(_ context.Context, messages []core.FluxMessage, _ core.
 			}
 		}
 	}
-	return &core.FluxResponse{Content: content, FinishReason: "stop"}, nil
+	return &core.MuxResponse{Content: content, FinishReason: "stop"}, nil
 }
 
-func (m *cacheMock) StreamChat(ctx context.Context, messages []core.FluxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (m *cacheMock) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	resp, err := m.Chat(ctx, messages, opts)
 	if err != nil {
 		return nil, err
 	}
-	ch := make(chan core.FluxStreamEvent, 2)
+	ch := make(chan core.MuxStreamEvent, 2)
 	if strings.TrimSpace(resp.Content) != "" {
-		ch <- core.FluxStreamEvent{Type: "content", Content: resp.Content}
+		ch <- core.MuxStreamEvent{Type: "content", Content: resp.Content}
 	}
-	ch <- core.FluxStreamEvent{Type: "done"}
+	ch <- core.MuxStreamEvent{Type: "done"}
 	close(ch)
 	return llm.NewStreamResult(ch, "", nil), nil
 }
@@ -70,7 +70,7 @@ func TestCachedProviderCacheHit(t *testing.T) {
 
 	cp := NewCachedProvider(inner, DefaultCacheConfig())
 
-	msgs := []FluxMessage{{Role: "user", Content: "hello"}}
+	msgs := []MuxMessage{{Role: "user", Content: "hello"}}
 	opts := ChatOptions{Model: "test-model"}
 
 	// First call: cache miss.
@@ -105,14 +105,14 @@ func TestCachedProviderDifferentInputsMiss(t *testing.T) {
 	cp := NewCachedProvider(inner, DefaultCacheConfig())
 
 	// Two different messages should produce two different cache keys.
-	resp1, err := cp.Chat(context.Background(), []FluxMessage{
+	resp1, err := cp.Chat(context.Background(), []MuxMessage{
 		{Role: "user", Content: "hello"},
 	}, ChatOptions{Model: "test-model"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	resp2, err := cp.Chat(context.Background(), []FluxMessage{
+	resp2, err := cp.Chat(context.Background(), []MuxMessage{
 		{Role: "user", Content: "world"},
 	}, ChatOptions{Model: "test-model"})
 	if err != nil {
@@ -136,7 +136,7 @@ func TestCachedProviderHighTempSkipsCache(t *testing.T) {
 
 	highTemp := 0.9
 	opts := ChatOptions{Model: "test-model", Temperature: &highTemp}
-	msgs := []FluxMessage{{Role: "user", Content: "hello"}}
+	msgs := []MuxMessage{{Role: "user", Content: "hello"}}
 
 	// Both calls should go through to inner.
 	_, err := cp.Chat(context.Background(), msgs, opts)
@@ -161,7 +161,7 @@ func TestCachedProviderLowTempUsesCacheEntry(t *testing.T) {
 
 	lowTemp := 0.0
 	opts := ChatOptions{Model: "test-model", Temperature: &lowTemp}
-	msgs := []FluxMessage{{Role: "user", Content: "hello"}}
+	msgs := []MuxMessage{{Role: "user", Content: "hello"}}
 
 	_, err := cp.Chat(context.Background(), msgs, opts)
 	if err != nil {
@@ -188,7 +188,7 @@ func TestCachedProviderTTLExpiration(t *testing.T) {
 	}
 	cp := NewCachedProvider(inner, cfg)
 
-	msgs := []FluxMessage{{Role: "user", Content: "hello"}}
+	msgs := []MuxMessage{{Role: "user", Content: "hello"}}
 	opts := ChatOptions{Model: "test-model"}
 
 	// First call: miss.
@@ -228,7 +228,7 @@ func TestCachedProviderLRUEviction(t *testing.T) {
 
 	// Fill the cache with 3 entries.
 	for i := 0; i < 3; i++ {
-		_, err := cp.Chat(context.Background(), []FluxMessage{
+		_, err := cp.Chat(context.Background(), []MuxMessage{
 			{Role: "user", Content: string(rune('a' + i))},
 		}, opts)
 		if err != nil {
@@ -245,7 +245,7 @@ func TestCachedProviderLRUEviction(t *testing.T) {
 	}
 
 	// Add a 4th entry -> should evict the LRU entry.
-	_, err := cp.Chat(context.Background(), []FluxMessage{
+	_, err := cp.Chat(context.Background(), []MuxMessage{
 		{Role: "user", Content: "d"},
 	}, opts)
 	if err != nil {
@@ -260,7 +260,7 @@ func TestCachedProviderLRUEviction(t *testing.T) {
 	// The oldest entry ("a") should have been evicted.
 	// Accessing "a" again should produce another inner call.
 	callsBefore := inner.CallCount()
-	_, err = cp.Chat(context.Background(), []FluxMessage{
+	_, err = cp.Chat(context.Background(), []MuxMessage{
 		{Role: "user", Content: "a"},
 	}, opts)
 	if err != nil {
@@ -283,7 +283,7 @@ func TestCachedProviderDisabled(t *testing.T) {
 	}
 	cp := NewCachedProvider(inner, cfg)
 
-	msgs := []FluxMessage{{Role: "user", Content: "hello"}}
+	msgs := []MuxMessage{{Role: "user", Content: "hello"}}
 	opts := ChatOptions{Model: "test-model"}
 
 	_, _ = cp.Chat(context.Background(), msgs, opts)
@@ -300,7 +300,7 @@ func TestCachedProviderSetEnabled(t *testing.T) {
 
 	cp := NewCachedProvider(inner, DefaultCacheConfig())
 
-	msgs := []FluxMessage{{Role: "user", Content: "hello"}}
+	msgs := []MuxMessage{{Role: "user", Content: "hello"}}
 	opts := ChatOptions{Model: "test-model"}
 
 	// Disable at runtime.
@@ -328,7 +328,7 @@ func TestCachedProviderClearCache(t *testing.T) {
 
 	cp := NewCachedProvider(inner, DefaultCacheConfig())
 
-	msgs := []FluxMessage{{Role: "user", Content: "hello"}}
+	msgs := []MuxMessage{{Role: "user", Content: "hello"}}
 	opts := ChatOptions{Model: "test-model"}
 
 	_, _ = cp.Chat(context.Background(), msgs, opts)
@@ -351,7 +351,7 @@ func TestCachedProviderStreamNotCached(t *testing.T) {
 
 	cp := NewCachedProvider(inner, DefaultCacheConfig())
 
-	msgs := []FluxMessage{{Role: "user", Content: "hello"}}
+	msgs := []MuxMessage{{Role: "user", Content: "hello"}}
 	opts := ChatOptions{Model: "test-model"}
 
 	sr, err := cp.StreamChat(context.Background(), msgs, opts)
@@ -391,7 +391,7 @@ func TestCachedProviderDifferentModels(t *testing.T) {
 
 	cp := NewCachedProvider(inner, DefaultCacheConfig())
 
-	msgs := []FluxMessage{{Role: "user", Content: "hello"}}
+	msgs := []MuxMessage{{Role: "user", Content: "hello"}}
 
 	_, _ = cp.Chat(context.Background(), msgs, ChatOptions{Model: "model-a"})
 	_, _ = cp.Chat(context.Background(), msgs, ChatOptions{Model: "model-b"})
@@ -409,7 +409,7 @@ func TestCachedProviderResponseIsolation(t *testing.T) {
 
 	cp := NewCachedProvider(inner, DefaultCacheConfig())
 
-	msgs := []FluxMessage{{Role: "user", Content: "hello"}}
+	msgs := []MuxMessage{{Role: "user", Content: "hello"}}
 	opts := ChatOptions{Model: "test-model"}
 
 	resp1, _ := cp.Chat(context.Background(), msgs, opts)
@@ -423,7 +423,7 @@ func TestCachedProviderResponseIsolation(t *testing.T) {
 
 func TestBuildCacheKeyDeterministic(t *testing.T) {
 	t.Parallel()
-	msgs := []FluxMessage{
+	msgs := []MuxMessage{
 		{Role: "user", Content: "hello"},
 		{Role: "assistant", Content: "hi"},
 	}
@@ -448,7 +448,7 @@ func TestBuildCacheKeyDeterministic(t *testing.T) {
 
 func TestBuildCacheKeyCoversRequestShape(t *testing.T) {
 	t.Parallel()
-	msgs := []FluxMessage{{Role: "user", Content: "list files"}}
+	msgs := []MuxMessage{{Role: "user", Content: "list files"}}
 	base := ChatOptions{Model: "gpt-4"}
 	baseKey := buildCacheKey(msgs, base)
 	if baseKey == "" {
@@ -459,7 +459,7 @@ func TestBuildCacheKeyCoversRequestShape(t *testing.T) {
 	topK := 40
 	thinking := true
 	variants := map[string]ChatOptions{
-		"tools":           {Model: "gpt-4", Tools: []llm.FluxTool{{Name: "read_file"}}},
+		"tools":           {Model: "gpt-4", Tools: []llm.MuxTool{{Name: "read_file"}}},
 		"tool choice":     {Model: "gpt-4", ToolChoice: &llm.ToolChoiceOption{Type: "required"}},
 		"max tokens":      {Model: "gpt-4", MaxTokens: 16},
 		"stop sequences":  {Model: "gpt-4", StopSequences: []string{"\n"}},
@@ -477,7 +477,7 @@ func TestBuildCacheKeyCoversRequestShape(t *testing.T) {
 		}
 	}
 
-	messageVariants := map[string][]FluxMessage{
+	messageVariants := map[string][]MuxMessage{
 		"image":           {{Role: "user", Content: "list files", Images: []string{"data:image/png;base64,AAAA"}}},
 		"content parts":   {{Role: "user", Content: "list files", ContentParts: []llm.ContentPart{{Type: "text", Text: "extra"}}}},
 		"thinking":        {{Role: "user", Content: "list files", Thinking: "plan"}},
@@ -495,10 +495,10 @@ func TestCachedProviderDoesNotShareRepliesAcrossToolSets(t *testing.T) {
 	inner := newCacheMock("fixed")
 	inner.Response = "tool reply"
 	cp := NewCachedProvider(inner, CacheConfig{Enabled: true})
-	msgs := []FluxMessage{{Role: "user", Content: "list files"}}
+	msgs := []MuxMessage{{Role: "user", Content: "list files"}}
 
-	_, _ = cp.Chat(context.Background(), msgs, ChatOptions{Model: "gpt-4", Tools: []llm.FluxTool{{Name: "read_file"}}})
-	_, _ = cp.Chat(context.Background(), msgs, ChatOptions{Model: "gpt-4", Tools: []llm.FluxTool{{Name: "delete_file"}}})
+	_, _ = cp.Chat(context.Background(), msgs, ChatOptions{Model: "gpt-4", Tools: []llm.MuxTool{{Name: "read_file"}}})
+	_, _ = cp.Chat(context.Background(), msgs, ChatOptions{Model: "gpt-4", Tools: []llm.MuxTool{{Name: "delete_file"}}})
 	if got := inner.CallCount(); got != 2 {
 		t.Fatalf("inner calls = %d, want 2: different tool sets must not share a cached reply", got)
 	}
@@ -509,7 +509,7 @@ func TestCachedProviderBypassesUnencodableRequests(t *testing.T) {
 	inner := newCacheMock("fixed")
 	inner.Response = "fresh"
 	cp := NewCachedProvider(inner, CacheConfig{Enabled: true})
-	msgs := []FluxMessage{{Role: "user", Content: "hi"}}
+	msgs := []MuxMessage{{Role: "user", Content: "hi"}}
 	opts := ChatOptions{Model: "gpt-4", Conversation: func() {}}
 
 	if key := buildCacheKey(msgs, opts); key != "" {

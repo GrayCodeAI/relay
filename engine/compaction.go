@@ -3,7 +3,7 @@ package engine
 import (
 	"context"
 
-	"github.com/GrayCodeAI/flux/runtime"
+	"github.com/GrayCodeAI/mux/runtime"
 )
 
 // SupportsNativeCompaction reports whether the selection and configured

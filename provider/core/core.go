@@ -1,12 +1,12 @@
 // Package core holds the provider contract and the data types shared by
-// every layer of the flux client: adapters, middleware, caching, embeddings,
+// every layer of the mux client: adapters, middleware, caching, embeddings,
 // and the provider runtime itself.
 //
-// core is a leaf package — it must not import any other flux/client
+// core is a leaf package — it must not import any other mux/client
 // subpackage. The conversation DTOs below are aliases to the canonical
 // eagle/llm definitions; core re-exports them so subpackages
 // share the contract without an import cycle through the facade. The public
-// names remain available as aliases in github.com/GrayCodeAI/flux/provider,
+// names remain available as aliases in github.com/GrayCodeAI/mux/provider,
 // which is the API consumers should keep importing.
 //
 // See plans/client-package-decomposition.md for the migration plan.
@@ -15,25 +15,25 @@ package core
 import (
 	"context"
 
-	"github.com/GrayCodeAI/flux/llm"
+	"github.com/GrayCodeAI/mux/llm"
 )
 
 // Provider is the core interface for LLM providers.
 // Implementations must be safe for concurrent use.
 type Provider interface {
 	// Chat sends a non-streaming chat request.
-	Chat(ctx context.Context, messages []FluxMessage, opts ChatOptions) (*FluxResponse, error)
+	Chat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*MuxResponse, error)
 	// StreamChat sends a streaming chat request.
 	// The caller must call Close() on the returned StreamResult when done.
-	StreamChat(ctx context.Context, messages []FluxMessage, opts ChatOptions) (*StreamResult, error)
+	StreamChat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*StreamResult, error)
 	// Ping checks connectivity and authentication.
 	Ping(ctx context.Context) error
 	// Name returns the provider name (e.g. "anthropic", "openai").
 	Name() string
 }
 
-// FluxConfig holds client configuration.
-type FluxConfig = llm.FluxConfig
+// MuxConfig holds client configuration.
+type MuxConfig = llm.MuxConfig
 
 // ContentPart represents a piece of content in a multi-modal message.
 // Use the helper types (TextPart, ImagePart, AudioPart) to construct these.
@@ -46,37 +46,37 @@ type ImageURLPart = llm.ImageURLPart
 // InputAudioPart represents an audio content part (base64 encoded).
 type InputAudioPart = llm.InputAudioPart
 
-// FluxMessage represents a chat message.
+// MuxMessage represents a chat message.
 // For simple text messages, set Content directly.
 // For multi-modal messages (images, audio), use ContentParts.
 // When ContentParts is non-empty, it takes precedence over Content and Images.
 // The Images field is retained for backward compatibility.
-type FluxMessage = llm.FluxMessage
+type MuxMessage = llm.MuxMessage
 
 // ToolResult represents the result of a tool execution.
 type ToolResult = llm.ToolResult
 
-// FluxTool represents a tool definition.
-type FluxTool = llm.FluxTool
+// MuxTool represents a tool definition.
+type MuxTool = llm.MuxTool
 
-// FluxUsage tracks token usage.
-type FluxUsage = llm.FluxUsage
+// MuxUsage tracks token usage.
+type MuxUsage = llm.MuxUsage
 
-// FluxResponse is the response from a chat call.
-type FluxResponse = llm.FluxResponse
+// MuxResponse is the response from a chat call.
+type MuxResponse = llm.MuxResponse
 
 // ToolCall represents a tool invocation.
 type ToolCall = llm.ToolCall
 
-// FluxStreamEvent is a streaming event.
-type FluxStreamEvent = llm.FluxStreamEvent
+// MuxStreamEvent is a streaming event.
+type MuxStreamEvent = llm.MuxStreamEvent
 
 // StreamResult wraps a streaming response with cleanup.
 // Callers must call Close() when done reading events, or cancel the context.
 //
 // StreamResult is aliased to the canonical contract type; its Close()
 // method and canonical constructor (NewStreamResult) live in
-// github.com/GrayCodeAI/flux/llm.
+// github.com/GrayCodeAI/mux/llm.
 type StreamResult = llm.StreamResult
 
 // ResponseFormat specifies the desired output format for the model response.

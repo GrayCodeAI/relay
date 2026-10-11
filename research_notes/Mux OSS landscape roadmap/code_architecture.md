@@ -1,7 +1,7 @@
-# Flux OSS landscape roadmap: code architecture audit
+# Mux OSS landscape roadmap: code architecture audit
 
 **Audit date:** 2026-09-24
-**Checkout:** `github.com/GrayCodeAI/flux` at `f9037a8` on `chore/oss-competitive-roadmap`
+**Checkout:** `github.com/GrayCodeAI/mux` at `f9037a8` on `chore/oss-competitive-roadmap`
 **Scope:** local source, tests, CI, build tags, SDKs, examples, and architecture documentation. No competitor benchmark was performed.
 **Evidence labels:** **Confirmed defect** means the behavior follows directly from current source; **Design opportunity** means the code is intentional or plausible but leaves a contract/operational gap; **Uncertainty** means the source establishes a risk but product intent needs confirmation.
 
@@ -9,7 +9,7 @@
 
 ### Takeaway
 
-Flux has a strong host-neutral foundation: canonical DTOs, a narrow engine facade, feature-oriented provider packages, validated deployment routing, atomic live snapshots, signed control-plane manifests, and a broad test/CI baseline. The largest risks are not missing packages; they are **contract features that are declared ahead of their implementations** and **middleware that changes stream/usage behavior after the provider boundary**.
+Mux has a strong host-neutral foundation: canonical DTOs, a narrow engine facade, feature-oriented provider packages, validated deployment routing, atomic live snapshots, signed control-plane manifests, and a broad test/CI baseline. The largest risks are not missing packages; they are **contract features that are declared ahead of their implementations** and **middleware that changes stream/usage behavior after the provider boundary**.
 
 The highest-value work is to close the canonical request/stream contract first: restore `ThinkingEnabled`, define one usage event policy, preserve provider blocks and route attempts, and make every stream decorator preserve cancellation. Then harden migration, budget, cache, and proxy semantics. The existing green test suite does not exercise these cross-layer cases.
 
@@ -27,9 +27,9 @@ The highest-value work is to close the canonical request/stream contract first: 
 
 ### Strengths confirmed
 
-- **Host boundary is explicit and compile-checked.** `engine/contract_assert.go` asserts the engine and stream implement the `llm` ports; `engine/types.go:142-146` re-exports the provider/stream contract. The accepted boundary document explicitly says Rho owns UX, sessions, tools, permissions, and agent loops (`docs/architecture/HOST-ENGINE-BOUNDARY.md:8-12`, `:137-154`).
+- **Host boundary is explicit and compile-checked.** `engine/contract_assert.go` asserts the engine and stream implement the `llm` ports; `engine/types.go:142-146` re-exports the provider/stream contract. The accepted boundary document explicitly says Decoder owns UX, sessions, tools, permissions, and agent loops (`docs/architecture/HOST-ENGINE-BOUNDARY.md:8-12`, `:137-154`).
 - **DTO ownership is centralized.** `llm/types.go:1-10` calls itself the canonical contract, and `provider/core/core.go:35-86` aliases those types. This avoids the older provider/client DTO duplication described in the migration plan.
-- **Provider layering is mechanically checked.** `scripts/check-provider-layering.sh:10-24` prevents `provider/core` and feature packages from importing siblings or the provider facade. The ecosystem script rejects Rho imports (`scripts/check-ecosystem-boundaries.sh:7-23`).
+- **Provider layering is mechanically checked.** `scripts/check-provider-layering.sh:10-24` prevents `provider/core` and feature packages from importing siblings or the provider facade. The ecosystem script rejects Decoder imports (`scripts/check-ecosystem-boundaries.sh:7-23`).
 - **Deployment routing validates more than the legacy router.** `NewDeploymentRouter` rejects missing catalog, empty deployments, nil providers, and inconsistent deployment IDs (`router/deployment_router.go:74-112`). It filters by tools and circuit-breaker state (`:365-389`).
 - **Live routing is atomic and last-good-safe.** `LiveDeploymentRouter.Replace` validates a complete replacement before publishing an atomic snapshot (`router/live_deployment_router.go:41-59`); control-plane replicas reject stale/conflicting revisions and retain the prior route on failure (`router/controlplane/snapshot.go:68-140`).
 - **Control-plane trust is materially stronger than ordinary catalog refresh.** Remote peers require HTTPS and pinned Ed25519 keys, cap manifests at 16 MiB, reject redirects, and reject disagreement at the newest revision (`router/controlplane/peers.go:65-110`, `:113-169`).
@@ -53,9 +53,9 @@ The result is host/provider behavior divergence: a host can request reasoning en
 
 **Classification:** Confirmed defect, P1.
 
-`llm.FluxStreamEvent` carries `ProviderBlock` and `Route` (`llm/types.go:265-287`), and the stable event vocabulary includes `provider_block` (`engine/types.go:65-84`). However, `engine.normalizeEvent` copies content, thinking, request ID, usage, stop reason, and TTFT, then maps only selected event types; it never copies `event.ProviderBlock` or `event.Route` (`engine/stream.go:124-165`). The initial synthetic `route_selected` event is present (`engine/stream.go:82-86`), but provider event route metadata is lost.
+`llm.MuxStreamEvent` carries `ProviderBlock` and `Route` (`llm/types.go:265-287`), and the stable event vocabulary includes `provider_block` (`engine/types.go:65-84`). However, `engine.normalizeEvent` copies content, thinking, request ID, usage, stop reason, and TTFT, then maps only selected event types; it never copies `event.ProviderBlock` or `event.Route` (`engine/stream.go:124-165`). The initial synthetic `route_selected` event is present (`engine/stream.go:82-86`), but provider event route metadata is lost.
 
-`StreamErrorInfo` is declared (`llm/types.go:90-98`) but is not a field on `FluxStreamEvent`; parser errors are emitted as only `Type:"error", Error:string` (`provider/core/stream.go:283-285`, `:485-488`). `FluxResponse.Warnings` is also declared (`llm/types.go:248-263`) but no provider adapter populates it.
+`StreamErrorInfo` is declared (`llm/types.go:90-98`) but is not a field on `MuxStreamEvent`; parser errors are emitted as only `Type:"error", Error:string` (`provider/core/stream.go:283-285`, `:485-488`). `MuxResponse.Warnings` is also declared (`llm/types.go:248-263`) but no provider adapter populates it.
 
 **Remediation:** either remove the unimplemented fields from the stable contract or make them mandatory end-to-end: parse and preserve provider blocks, attach route/attempt metadata to terminal events, and add a structured error field or a documented error-classification path. Add black-box tests that feed a provider block through adapter → core → engine.
 
@@ -160,7 +160,7 @@ The existing migration tests cover empty files and successful/key-existing cases
 
 **Classification:** Confirmed compatibility defect, P1/P2.
 
-The endpoint claims that existing OpenAI clients can talk to Flux unchanged (`internal/api/openai_proxy.go:16-20`). Its request message type contains only `Role` and string `Content` (`:22-26`), and `splitOpenAIMessages` flattens the entire conversation into one prompt string (`:300-331`). Tool-call messages, tool results, multimodal content, tool choice, response format, `stop`, sampling controls, and several other accepted fields are either ignored or unavailable (`internal/api/openai_proxy.go:28-44`; `handleOpenAIChatCompletions` explicitly documents lenient partial decoding at `:109-140`).
+The endpoint claims that existing OpenAI clients can talk to Mux unchanged (`internal/api/openai_proxy.go:16-20`). Its request message type contains only `Role` and string `Content` (`:22-26`), and `splitOpenAIMessages` flattens the entire conversation into one prompt string (`:300-331`). Tool-call messages, tool results, multimodal content, tool choice, response format, `stop`, sampling controls, and several other accepted fields are either ignored or unavailable (`internal/api/openai_proxy.go:28-44`; `handleOpenAIChatCompletions` explicitly documents lenient partial decoding at `:109-140`).
 
 This is acceptable only if the endpoint is clearly documented as a lossy single-turn compatibility facade. It is not a faithful OpenAI conversation adapter.
 
@@ -193,8 +193,8 @@ This is a data-model consistency defect even if current adapter selection works:
 - **Provider registry composition is coupled.** `provider/adapters/provider_registry.go:5-10` imports catalog, config, and credentials to derive maps and detect providers. The target architecture says adapters translate protocols and do not own routing/credentials (`docs/architecture/FEATURE-MONOREPO.md:48-56`). Move registry composition into `provider/` or `setup`, and make the layering guard cover the full direction rule rather than only provider subpackage imports.
 - **Retry models are duplicated.** `types.RetryConfig` (`types/retry.go:5-12`), `provider/core.RetryConfig` (`provider/core/retry.go:15-21`), and `router.RetryConfig` (`router/retry.go:10-16`) represent overlapping policy. Keep one canonical policy plus transport/router-specific behavior, or add compile-time conversion tests and a deprecation plan.
 - **Observability has two stacks.** OTel wrappers use `provider/observability/tracing.go:12-136`; the separate zero-dependency package describes its own OTel-compatible model (`internal/observability/observability.go:1-8`, `:23-42`) but has no production import hits. Choose OTel as the execution path and retain only a deliberately isolated test/export implementation.
-- **Configuration duplicates provider metadata.** `config/profiles.go:39-64` and `catalog/registry/providers.go:16-29` both define provider modes, endpoints, credentials, and model behavior. `config/provider_env.go:16` also describes the config as mirroring Rho. Generate config profiles from the registry or explicitly scope config as legacy host state.
-- **Rho-specific paths remain in supposedly host-neutral code.** `credentials/migrate.go:10-30` hard-codes `~/.rho` and `~/.hawk`; `runtime` documents Rho-specific assembly (`runtime/runtime.go:1-22`). This is acceptable only as an explicit legacy migration package, not as the default engine surface.
+- **Configuration duplicates provider metadata.** `config/profiles.go:39-64` and `catalog/registry/providers.go:16-29` both define provider modes, endpoints, credentials, and model behavior. `config/provider_env.go:16` also describes the config as mirroring Decoder. Generate config profiles from the registry or explicitly scope config as legacy host state.
+- **Decoder-specific paths remain in supposedly host-neutral code.** `credentials/migrate.go:10-30` hard-codes `~/.decoder` and `~/.hawk`; `runtime` documents Decoder-specific assembly (`runtime/runtime.go:1-22`). This is acceptable only as an explicit legacy migration package, not as the default engine surface.
 - **The optional gRPC surface is intentionally skeletal.** The untagged contract and default service return `ErrUnimplemented` (`internal/grpc/grpc.go:42-67`); the tagged server uses a hand-written JSON codec and a single unary method (`internal/grpc/server_grpc.go:15-78`). The tagged test proves the loopback round trip (`internal/grpc/server_grpc_test.go:21-52`), but there are no generated protobuf clients or SDK gRPC clients. Keep it clearly experimental or make the compatibility contract explicit.
 - **The internal cache warmer contains hard-coded pricing and Anthropic assumptions.** `internal/cache/cache_warmer.go:10-31` embeds a model-specific price and cache multipliers. If retained, source pricing/capability data from the catalog and make the warmer provider/profile-specific.
 
@@ -301,4 +301,4 @@ All commands below passed on the audited checkout:
 
 ### Audit boundary
 
-This report is a local architectural audit, not a competitor benchmark, security certification, provider conformance certification, or production readiness sign-off. External landscape research is kept in the companion files under `research_notes/Flux OSS landscape roadmap/`; this document records only repository architecture, implementation behavior, and test evidence.
+This report is a local architectural audit, not a competitor benchmark, security certification, provider conformance certification, or production readiness sign-off. External landscape research is kept in the companion files under `research_notes/Mux OSS landscape roadmap/`; this document records only repository architecture, implementation behavior, and test evidence.

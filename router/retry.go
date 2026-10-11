@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/flux/types"
+	"github.com/GrayCodeAI/mux/types"
 )
 
 // RetryConfig controls retry behavior at the router level.

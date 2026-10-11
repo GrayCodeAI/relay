@@ -1,9 +1,9 @@
 package batch
 
-import "github.com/GrayCodeAI/flux/provider/core"
+import "github.com/GrayCodeAI/mux/provider/core"
 
 type (
-	FluxMessage  = core.FluxMessage
-	ChatOptions  = core.ChatOptions
-	FluxResponse = core.FluxResponse
+	MuxMessage  = core.MuxMessage
+	ChatOptions = core.ChatOptions
+	MuxResponse = core.MuxResponse
 )

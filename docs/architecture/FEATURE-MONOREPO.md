@@ -1,9 +1,9 @@
-# Feature-oriented Flux architecture
+# Feature-oriented Mux architecture
 
 Status: active refactor. This is a feature-oriented Go module, not a monorepo;
-Rho remains a separate repository in the parent workspace.
+Decoder remains a separate repository in the parent workspace.
 
-Flux is one Go module with explicit feature packages. A feature owns its
+Mux is one Go module with explicit feature packages. A feature owns its
 contract, implementation, tests, and documentation in one directory. Packages
 must have one direction of dependency; convenience re-export packages are not
 architecture.
@@ -54,7 +54,7 @@ are not protocol adapters or cross-feature implementations.
    caching, credentials, or product semantics.
 5. New cross-feature behavior is composed in `provider/`, not added to
    package-global registries. Custom OpenAI-compatible providers are now
-   registered on a `FluxClient` instance only.
+   registered on a `MuxClient` instance only.
 6. No compatibility aliases or deprecated import paths ship in production.
    Root-package test helpers may use local aliases while tests are migrated;
    they are not part of the module API.
@@ -70,7 +70,7 @@ are not protocol adapters or cross-feature implementations.
    cache analytics with observability.
 4. Move media and auxiliary capabilities to `provider/media` (media,
    moderation, and structured output are feature-owned; the root only resolves
-   `FluxClient` and delegates).
+   `MuxClient` and delegates).
 5. Move relationship extraction to `provider/extraction` and provider-neutral
    message/stream primitives to `provider/core` (done).
 6. Move model capability/deprecation policy to `catalog/capabilities` and
@@ -86,4 +86,4 @@ are not protocol adapters or cross-feature implementations.
    suite.
 
 For live instance-owned routing and shared peer manifests, see
-[Decentralized Flux routing](DECENTRALIZED-FLUX.md).
+[Decentralized Mux routing](DECENTRALIZED-MUX.md).

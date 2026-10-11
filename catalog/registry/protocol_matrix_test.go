@@ -3,7 +3,7 @@ package registry_test
 import (
 	"testing"
 
-	"github.com/GrayCodeAI/flux/catalog/registry"
+	"github.com/GrayCodeAI/mux/catalog/registry"
 )
 
 // Official protocol surfaces (validated against provider docs, Jul 2026):
@@ -12,7 +12,7 @@ import (
 //   agnes, kimi, openai, grok, openrouter, groq, canopywave, poolside,
 //   clinepass, ollama, azure, gemini (native/Gemini protocol), concentrate (Responses)
 //
-// Vendors documenting both OpenAI + Anthropic (rho uses exactly one — OpenAI):
+// Vendors documenting both OpenAI + Anthropic (decoder uses exactly one — OpenAI):
 //   deepseek, zai_*, xiaomi_mimo_*, minimax_*, longcat
 //   opencodego keeps both clients only for per-model routing (one protocol per call;
 //   never cross-protocol fallback on the same request)
@@ -21,7 +21,7 @@ import (
 //   anthropic, bedrock
 //
 // Rule: if a vendor is OpenAI-compatible only, do not invent an Anthropic provider.
-// If a vendor documents both, rho uses OpenAI only — never both protocols for the
+// If a vendor documents both, decoder uses OpenAI only — never both protocols for the
 // same provider request (no OpenAI→Anthropic error fallback).
 
 func TestProviderProtocolMatrix_OpenAIOnlyHaveNoAnthropicTransport(t *testing.T) {
@@ -50,7 +50,7 @@ func TestProviderProtocolMatrix_OpenAIOnlyHaveNoAnthropicTransport(t *testing.T)
 
 func TestProviderProtocolMatrix_DualOfficialStayOpenAIPrimary(t *testing.T) {
 	t.Parallel()
-	// Catalog primary protocol is OpenAI chat completions. Rho clients for these
+	// Catalog primary protocol is OpenAI chat completions. Decoder clients for these
 	// providers use OpenAI only (OpenCode Go is the exception: per-model single
 	// protocol, still no cross-protocol fallback).
 	dualPrimaryOpenAI := []string{

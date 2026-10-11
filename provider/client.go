@@ -9,11 +9,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/provider/core"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	"github.com/GrayCodeAI/flux/provider/adapters"
-	"github.com/GrayCodeAI/flux/provider/resilience"
+	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/mux/provider/adapters"
+	"github.com/GrayCodeAI/mux/provider/resilience"
 )
 
 // Version mirrors core.Version; the canonical value lives in provider/core so
@@ -28,9 +28,9 @@ func SetVersion(v string) {
 	core.SetVersion(v)
 }
 
-// FluxClient is the universal LLM provider.
+// MuxClient is the universal LLM provider.
 // It is safe for concurrent use.
-type FluxClient struct {
+type MuxClient struct {
 	mu              sync.RWMutex
 	defaultProvider string
 	apiKeys         map[string]string
@@ -40,9 +40,9 @@ type FluxClient struct {
 	coalescer       *resilience.Coalescer    // optional request coalescing
 }
 
-// Client creates an FluxClient.
-func Client(cfg *core.FluxConfig, opts ...core.ClientOption) *FluxClient {
-	c := &FluxClient{
+// Client creates an MuxClient.
+func Client(cfg *core.MuxConfig, opts ...core.ClientOption) *MuxClient {
+	c := &MuxClient{
 		defaultProvider: DetectProvider(),
 		apiKeys:         make(map[string]string),
 		baseURLs:        make(map[string]string),
@@ -62,19 +62,19 @@ func Client(cfg *core.FluxConfig, opts ...core.ClientOption) *FluxClient {
 	}
 	// Apply options (including coalescing)
 	for _, opt := range opts {
-		opt.ApplyFlux(c)
+		opt.ApplyMux(c)
 	}
 	return c
 }
 
 // SetCoalescingTTL enables request coalescing with the given reuse TTL.
-// Implements core.FluxConfigurable for WithCoalescing.
-func (c *FluxClient) SetCoalescingTTL(ttl time.Duration) {
+// Implements core.MuxConfigurable for WithCoalescing.
+func (c *MuxClient) SetCoalescingTTL(ttl time.Duration) {
 	c.coalescer = resilience.NewCoalescer(ttl)
 }
 
 // SetAPIKey sets an API key for a provider.
-func (c *FluxClient) SetAPIKey(provider, apiKey string) {
+func (c *MuxClient) SetAPIKey(provider, apiKey string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.apiKeys[provider] = apiKey
@@ -82,7 +82,7 @@ func (c *FluxClient) SetAPIKey(provider, apiKey string) {
 }
 
 // Ping checks connectivity to the specified (or default) provider.
-func (c *FluxClient) Ping(ctx context.Context, provider string) error {
+func (c *MuxClient) Ping(ctx context.Context, provider string) error {
 	if provider == "" {
 		provider = c.defaultProvider
 	}
@@ -103,10 +103,10 @@ type AnthropicClientConfig struct {
 	BaseURL        string            `json:"base_url,omitempty"`
 }
 
-// ParseCustomHeaders parses FLUX_CUSTOM_HEADERS env var into a map.
+// ParseCustomHeaders parses MUX_CUSTOM_HEADERS env var into a map.
 func ParseCustomHeaders() map[string]string {
 	result := make(map[string]string)
-	raw := os.Getenv("FLUX_CUSTOM_HEADERS")
+	raw := os.Getenv("MUX_CUSTOM_HEADERS")
 	if raw == "" {
 		return result
 	}
@@ -133,8 +133,8 @@ var (
 
 // NewImageMessage creates a user message with an image from a URL or data URI.
 // The url parameter accepts HTTP(S) URLs or data URIs (data:image/png;base64,...).
-func NewImageMessage(url string) core.FluxMessage {
-	return core.FluxMessage{
+func NewImageMessage(url string) core.MuxMessage {
+	return core.MuxMessage{
 		Role: "user",
 		ContentParts: []core.ContentPart{
 			{Type: "image_url", ImageURL: &core.ImageURLPart{URL: url}},
@@ -143,8 +143,8 @@ func NewImageMessage(url string) core.FluxMessage {
 }
 
 // NewImageMessageWithText creates a user message with text and an image from a URL or data URI.
-func NewImageMessageWithText(text, url string) core.FluxMessage {
-	return core.FluxMessage{
+func NewImageMessageWithText(text, url string) core.MuxMessage {
+	return core.MuxMessage{
 		Role: "user",
 		ContentParts: []core.ContentPart{
 			{Type: "text", Text: text},
@@ -155,8 +155,8 @@ func NewImageMessageWithText(text, url string) core.FluxMessage {
 
 // NewBase64ImageMessage creates a user message with a base64-encoded image.
 // mediaType should be a MIME type like "image/png" or "image/jpeg".
-func NewBase64ImageMessage(data, mediaType string) core.FluxMessage {
-	return core.FluxMessage{
+func NewBase64ImageMessage(data, mediaType string) core.MuxMessage {
+	return core.MuxMessage{
 		Role: "user",
 		ContentParts: []core.ContentPart{
 			{Type: "image_url", ImageURL: &core.ImageURLPart{
@@ -167,8 +167,8 @@ func NewBase64ImageMessage(data, mediaType string) core.FluxMessage {
 }
 
 // NewBase64ImageMessageWithText creates a user message with text and a base64-encoded image.
-func NewBase64ImageMessageWithText(text, data, mediaType string) core.FluxMessage {
-	return core.FluxMessage{
+func NewBase64ImageMessageWithText(text, data, mediaType string) core.MuxMessage {
+	return core.MuxMessage{
 		Role: "user",
 		ContentParts: []core.ContentPart{
 			{Type: "text", Text: text},
@@ -181,8 +181,8 @@ func NewBase64ImageMessageWithText(text, data, mediaType string) core.FluxMessag
 
 // NewAudioMessage creates a user message with base64-encoded audio.
 // format should be "wav" or "mp3".
-func NewAudioMessage(base64Data, format string) core.FluxMessage {
-	return core.FluxMessage{
+func NewAudioMessage(base64Data, format string) core.MuxMessage {
+	return core.MuxMessage{
 		Role: "user",
 		ContentParts: []core.ContentPart{
 			{Type: "input_audio", InputAudio: &core.InputAudioPart{
@@ -194,8 +194,8 @@ func NewAudioMessage(base64Data, format string) core.FluxMessage {
 }
 
 // NewAudioMessageWithText creates a user message with text and base64-encoded audio.
-func NewAudioMessageWithText(text, base64Data, format string) core.FluxMessage {
-	return core.FluxMessage{
+func NewAudioMessageWithText(text, base64Data, format string) core.MuxMessage {
+	return core.MuxMessage{
 		Role: "user",
 		ContentParts: []core.ContentPart{
 			{Type: "text", Text: text},

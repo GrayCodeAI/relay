@@ -12,8 +12,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GrayCodeAI/flux/llm"
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/llm"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 // geminiSharedParserEnvVar is the opt-out flag for the new
@@ -21,7 +21,7 @@ import (
 // from stream.go). Set to "0" / "false" / "no" to revert to the
 // old bespoke streamLoop. The old path will be removed after one
 // release once the new path is validated in production.
-const geminiSharedParserEnvVar = "FLUX_GEMINI_SHARED_PARSER"
+const geminiSharedParserEnvVar = "MUX_GEMINI_SHARED_PARSER"
 
 // GeminiSharedParserEnvVar controls the shared SSE parser compatibility switch.
 const GeminiSharedParserEnvVar = geminiSharedParserEnvVar
@@ -79,9 +79,9 @@ func (c *GeminiClient) isVertex() bool {
 	return strings.Contains(c.baseURL, "aiplatform.googleapis.com")
 }
 
-func (c *GeminiClient) Chat(ctx context.Context, messages []core.FluxMessage, opts core.ChatOptions) (*core.FluxResponse, error) {
+func (c *GeminiClient) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
 	if opts.Model == "" {
-		return nil, fmt.Errorf("flux: model is required for gemini")
+		return nil, fmt.Errorf("mux: model is required for gemini")
 	}
 	body, err := c.buildBody(messages, opts)
 	if err != nil {
@@ -90,14 +90,14 @@ func (c *GeminiClient) Chat(ctx context.Context, messages []core.FluxMessage, op
 	url := fmt.Sprintf("%s/models/%s:generateContent", c.baseURL, opts.Model)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("flux: gemini request creation failed: %w", err)
+		return nil, fmt.Errorf("mux: gemini request creation failed: %w", err)
 	}
 	c.setHeaders(req)
 	req.GetBody = func() (io.ReadCloser, error) { return io.NopCloser(bytes.NewReader(body)), nil }
 
 	resp, err := core.DoWithRetry(ctx, c.httpClient, req, c.retry, c.logger)
 	if err != nil {
-		return nil, fmt.Errorf("flux: gemini request failed: %w", err)
+		return nil, fmt.Errorf("mux: gemini request failed: %w", err)
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -114,24 +114,24 @@ func (c *GeminiClient) Chat(ctx context.Context, messages []core.FluxMessage, op
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("flux: gemini response read failed: %w", err)
+		return nil, fmt.Errorf("mux: gemini response read failed: %w", err)
 	}
 
-	fluxResp, err := c.parseResponse(respBody, requestID)
+	muxResp, err := c.parseResponse(respBody, requestID)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := core.ApplyGuardrails(ctx, fluxResp, c.guardrails); err != nil {
+	if err := core.ApplyGuardrails(ctx, muxResp, c.guardrails); err != nil {
 		return nil, err
 	}
 
-	return fluxResp, nil
+	return muxResp, nil
 }
 
-func (c *GeminiClient) StreamChat(ctx context.Context, messages []core.FluxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (c *GeminiClient) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	if opts.Model == "" {
-		return nil, fmt.Errorf("flux: model is required for gemini")
+		return nil, fmt.Errorf("mux: model is required for gemini")
 	}
 	streamCtx, cancel := context.WithCancel(ctx)
 	body, err := c.buildBody(messages, opts)
@@ -143,7 +143,7 @@ func (c *GeminiClient) StreamChat(ctx context.Context, messages []core.FluxMessa
 	req, err := http.NewRequestWithContext(streamCtx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		cancel()
-		return nil, fmt.Errorf("flux: gemini stream request creation failed: %w", err)
+		return nil, fmt.Errorf("mux: gemini stream request creation failed: %w", err)
 	}
 	c.setHeaders(req)
 	req.GetBody = func() (io.ReadCloser, error) { return io.NopCloser(bytes.NewReader(body)), nil }
@@ -151,7 +151,7 @@ func (c *GeminiClient) StreamChat(ctx context.Context, messages []core.FluxMessa
 	resp, err := core.DoWithRetry(streamCtx, c.httpClient, req, c.retry, c.logger)
 	if err != nil {
 		cancel()
-		return nil, fmt.Errorf("flux: gemini stream request failed: %w", err)
+		return nil, fmt.Errorf("mux: gemini stream request failed: %w", err)
 	}
 
 	requestID := resp.Header.Get("X-Goog-Request-Id")
@@ -164,12 +164,12 @@ func (c *GeminiClient) StreamChat(ctx context.Context, messages []core.FluxMessa
 	}
 
 	streamBody, cleanup := core.BindStreamBody(streamCtx, resp.Body, cancel)
-	var events <-chan core.FluxStreamEvent
+	var events <-chan core.MuxStreamEvent
 	if geminiSharedParserEnabled() {
 		sseEvents := core.ParseSSEStream(streamCtx, streamBody, c.logger)
 		events = processGeminiStream(streamCtx, sseEvents, c.logger)
 	} else {
-		buffered := make(chan core.FluxStreamEvent, 64)
+		buffered := make(chan core.MuxStreamEvent, 64)
 		events = buffered
 		go c.streamLoop(streamCtx, streamBody, buffered)
 	}
@@ -182,12 +182,12 @@ func (c *GeminiClient) Ping(ctx context.Context) error {
 	url := fmt.Sprintf("%s/models", c.baseURL)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return fmt.Errorf("flux: gemini ping request creation failed: %w", err)
+		return fmt.Errorf("mux: gemini ping request creation failed: %w", err)
 	}
 	c.setHeaders(req)
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("flux: gemini ping failed: %w", err)
+		return fmt.Errorf("mux: gemini ping failed: %w", err)
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -195,7 +195,7 @@ func (c *GeminiClient) Ping(ctx context.Context) error {
 		}
 	}()
 	if resp.StatusCode == 401 {
-		return fmt.Errorf("flux: gemini: invalid API key")
+		return fmt.Errorf("mux: gemini: invalid API key")
 	}
 	return nil
 }
@@ -286,7 +286,7 @@ type geminiSafetySetting struct {
 	Threshold string `json:"threshold"` // e.g., "BLOCK_NONE", "BLOCK_LOW_AND_ABOVE", etc.
 }
 
-func (c *GeminiClient) buildBody(messages []core.FluxMessage, opts core.ChatOptions) ([]byte, error) {
+func (c *GeminiClient) buildBody(messages []core.MuxMessage, opts core.ChatOptions) ([]byte, error) {
 	messages = core.SanitizeMessages(messages)
 	contents := make([]geminiContent, 0, len(messages))
 	var systemInstruction *geminiContent
@@ -465,7 +465,7 @@ func (c *GeminiClient) buildBody(messages []core.FluxMessage, opts core.ChatOpti
 		return nil, err
 	}
 	if len(data) > maxGeminiRequestSize {
-		return nil, fmt.Errorf("flux: request size %d bytes exceeds Gemini limit of %d bytes", len(data), maxGeminiRequestSize)
+		return nil, fmt.Errorf("mux: request size %d bytes exceeds Gemini limit of %d bytes", len(data), maxGeminiRequestSize)
 	}
 	return data, nil
 }
@@ -497,10 +497,10 @@ type geminiPromptFeedback struct {
 	BlockReasonMessage string `json:"blockReasonMessage,omitempty"`
 }
 
-func (c *GeminiClient) parseResponse(data []byte, requestID string) (*core.FluxResponse, error) {
+func (c *GeminiClient) parseResponse(data []byte, requestID string) (*core.MuxResponse, error) {
 	var gr geminiResponse
 	if err := json.Unmarshal(data, &gr); err != nil {
-		return nil, fmt.Errorf("flux: gemini response parse failed: %w", err)
+		return nil, fmt.Errorf("mux: gemini response parse failed: %w", err)
 	}
 	if len(gr.Candidates) == 0 {
 		// Check if the prompt was blocked
@@ -509,13 +509,13 @@ func (c *GeminiClient) parseResponse(data []byte, requestID string) (*core.FluxR
 			if gr.PromptFeedback.BlockReasonMessage != "" {
 				msg = gr.PromptFeedback.BlockReasonMessage
 			}
-			return nil, fmt.Errorf("flux: gemini blocked prompt: %s", msg)
+			return nil, fmt.Errorf("mux: gemini blocked prompt: %s", msg)
 		}
-		return nil, fmt.Errorf("flux: gemini returned no candidates")
+		return nil, fmt.Errorf("mux: gemini returned no candidates")
 	}
 
 	candidate := gr.Candidates[0]
-	resp := &core.FluxResponse{
+	resp := &core.MuxResponse{
 		FinishReason: mapGeminiFinishReason(candidate.FinishReason),
 		RequestID:    requestID,
 	}
@@ -537,7 +537,7 @@ func (c *GeminiClient) parseResponse(data []byte, requestID string) (*core.FluxR
 	}
 
 	if gr.Usage != nil {
-		resp.Usage = &core.FluxUsage{
+		resp.Usage = &core.MuxUsage{
 			PromptTokens:     gr.Usage.PromptTokenCount,
 			CompletionTokens: gr.Usage.CandidatesTokenCount,
 			TotalTokens:      gr.Usage.TotalTokenCount,
@@ -562,11 +562,11 @@ func mapGeminiFinishReason(reason string) string {
 	}
 }
 
-func geminiUsageSnapshot(usage *geminiUsage) *core.FluxUsage {
+func geminiUsageSnapshot(usage *geminiUsage) *core.MuxUsage {
 	if usage == nil {
 		return nil
 	}
-	return &core.FluxUsage{
+	return &core.MuxUsage{
 		PromptTokens:     usage.PromptTokenCount,
 		CompletionTokens: usage.CandidatesTokenCount,
 		TotalTokens:      usage.TotalTokenCount,
@@ -578,7 +578,7 @@ func geminiUsageSnapshot(usage *geminiUsage) *core.FluxUsage {
 // --- Streaming ---
 
 // processGeminiStream converts Gemini SSE events (parsed by the shared
-// core.ParseSSEStream) into FluxStreamEvents. Handles text, tool calls
+// core.ParseSSEStream) into MuxStreamEvents. Handles text, tool calls
 // (functionCall), and the final usage+done event.
 //
 // Behavior matches the original streamLoop's processStreamChunk:
@@ -589,11 +589,11 @@ func geminiUsageSnapshot(usage *geminiUsage) *core.FluxUsage {
 //     original Gemini "done with usage" contract).
 //   - A bare finish reason without usage emits a "done" event with
 //     StopReason but no Usage.
-func processGeminiStream(ctx context.Context, sseEvents <-chan core.SSEEvent, logger *slog.Logger) <-chan core.FluxStreamEvent {
-	ch := make(chan core.FluxStreamEvent, core.StreamChannelBuffer)
+func processGeminiStream(ctx context.Context, sseEvents <-chan core.SSEEvent, logger *slog.Logger) <-chan core.MuxStreamEvent {
+	ch := make(chan core.MuxStreamEvent, core.StreamChannelBuffer)
 	go func() {
 		defer close(ch)
-		var pendingUsage *core.FluxUsage
+		var pendingUsage *core.MuxUsage
 		for {
 			select {
 			case <-ctx.Done():
@@ -601,12 +601,12 @@ func processGeminiStream(ctx context.Context, sseEvents <-chan core.SSEEvent, lo
 			case evt, ok := <-sseEvents:
 				if !ok {
 					if pendingUsage != nil {
-						core.Emit(ctx, ch, core.FluxStreamEvent{Type: "usage", Usage: pendingUsage})
+						core.Emit(ctx, ch, core.MuxStreamEvent{Type: "usage", Usage: pendingUsage})
 					}
 					return
 				}
 				if evt.Event == "error" {
-					core.Emit(ctx, ch, core.FluxStreamEvent{Type: "error", Error: evt.Data})
+					core.Emit(ctx, ch, core.MuxStreamEvent{Type: "error", Error: evt.Data})
 					return
 				}
 				data := strings.TrimSpace(evt.Data)
@@ -627,7 +627,7 @@ func processGeminiStream(ctx context.Context, sseEvents <-chan core.SSEEvent, lo
 				candidate := chunk.Candidates[0]
 				for _, part := range candidate.Content.Parts {
 					if part.Text != "" {
-						core.Emit(ctx, ch, core.FluxStreamEvent{Type: "content", Content: part.Text})
+						core.Emit(ctx, ch, core.MuxStreamEvent{Type: "content", Content: part.Text})
 					}
 					if part.FunctionCall != nil {
 						tc := &core.ToolCall{
@@ -637,14 +637,14 @@ func processGeminiStream(ctx context.Context, sseEvents <-chan core.SSEEvent, lo
 						if part.FunctionCall.ID != "" {
 							tc.ID = part.FunctionCall.ID
 						}
-						core.Emit(ctx, ch, core.FluxStreamEvent{
+						core.Emit(ctx, ch, core.MuxStreamEvent{
 							Type:     "tool_call",
 							ToolCall: tc,
 						})
 					}
 				}
 				if candidate.FinishReason != "" {
-					core.Emit(ctx, ch, core.FluxStreamEvent{
+					core.Emit(ctx, ch, core.MuxStreamEvent{
 						Type:       "done",
 						StopReason: mapGeminiFinishReason(candidate.FinishReason),
 						Usage:      pendingUsage,
@@ -657,11 +657,11 @@ func processGeminiStream(ctx context.Context, sseEvents <-chan core.SSEEvent, lo
 	return ch
 }
 
-func (c *GeminiClient) streamLoop(ctx context.Context, body io.ReadCloser, events chan<- core.FluxStreamEvent) {
+func (c *GeminiClient) streamLoop(ctx context.Context, body io.ReadCloser, events chan<- core.MuxStreamEvent) {
 	defer close(events)
 	defer func() { _ = body.Close() }()
 
-	var pendingUsage *core.FluxUsage
+	var pendingUsage *core.MuxUsage
 	processLine := func(line string) bool {
 		line = strings.TrimSpace(line)
 		if line == "" || !strings.HasPrefix(line, "data:") {
@@ -695,14 +695,14 @@ func (c *GeminiClient) streamLoop(ctx context.Context, body io.ReadCloser, event
 			}
 			if !errors.Is(readErr, io.EOF) {
 				select {
-				case events <- core.FluxStreamEvent{Type: "error", Error: readErr.Error()}:
+				case events <- core.MuxStreamEvent{Type: "error", Error: readErr.Error()}:
 				case <-ctx.Done():
 				}
 				return
 			}
 			if pendingUsage != nil {
 				select {
-				case events <- core.FluxStreamEvent{Type: "usage", Usage: pendingUsage}:
+				case events <- core.MuxStreamEvent{Type: "usage", Usage: pendingUsage}:
 				case <-ctx.Done():
 				}
 			}
@@ -711,12 +711,12 @@ func (c *GeminiClient) streamLoop(ctx context.Context, body io.ReadCloser, event
 	}
 }
 
-func (c *GeminiClient) processStreamChunk(ctx context.Context, data string, events chan<- core.FluxStreamEvent) bool {
-	var pendingUsage *core.FluxUsage
+func (c *GeminiClient) processStreamChunk(ctx context.Context, data string, events chan<- core.MuxStreamEvent) bool {
+	var pendingUsage *core.MuxUsage
 	return c.processStreamChunkWithUsage(ctx, data, events, &pendingUsage)
 }
 
-func (c *GeminiClient) processStreamChunkWithUsage(ctx context.Context, data string, events chan<- core.FluxStreamEvent, pendingUsage **core.FluxUsage) bool {
+func (c *GeminiClient) processStreamChunkWithUsage(ctx context.Context, data string, events chan<- core.MuxStreamEvent, pendingUsage **core.MuxUsage) bool {
 	var chunk geminiResponse
 	if err := json.Unmarshal([]byte(data), &chunk); err != nil {
 		return false
@@ -731,7 +731,7 @@ func (c *GeminiClient) processStreamChunkWithUsage(ctx context.Context, data str
 	for _, part := range candidate.Content.Parts {
 		if part.Text != "" {
 			select {
-			case events <- core.FluxStreamEvent{Type: "content", Content: part.Text}:
+			case events <- core.MuxStreamEvent{Type: "content", Content: part.Text}:
 			case <-ctx.Done():
 				return false
 			}
@@ -745,7 +745,7 @@ func (c *GeminiClient) processStreamChunkWithUsage(ctx context.Context, data str
 				tc.ID = part.FunctionCall.ID
 			}
 			select {
-			case events <- core.FluxStreamEvent{
+			case events <- core.MuxStreamEvent{
 				Type:     "tool_call",
 				ToolCall: tc,
 			}:
@@ -756,7 +756,7 @@ func (c *GeminiClient) processStreamChunkWithUsage(ctx context.Context, data str
 	}
 	if candidate.FinishReason != "" {
 		select {
-		case events <- core.FluxStreamEvent{Type: "done", StopReason: mapGeminiFinishReason(candidate.FinishReason), Usage: *pendingUsage}:
+		case events <- core.MuxStreamEvent{Type: "done", StopReason: mapGeminiFinishReason(candidate.FinishReason), Usage: *pendingUsage}:
 			return true
 		case <-ctx.Done():
 		}
@@ -771,6 +771,6 @@ func (c *GeminiClient) HTTPClient() *http.Client { return c.httpClient }
 func (c *GeminiClient) Retry() core.RetryConfig { return c.retry }
 
 // ProcessGeminiStream normalizes decoded Gemini SSE events.
-func ProcessGeminiStream(ctx context.Context, events <-chan core.SSEEvent, logger *slog.Logger) <-chan core.FluxStreamEvent {
+func ProcessGeminiStream(ctx context.Context, events <-chan core.SSEEvent, logger *slog.Logger) <-chan core.MuxStreamEvent {
 	return processGeminiStream(ctx, events, logger)
 }

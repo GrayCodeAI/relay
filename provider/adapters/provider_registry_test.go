@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GrayCodeAI/flux/credentials"
+	"github.com/GrayCodeAI/mux/credentials"
 )
 
 func TestResolveEnvSecret(t *testing.T) {

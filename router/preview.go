@@ -3,7 +3,7 @@ package router
 import (
 	"encoding/json"
 
-	"github.com/GrayCodeAI/flux/catalog"
+	"github.com/GrayCodeAI/mux/catalog"
 )
 
 // RoutingResolution describes which routing policy matched a canonical model.

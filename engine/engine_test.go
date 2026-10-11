@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	"github.com/GrayCodeAI/flux/config"
-	"github.com/GrayCodeAI/flux/credentials"
-	"github.com/GrayCodeAI/flux/llm"
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/mux/config"
+	"github.com/GrayCodeAI/mux/credentials"
+	"github.com/GrayCodeAI/mux/llm"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 func TestNewUsesInjectedCredentialStore(t *testing.T) {
@@ -28,7 +28,7 @@ func TestContractVersionAndRemoteCatalogIsolation(t *testing.T) {
 	if ContractVersion != "2" {
 		t.Fatalf("ContractVersion = %q, want 2", ContractVersion)
 	}
-	t.Setenv("FLUX_MODEL_CATALOG_URL", "https://ambient.invalid/catalog.json")
+	t.Setenv("MUX_MODEL_CATALOG_URL", "https://ambient.invalid/catalog.json")
 	eng, err := New(Options{SecretStore: &credentials.MapStore{}, StateDir: t.TempDir()})
 	if err != nil {
 		t.Fatal(err)
@@ -149,10 +149,10 @@ func TestMessageConversionPreservesToolsAndMultimodalParts(t *testing.T) {
 }
 
 func TestNormalizedStreamContract(t *testing.T) {
-	sourceEvents := make(chan core.FluxStreamEvent, 3)
-	sourceEvents <- core.FluxStreamEvent{Type: "content", Content: "hello"}
-	sourceEvents <- core.FluxStreamEvent{Type: "tool_call", ToolCall: &core.ToolCall{ID: "1", Name: "read"}}
-	sourceEvents <- core.FluxStreamEvent{Type: "done", StopReason: "end_turn", Usage: &core.FluxUsage{PromptTokens: 2, CompletionTokens: 3, TotalTokens: 5}}
+	sourceEvents := make(chan core.MuxStreamEvent, 3)
+	sourceEvents <- core.MuxStreamEvent{Type: "content", Content: "hello"}
+	sourceEvents <- core.MuxStreamEvent{Type: "tool_call", ToolCall: &core.ToolCall{ID: "1", Name: "read"}}
+	sourceEvents <- core.MuxStreamEvent{Type: "done", StopReason: "end_turn", Usage: &core.MuxUsage{PromptTokens: 2, CompletionTokens: 3, TotalTokens: 5}}
 	close(sourceEvents)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -183,10 +183,10 @@ func TestNormalizedStreamContract(t *testing.T) {
 // them as warning events and still deliver the done/usage event without
 // setting Err().
 func TestStreamDiagnosticErrorEventIsNonFatal(t *testing.T) {
-	sourceEvents := make(chan core.FluxStreamEvent, 3)
-	sourceEvents <- core.FluxStreamEvent{Type: "content", Content: "answer"}
-	sourceEvents <- core.FluxStreamEvent{Type: "error", Error: "model produced reasoning tokens but no answer", Warning: "model produced reasoning tokens but no answer"}
-	sourceEvents <- core.FluxStreamEvent{Type: "done", StopReason: "stop", Usage: &core.FluxUsage{PromptTokens: 1, CompletionTokens: 2, TotalTokens: 3}}
+	sourceEvents := make(chan core.MuxStreamEvent, 3)
+	sourceEvents <- core.MuxStreamEvent{Type: "content", Content: "answer"}
+	sourceEvents <- core.MuxStreamEvent{Type: "error", Error: "model produced reasoning tokens but no answer", Warning: "model produced reasoning tokens but no answer"}
+	sourceEvents <- core.MuxStreamEvent{Type: "done", StopReason: "stop", Usage: &core.MuxUsage{PromptTokens: 1, CompletionTokens: 2, TotalTokens: 3}}
 	close(sourceEvents)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -217,9 +217,9 @@ func TestStreamDiagnosticErrorEventIsNonFatal(t *testing.T) {
 // Genuinely fatal error events (no Warning marker) keep the previous
 // behavior: the stream terminates and Err() carries the classified error.
 func TestStreamFatalErrorEventStillTerminal(t *testing.T) {
-	sourceEvents := make(chan core.FluxStreamEvent, 2)
-	sourceEvents <- core.FluxStreamEvent{Type: "content", Content: "partial"}
-	sourceEvents <- core.FluxStreamEvent{Type: "error", Error: "connection reset"}
+	sourceEvents := make(chan core.MuxStreamEvent, 2)
+	sourceEvents <- core.MuxStreamEvent{Type: "content", Content: "partial"}
+	sourceEvents <- core.MuxStreamEvent{Type: "error", Error: "connection reset"}
 	close(sourceEvents)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -241,7 +241,7 @@ func TestStreamFatalErrorEventStillTerminal(t *testing.T) {
 }
 
 func TestStreamSilentSourceCloseIsTruncated(t *testing.T) {
-	sourceEvents := make(chan core.FluxStreamEvent)
+	sourceEvents := make(chan core.MuxStreamEvent)
 	close(sourceEvents)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -265,7 +265,7 @@ func TestStreamSilentSourceCloseIsTruncated(t *testing.T) {
 }
 
 func TestStreamContextCancellationEmitsTerminalAndErr(t *testing.T) {
-	sourceEvents := make(chan core.FluxStreamEvent)
+	sourceEvents := make(chan core.MuxStreamEvent)
 	ctx, cancel := context.WithCancel(context.Background())
 	stream := newStream(ctx, cancel, llm.NewStreamResult(sourceEvents, "request-cancel", nil), Route{Provider: "mock", Model: "mock/model"})
 
@@ -296,7 +296,7 @@ func TestStreamCancelledBeforeFirstEventStillTerminates(t *testing.T) {
 	for i := 0; i < 200; i++ {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		stream := newStream(ctx, cancel, llm.NewStreamResult(make(chan core.FluxStreamEvent), "request-early", nil), Route{Provider: "mock", Model: "mock/model"})
+		stream := newStream(ctx, cancel, llm.NewStreamResult(make(chan core.MuxStreamEvent), "request-early", nil), Route{Provider: "mock", Model: "mock/model"})
 		var last Event
 		for stream.Next() {
 			last = stream.Event()

@@ -1,12 +1,12 @@
-# Host–Flux Engine Boundary
+# Host–Mux Engine Boundary
 
 Status: accepted. The host-facing compatibility contract is
 `engine.ContractVersion == "2"`.
 
 ## Decision
 
-Rho is the product face. It owns the terminal UI, agent loop, tool execution,
-permissions, conversation history, checkpoints, and product semantics. Flux is
+Decoder is the product face. It owns the terminal UI, agent loop, tool execution,
+permissions, conversation history, checkpoints, and product semantics. Mux is
 the engine. It owns credentials, provider/deployment metadata, model discovery,
 catalog compilation, selection, transport construction, provider request and
 stream normalization, resilience, normalized usage, and provider telemetry.
@@ -15,11 +15,11 @@ stream normalization, resilience, normalized usage, and provider telemetry.
 User
   |
   v
-Rho (face: UX, session, tools, permissions)
+Decoder (face: UX, session, tools, permissions)
   |
   | stable DTOs and methods
   v
-github.com/GrayCodeAI/flux/engine  [contract v2]
+github.com/GrayCodeAI/mux/engine  [contract v2]
   |
   +--> injected secret store
   +--> injected state paths
@@ -30,14 +30,14 @@ github.com/GrayCodeAI/flux/engine  [contract v2]
 Provider model APIs
 ```
 
-The dependency is one-way: Flux must not import Rho. Rho's integration layer
-may import `flux/engine`; Rho command, conversation, and UI packages must not
-assemble Flux's `catalog`, `provider`, `config`, `credentials`, `router`,
+The dependency is one-way: Mux must not import Decoder. Decoder's integration layer
+may import `mux/engine`; Decoder command, conversation, and UI packages must not
+assemble Mux's `catalog`, `provider`, `config`, `credentials`, `router`,
 `runtime`, or `setup` packages.
 
 ## Composition root
 
-Rho constructs one `engine.Engine` from host-owned dependencies:
+Decoder constructs one `engine.Engine` from host-owned dependencies:
 
 ```go
 e, err := engine.New(engine.Options{
@@ -53,7 +53,7 @@ e, err := engine.New(engine.Options{
 `StateDir` derives `model_catalog.json` and `provider.json` when explicit paths
 are absent. Explicit paths win. The store, paths, remote catalog URL, and custom
 gateways belong to the Engine instance; behavior does not depend on ambient
-Rho paths or a process-global custom-gateway registry.
+Decoder paths or a process-global custom-gateway registry.
 
 ## Stable contract
 
@@ -75,7 +75,7 @@ MigrateProviderSecretsContext
 Provider-specific wire types, authentication headers, retry behavior, and raw
 stream events do not cross this boundary. `Model` keeps distinct `Owner`,
 `ProviderID`, `GatewayID`, `CanonicalID`, `Source`, and `LiveMetadata` fields so
-Rho does not reconstruct catalog meaning.
+Decoder does not reconstruct catalog meaning.
 
 ## Frozen engine-internal types
 
@@ -98,9 +98,9 @@ hosts exactly like changing `engine` itself and needs a contract-version bump.
 | `provider/resilience.RateLimitHeaders` | result of `HeaderExtractor` |
 | `provider/cache.CacheConfig` | `Options.CacheConfig` |
 
-Rho uses `engine.MapStore`, `engine.DefaultStore`, `engine.SetDefaultStore`,
+Decoder uses `engine.MapStore`, `engine.DefaultStore`, `engine.SetDefaultStore`,
 `engine.OperationsGraphInput`, and `engine.BuildOperationsGraph` today, and its
-import-path boundary checks cannot see through the aliases. Flux therefore
+import-path boundary checks cannot see through the aliases. Mux therefore
 guards the set itself: `engine/host_surface_test.go` walks the exported surface
 of the four contract packages, follows every engine-internal symbol it reaches
 through struct fields, signatures, and exported methods, and fails when the
@@ -127,10 +127,10 @@ Engine.ApplyCredentials / ListLiveModels
   +--> pass a provider-scoped environment to its live fetcher
   +--> merge/compile catalog and atomically update model_catalog.json
   v
-Engine.ListModels --> Rho picker --> Engine.SetSelection
+Engine.ListModels --> Decoder picker --> Engine.SetSelection
   |
   v
-Rho builds provider-neutral GenerateRequest from its conversation
+Decoder builds provider-neutral GenerateRequest from its conversation
   |
   +--> Engine.Generate
   `--> Engine.Stream --> normalized route/content/thinking/tool/usage events
@@ -154,21 +154,21 @@ Legacy provider files may contain credential-shaped fields. The explicit
 `MigrateProviderSecretsContext` flow maps every recognized secret to the
 injected store before writing a sanitized provider file. An unmapped secret or
 store failure aborts the migration and restores the original state; no
-plaintext backup is created. Rho should run security status/migration before
+plaintext backup is created. Decoder should run security status/migration before
 normal provider-state writes.
 
 ## Selection and generation
 
 Hosts express capabilities (`streaming`, `tools`, `vision`, structured JSON,
 reasoning, and context size) plus an intent or explicit provider/model. An
-explicit model is a hard constraint unless the host enables fallback. Flux
+explicit model is a hard constraint unless the host enables fallback. Mux
 owns canonicalization, gateway ownership, deployment routing, and capability
 matching.
 
-Flux generation is stateless from Rho's point of view:
+Mux generation is stateless from Decoder's point of view:
 
 ```text
-Rho owns                         Flux owns
+Decoder owns                         Mux owns
 ----------                        -----------
 conversation history              route decision
 tool permission and execution     provider transport
@@ -180,7 +180,7 @@ session lifecycle                 normalized usage/telemetry
 `Stream` is pull-based, cancellable, and must be closed. It emits the selected
 route before provider events and normalizes content, thinking, tool calls,
 usage, retry/continuation, TTFT, and completion. Unknown future event types are
-additive and must be ignored safely. Flux emits tool requests; Rho authorizes
+additive and must be ignored safely. Mux emits tool requests; Decoder authorizes
 and executes tools, appends results to its history, and begins the next model
 turn.
 
@@ -218,26 +218,26 @@ diagnostics; live readiness is an explicit network operation.
 
 ## Release and sibling-repository order
 
-The boundary is delivered Flux-first:
+The boundary is delivered Mux-first:
 
 ```text
-1. Change and verify standalone Flux
-2. Commit Flux and publish a resolvable release/commit
-3. Update Rho's Flux module version when required
-4. Update Rho's Flux module pin to that exact published commit
-5. Verify Rho integration, boundary checks, and clean-clone/module builds
-6. Commit the Rho module-pin update in Rho's repository
+1. Change and verify standalone Mux
+2. Commit Mux and publish a resolvable release/commit
+3. Update Decoder's Mux module version when required
+4. Update Decoder's Mux module pin to that exact published commit
+5. Verify Decoder integration, boundary checks, and clean-clone/module builds
+6. Commit the Decoder module-pin update in Decoder's repository
 ```
 
-Rho must never depend on an uncommitted Flux worktree. The parent workspace
+Decoder must never depend on an uncommitted Mux worktree. The parent workspace
 uses a sibling checkout for source identity during local development; a
 resolvable published module version is also required for workflows that build
-Rho with `GOWORK=off`.
+Decoder with `GOWORK=off`.
 
 ## Compatibility policy
 
-Lower-level Flux packages remain public for non-Rho consumers and staged
-migration, but they are not part of Rho's product boundary, apart from the
+Lower-level Mux packages remain public for non-Decoder consumers and staged
+migration, but they are not part of Decoder's product boundary, apart from the
 frozen symbols listed above. Additive fields
 and stream events are allowed within contract v2. Removing or changing stable
 DTO semantics requires a contract-version and semantic-version boundary.
