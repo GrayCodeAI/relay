@@ -1,7 +1,7 @@
 package catalog
 
 import (
-	"github.com/GrayCodeAI/flux/catalog/registry"
+	"github.com/GrayCodeAI/mux/catalog/registry"
 )
 
 // extraDeploymentEnvFallbacks are env fallbacks for deployments that have no

@@ -4,8 +4,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	"github.com/GrayCodeAI/flux/catalog/registry"
+	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/mux/catalog/registry"
 )
 
 // ModelUI is one selectable model for host /config UIs.
@@ -22,7 +22,7 @@ type ProviderUI struct {
 	Models      []ModelUI `json:"models"`
 }
 
-// SetupUI is JSON-safe metadata returned to rho (no secrets).
+// SetupUI is JSON-safe metadata returned to decoder (no secrets).
 type SetupUI struct {
 	Providers []ProviderUI `json:"providers"`
 }

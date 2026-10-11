@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/flux/catalog/live"
+	"github.com/GrayCodeAI/mux/catalog/live"
 )
 
 type CapabilityState string
@@ -45,7 +45,7 @@ const (
 	CatalogSchemaVersion = "model-catalog/v1"
 	// SeedCatalogURL is the published model-catalog/v1 document.
 	SeedCatalogURL = "https://langdag.com/model-catalog/v1/catalog.json"
-	EnvCatalogURL  = "FLUX_MODEL_CATALOG_URL"
+	EnvCatalogURL  = "MUX_MODEL_CATALOG_URL"
 	// LiveStaleDuration is how long a cache remains fresh after live provider APIs were merged.
 	LiveStaleDuration = 24 * time.Hour
 )
@@ -630,7 +630,7 @@ func LoadCatalog(ctx context.Context, opts LoadCatalogOptions) (*CompiledCatalog
 		return compiled, nil
 	}
 	if opts.RequireCache {
-		return nil, fmt.Errorf("%w (%s missing or invalid; run: rho models refresh)", ErrCatalogCacheRequired, opts.CachePath)
+		return nil, fmt.Errorf("%w (%s missing or invalid; run: decoder models refresh)", ErrCatalogCacheRequired, opts.CachePath)
 	}
 	bootstrap := BootstrapCatalog()
 	compiled, err := CompileCatalog(&bootstrap)
@@ -639,7 +639,7 @@ func LoadCatalog(ctx context.Context, opts LoadCatalogOptions) (*CompiledCatalog
 	}
 	compiled.Diagnostics = append(compiled.Diagnostics, CatalogDiagnostic{
 		Code:    "bootstrap_only",
-		Message: "no model catalog cache; run rho models refresh or flux catalog discover",
+		Message: "no model catalog cache; run decoder models refresh or mux catalog discover",
 	})
 	return compiled, nil
 }
@@ -704,7 +704,7 @@ func FetchRemoteCatalog(ctx context.Context, opts LoadCatalogOptions) (*Catalog,
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "flux/1.0")
+	req.Header.Set("User-Agent", "mux/1.0")
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err

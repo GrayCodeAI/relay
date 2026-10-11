@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	"github.com/GrayCodeAI/flux/catalog/registry"
-	"github.com/GrayCodeAI/flux/config"
-	"github.com/GrayCodeAI/flux/credentials"
+	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/mux/catalog/registry"
+	"github.com/GrayCodeAI/mux/config"
+	"github.com/GrayCodeAI/mux/credentials"
 )
 
 type importedCredential struct {

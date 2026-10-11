@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GrayCodeAI/flux/llm"
+	"github.com/GrayCodeAI/mux/llm"
 )
 
 // SSEEvent represents a single Server-Sent Event.
@@ -69,14 +69,14 @@ var ErrStreamTruncated = errors.New("stream ended before terminal event")
 // produced by TransformStreamResult, the context and request ID coordinating
 // it. CoordinateStreamResult uses it to avoid stacking an identical lifecycle
 // wrapper (and its goroutine and buffer) on every layer a stream crosses.
-var coordinatedStreams sync.Map // map[<-chan FluxStreamEvent]streamCoordination
+var coordinatedStreams sync.Map // map[<-chan MuxStreamEvent]streamCoordination
 
 type streamCoordination struct {
 	done      <-chan struct{}
 	requestID string
 }
 
-type StreamEventHandler func(context.Context, FluxStreamEvent) (FluxStreamEvent, error)
+type StreamEventHandler func(context.Context, MuxStreamEvent) (MuxStreamEvent, error)
 
 // TransformStreamResult forwards source through handler (nil forwards events
 // unchanged) and enforces the stream lifecycle: exactly one terminal event
@@ -97,7 +97,7 @@ func TransformStreamResult(ctx context.Context, source *StreamResult, handler St
 	}
 
 	streamCtx, cancel := context.WithCancel(ctx)
-	out := make(chan FluxStreamEvent, cap(source.Events))
+	out := make(chan MuxStreamEvent, cap(source.Events))
 	closed := make(chan struct{})
 	var releaseOnce, closeOnce sync.Once
 	// releaseSource stops the upstream request and its connection.
@@ -127,7 +127,7 @@ func TransformStreamResult(ctx context.Context, source *StreamResult, handler St
 		_ = sendTerminalEvent(out, cancellationEvent(source.RequestID, ctx.Err()), closed)
 	}
 
-	var events <-chan FluxStreamEvent = out
+	var events <-chan MuxStreamEvent = out
 	coordinatedStreams.Store(events, streamCoordination{done: ctx.Done(), requestID: source.RequestID})
 
 	go func() {
@@ -151,7 +151,7 @@ func TransformStreamResult(ctx context.Context, source *StreamResult, handler St
 						emitCancellation()
 						return
 					}
-					event = FluxStreamEvent{
+					event = MuxStreamEvent{
 						Type:      "error",
 						Error:     ErrStreamTruncated.Error(),
 						RequestID: source.RequestID,
@@ -208,7 +208,7 @@ func CoordinateStreamResult(ctx context.Context, source *StreamResult) *StreamRe
 	return TransformStreamResult(ctx, source, nil)
 }
 
-func cancellationEvent(requestID string, err error) FluxStreamEvent {
+func cancellationEvent(requestID string, err error) MuxStreamEvent {
 	kind := llm.ErrKindCanceled
 	if errors.Is(err, context.DeadlineExceeded) {
 		kind = llm.ErrKindTimeout
@@ -217,7 +217,7 @@ func cancellationEvent(requestID string, err error) FluxStreamEvent {
 	if err != nil {
 		message = err.Error()
 	}
-	return FluxStreamEvent{
+	return MuxStreamEvent{
 		Type:      "cancelled",
 		Error:     message,
 		RequestID: requestID,
@@ -225,7 +225,7 @@ func cancellationEvent(requestID string, err error) FluxStreamEvent {
 	}
 }
 
-func streamErrorEvent(requestID string, err error) FluxStreamEvent {
+func streamErrorEvent(requestID string, err error) MuxStreamEvent {
 	kind := llm.ErrKindInternal
 	retryable := false
 	switch {
@@ -241,7 +241,7 @@ func streamErrorEvent(requestID string, err error) FluxStreamEvent {
 	if err != nil {
 		message = err.Error()
 	}
-	return FluxStreamEvent{
+	return MuxStreamEvent{
 		Type:      "error",
 		Error:     message,
 		RequestID: requestID,
@@ -256,7 +256,7 @@ func streamErrorEvent(requestID string, err error) FluxStreamEvent {
 // Events that already carry ErrorInfo are returned untouched — the producer or
 // a handler knows more than can be inferred from the message alone. Non-error
 // events are returned untouched.
-func ensureStreamErrorInfo(event FluxStreamEvent) FluxStreamEvent {
+func ensureStreamErrorInfo(event MuxStreamEvent) MuxStreamEvent {
 	if event.ErrorInfo != nil {
 		return event
 	}
@@ -281,7 +281,7 @@ func ensureStreamErrorInfo(event FluxStreamEvent) FluxStreamEvent {
 //
 // Like classifyProviderError, it keys on common cross-provider substrings
 // rather than a per-provider table, so it does not become a maintenance sink
-// across flux's many providers. Matching is deliberately textual only: bare
+// across mux's many providers. Matching is deliberately textual only: bare
 // HTTP status digits are not matched, because they false-positive against
 // ordinary content such as model ids and token counts. Only Go's own
 // "context canceled" text maps to the canceled kind: a bare "cancelled" is as
@@ -332,11 +332,11 @@ func containsAny(haystack string, needles ...string) bool {
 	return false
 }
 
-func isTerminalStreamEvent(event FluxStreamEvent) bool {
+func isTerminalStreamEvent(event MuxStreamEvent) bool {
 	return event.Type == "done" || event.Type == "cancelled" || event.Type == "canceled" || event.Type == "error" && event.Warning == ""
 }
 
-func sendLifecycleEvent(ctx context.Context, out chan<- FluxStreamEvent, event FluxStreamEvent) bool {
+func sendLifecycleEvent(ctx context.Context, out chan<- MuxStreamEvent, event MuxStreamEvent) bool {
 	select {
 	case out <- event:
 		return true
@@ -345,7 +345,7 @@ func sendLifecycleEvent(ctx context.Context, out chan<- FluxStreamEvent, event F
 	}
 }
 
-func sendTerminalEvent(out chan<- FluxStreamEvent, event FluxStreamEvent, closed <-chan struct{}) bool {
+func sendTerminalEvent(out chan<- MuxStreamEvent, event MuxStreamEvent, closed <-chan struct{}) bool {
 	select {
 	case out <- event:
 		return true
@@ -363,7 +363,7 @@ func channelClosed(closed <-chan struct{}) bool {
 	}
 }
 
-func CloneUsage(usage *FluxUsage) *FluxUsage {
+func CloneUsage(usage *MuxUsage) *MuxUsage {
 	if usage == nil {
 		return nil
 	}
@@ -371,7 +371,7 @@ func CloneUsage(usage *FluxUsage) *FluxUsage {
 	return &cloned
 }
 
-func MergeUsage(previous, current *FluxUsage) *FluxUsage {
+func MergeUsage(previous, current *MuxUsage) *MuxUsage {
 	if previous == nil {
 		merged := CloneUsage(current)
 		if merged != nil && merged.TotalTokens == 0 {
@@ -382,7 +382,7 @@ func MergeUsage(previous, current *FluxUsage) *FluxUsage {
 	if current == nil {
 		return CloneUsage(previous)
 	}
-	merged := &FluxUsage{
+	merged := &MuxUsage{
 		PromptTokens:        max(previous.PromptTokens, current.PromptTokens),
 		CompletionTokens:    max(previous.CompletionTokens, current.CompletionTokens),
 		CacheCreationTokens: max(previous.CacheCreationTokens, current.CacheCreationTokens),
@@ -393,7 +393,7 @@ func MergeUsage(previous, current *FluxUsage) *FluxUsage {
 	return merged
 }
 
-func UsageDelta(previous, current *FluxUsage) *FluxUsage {
+func UsageDelta(previous, current *MuxUsage) *MuxUsage {
 	if current == nil {
 		return nil
 	}
@@ -408,7 +408,7 @@ func UsageDelta(previous, current *FluxUsage) *FluxUsage {
 		return delta
 	}
 
-	delta := &FluxUsage{
+	delta := &MuxUsage{
 		PromptTokens:        positiveUsageDelta(current.PromptTokens, previous.PromptTokens),
 		CompletionTokens:    positiveUsageDelta(current.CompletionTokens, previous.CompletionTokens),
 		CacheCreationTokens: positiveUsageDelta(current.CacheCreationTokens, previous.CacheCreationTokens),
@@ -438,14 +438,14 @@ func positiveUsageDelta(current, previous int) int {
 	return current - previous
 }
 
-func usageTotal(usage *FluxUsage) int {
+func usageTotal(usage *MuxUsage) int {
 	if usage.TotalTokens > 0 {
 		return usage.TotalTokens
 	}
 	return usage.PromptTokens + usage.CompletionTokens
 }
 
-func usageIsZero(usage *FluxUsage) bool {
+func usageIsZero(usage *MuxUsage) bool {
 	return usage.PromptTokens == 0 &&
 		usage.CompletionTokens == 0 &&
 		usage.CacheCreationTokens == 0 &&
@@ -555,14 +555,14 @@ type anthropicStreamEvent struct {
 	} `json:"content_block,omitempty"`
 }
 
-// ProcessAnthropicStream converts Anthropic SSE events to FluxStreamEvents.
+// ProcessAnthropicStream converts Anthropic SSE events to MuxStreamEvents.
 // Handles text, tool_use (with input_json_delta), and thinking blocks.
-func ProcessAnthropicStream(ctx context.Context, sseEvents <-chan SSEEvent, logger *slog.Logger) <-chan FluxStreamEvent {
+func ProcessAnthropicStream(ctx context.Context, sseEvents <-chan SSEEvent, logger *slog.Logger) <-chan MuxStreamEvent {
 	return ProcessAnthropicStreamWithOpts(ctx, sseEvents, logger, time.Now())
 }
 
-func ProcessAnthropicStreamWithOpts(ctx context.Context, sseEvents <-chan SSEEvent, logger *slog.Logger, start time.Time) <-chan FluxStreamEvent {
-	ch := make(chan FluxStreamEvent, StreamChannelBuffer)
+func ProcessAnthropicStreamWithOpts(ctx context.Context, sseEvents <-chan SSEEvent, logger *slog.Logger, start time.Time) <-chan MuxStreamEvent {
+	ch := make(chan MuxStreamEvent, StreamChannelBuffer)
 	go func() {
 		defer close(ch)
 
@@ -587,7 +587,7 @@ func ProcessAnthropicStreamWithOpts(ctx context.Context, sseEvents <-chan SSEEve
 				if !ok {
 					// Stream closed — Emit partial tool call as error if incomplete
 					if currentTool != nil {
-						Emit(ctx, ch, FluxStreamEvent{
+						Emit(ctx, ch, MuxStreamEvent{
 							Type:  "error",
 							Error: fmt.Sprintf("stream closed with incomplete tool call: %s", currentTool.name),
 						})
@@ -597,7 +597,7 @@ func ProcessAnthropicStreamWithOpts(ctx context.Context, sseEvents <-chan SSEEve
 				}
 				// Propagate SSE-level errors
 				if evt.Event == "error" {
-					Emit(ctx, ch, FluxStreamEvent{Type: "error", Error: evt.Data})
+					Emit(ctx, ch, MuxStreamEvent{Type: "error", Error: evt.Data})
 					return
 				}
 				data := strings.TrimSpace(evt.Data)
@@ -630,15 +630,15 @@ func ProcessAnthropicStreamWithOpts(ctx context.Context, sseEvents <-chan SSEEve
 					case "text_delta":
 						if ae.Delta.Text != "" {
 							if strings.Contains(blockTypes[ae.Index], "thinking") {
-								Emit(ctx, ch, FluxStreamEvent{Type: "thinking", Thinking: ae.Delta.Text})
+								Emit(ctx, ch, MuxStreamEvent{Type: "thinking", Thinking: ae.Delta.Text})
 							} else {
 								// TTFT: record and Emit on the first content token.
 								if !ttftEmitted {
 									ttftEmitted = true
 									ttftMs = int(time.Since(start) / time.Millisecond)
-									Emit(ctx, ch, FluxStreamEvent{Type: "ttft", TTFT: ttftMs})
+									Emit(ctx, ch, MuxStreamEvent{Type: "ttft", TTFT: ttftMs})
 								}
-								Emit(ctx, ch, FluxStreamEvent{Type: "content", Content: ae.Delta.Text})
+								Emit(ctx, ch, MuxStreamEvent{Type: "content", Content: ae.Delta.Text})
 							}
 						}
 					case "input_json_delta":
@@ -647,13 +647,13 @@ func ProcessAnthropicStreamWithOpts(ctx context.Context, sseEvents <-chan SSEEve
 							if !ttftEmitted {
 								ttftEmitted = true
 								ttftMs = int(time.Since(start) / time.Millisecond)
-								Emit(ctx, ch, FluxStreamEvent{Type: "ttft", TTFT: ttftMs})
+								Emit(ctx, ch, MuxStreamEvent{Type: "ttft", TTFT: ttftMs})
 							}
 							currentTool.jsonBuf.WriteString(ae.Delta.PartialJSON)
 						}
 					case "thinking_delta":
 						if ae.Delta.Text != "" {
-							Emit(ctx, ch, FluxStreamEvent{Type: "thinking", Thinking: ae.Delta.Text})
+							Emit(ctx, ch, MuxStreamEvent{Type: "thinking", Thinking: ae.Delta.Text})
 						}
 					}
 
@@ -664,12 +664,12 @@ func ProcessAnthropicStreamWithOpts(ctx context.Context, sseEvents <-chan SSEEve
 						var args map[string]interface{}
 						if err := json.Unmarshal([]byte(rawJSON), &args); err != nil {
 							logger.Warn("invalid tool call JSON accumulated", "tool", currentTool.name, "error", err)
-							Emit(ctx, ch, FluxStreamEvent{
+							Emit(ctx, ch, MuxStreamEvent{
 								Type:  "error",
 								Error: fmt.Sprintf("invalid tool call JSON for %s: %v", currentTool.name, err),
 							})
 						} else {
-							Emit(ctx, ch, FluxStreamEvent{
+							Emit(ctx, ch, MuxStreamEvent{
 								Type:     "tool_call",
 								ToolCall: &ToolCall{ID: currentTool.id, Name: currentTool.name, Arguments: args},
 							})
@@ -678,7 +678,7 @@ func ProcessAnthropicStreamWithOpts(ctx context.Context, sseEvents <-chan SSEEve
 					}
 
 				case "message_stop":
-					Emit(ctx, ch, FluxStreamEvent{Type: "done", StopReason: stopReason, TTFTms: ttftMs})
+					Emit(ctx, ch, MuxStreamEvent{Type: "done", StopReason: stopReason, TTFTms: ttftMs})
 					return
 
 				case "message_delta":
@@ -698,9 +698,9 @@ func ProcessAnthropicStreamWithOpts(ctx context.Context, sseEvents <-chan SSEEve
 						stopReason = md.Delta.StopReason
 					}
 					if md.Usage != nil && md.Usage.OutputTokens > 0 {
-						Emit(ctx, ch, FluxStreamEvent{
+						Emit(ctx, ch, MuxStreamEvent{
 							Type: "usage",
-							Usage: &FluxUsage{
+							Usage: &MuxUsage{
 								CompletionTokens: md.Usage.OutputTokens,
 							},
 						})
@@ -720,16 +720,16 @@ func ProcessAnthropicStreamWithOpts(ctx context.Context, sseEvents <-chan SSEEve
 						logger.Warn("stream: failed to parse anthropic message_start", "error", err)
 					}
 					if ms.Message.Usage.InputTokens > 0 {
-						Emit(ctx, ch, FluxStreamEvent{
+						Emit(ctx, ch, MuxStreamEvent{
 							Type: "usage",
-							Usage: &FluxUsage{
+							Usage: &MuxUsage{
 								PromptTokens: ms.Message.Usage.InputTokens,
 							},
 						})
 					}
 
 				case "error":
-					Emit(ctx, ch, FluxStreamEvent{Type: "error", Error: data})
+					Emit(ctx, ch, MuxStreamEvent{Type: "error", Error: data})
 					return
 				}
 			}
@@ -745,7 +745,7 @@ type openaiStreamChoice struct {
 		Content string `json:"content,omitempty"`
 		// ReasoningContent carries the model's chain-of-thought on OpenAI-compatible
 		// providers that expose it as a separate channel (DeepSeek, Qwen, MiniMax-M2,
-		// some OpenRouter/z.ai routes). Without this field flux would drop it.
+		// some OpenRouter/z.ai routes). Without this field mux would drop it.
 		ReasoningContent string `json:"reasoning_content,omitempty"`
 		Role             string `json:"role,omitempty"`
 		ToolCalls        []struct {
@@ -841,16 +841,16 @@ func partialSuffixLen(s, tag string) int {
 	return 0
 }
 
-// ProcessOpenAIStream converts OpenAI SSE events to FluxStreamEvents.
+// ProcessOpenAIStream converts OpenAI SSE events to MuxStreamEvents.
 // Handles text deltas and tool call streaming by index.
 // Also instruments TTFT (time-to-first-token) and runs a RepeatDetector to
 // synthesise a finish_reason:"repeat" event when the stream loops.
-func ProcessOpenAIStream(ctx context.Context, sseEvents <-chan SSEEvent, logger *slog.Logger) <-chan FluxStreamEvent {
+func ProcessOpenAIStream(ctx context.Context, sseEvents <-chan SSEEvent, logger *slog.Logger) <-chan MuxStreamEvent {
 	return ProcessOpenAIStreamWithOpts(ctx, sseEvents, logger, DefaultRepeatDetector(), time.Now())
 }
 
-func ProcessOpenAIStreamWithOpts(ctx context.Context, sseEvents <-chan SSEEvent, logger *slog.Logger, repeat *RepeatDetector, start time.Time) <-chan FluxStreamEvent {
-	ch := make(chan FluxStreamEvent, StreamChannelBuffer)
+func ProcessOpenAIStreamWithOpts(ctx context.Context, sseEvents <-chan SSEEvent, logger *slog.Logger, repeat *RepeatDetector, start time.Time) <-chan MuxStreamEvent {
+	ch := make(chan MuxStreamEvent, StreamChannelBuffer)
 	go func() {
 		defer close(ch)
 
@@ -893,7 +893,7 @@ func ProcessOpenAIStreamWithOpts(ctx context.Context, sseEvents <-chan SSEEvent,
 					// the caller sees something rather than a nil map.
 					args = map[string]interface{}{"_raw": t.argsBuf.String()}
 				}
-				Emit(ctx, ch, FluxStreamEvent{
+				Emit(ctx, ch, MuxStreamEvent{
 					Type:     "tool_call",
 					ToolCall: &ToolCall{ID: t.id, Name: t.name, Arguments: args},
 				})
@@ -916,9 +916,9 @@ func ProcessOpenAIStreamWithOpts(ctx context.Context, sseEvents <-chan SSEEvent,
 				StreamEnded:  true,
 			})
 			if d := health.Diagnostic(); d != "" {
-				Emit(ctx, ch, FluxStreamEvent{Type: "error", Error: d, Warning: d})
+				Emit(ctx, ch, MuxStreamEvent{Type: "error", Error: d, Warning: d})
 			}
-			Emit(ctx, ch, FluxStreamEvent{Type: "done", StopReason: stopReason, TTFTms: ttftMs})
+			Emit(ctx, ch, MuxStreamEvent{Type: "done", StopReason: stopReason, TTFTms: ttftMs})
 		}
 
 		for {
@@ -931,7 +931,7 @@ func ProcessOpenAIStreamWithOpts(ctx context.Context, sseEvents <-chan SSEEvent,
 				}
 				// Propagate SSE-level errors
 				if evt.Event == "error" {
-					Emit(ctx, ch, FluxStreamEvent{Type: "error", Error: evt.Data})
+					Emit(ctx, ch, MuxStreamEvent{Type: "error", Error: evt.Data})
 					return
 				}
 				data := strings.TrimSpace(evt.Data)
@@ -948,9 +948,9 @@ func ProcessOpenAIStreamWithOpts(ctx context.Context, sseEvents <-chan SSEEvent,
 
 				// Emit usage if present (final chunk with stream_options.include_usage)
 				if oe.Usage != nil {
-					Emit(ctx, ch, FluxStreamEvent{
+					Emit(ctx, ch, MuxStreamEvent{
 						Type: "usage",
-						Usage: &FluxUsage{
+						Usage: &MuxUsage{
 							PromptTokens:     oe.Usage.PromptTokens,
 							CompletionTokens: oe.Usage.CompletionTokens,
 							TotalTokens:      oe.Usage.TotalTokens,
@@ -967,7 +967,7 @@ func ProcessOpenAIStreamWithOpts(ctx context.Context, sseEvents <-chan SSEEvent,
 				// route it to a thinking event so it never lands in the answer.
 				if choice.Delta.ReasoningContent != "" {
 					sawReasoning = true
-					Emit(ctx, ch, FluxStreamEvent{Type: "thinking", Thinking: choice.Delta.ReasoningContent})
+					Emit(ctx, ch, MuxStreamEvent{Type: "thinking", Thinking: choice.Delta.ReasoningContent})
 				}
 
 				// Text content. Split out any inline <think>...</think> reasoning
@@ -976,17 +976,17 @@ func ProcessOpenAIStreamWithOpts(ctx context.Context, sseEvents <-chan SSEEvent,
 					content, thinking := splitter.feed(choice.Delta.Content)
 					if thinking != "" {
 						sawReasoning = true
-						Emit(ctx, ch, FluxStreamEvent{Type: "thinking", Thinking: thinking})
+						Emit(ctx, ch, MuxStreamEvent{Type: "thinking", Thinking: thinking})
 					}
 					if content != "" {
 						// TTFT: record and Emit a dedicated event on the first token.
 						if !ttftEmitted {
 							ttftEmitted = true
 							ttftMs = int(time.Since(start) / time.Millisecond)
-							Emit(ctx, ch, FluxStreamEvent{Type: "ttft", TTFT: ttftMs})
+							Emit(ctx, ch, MuxStreamEvent{Type: "ttft", TTFT: ttftMs})
 						}
 						contentLen += len(content)
-						Emit(ctx, ch, FluxStreamEvent{Type: "content", Content: content})
+						Emit(ctx, ch, MuxStreamEvent{Type: "content", Content: content})
 						// Repeat detection: abort if stream is looping.
 						if repeat != nil {
 							repeat.Feed(content)
@@ -1005,7 +1005,7 @@ func ProcessOpenAIStreamWithOpts(ctx context.Context, sseEvents <-chan SSEEvent,
 					if !ttftEmitted && tc.Function.Arguments != "" {
 						ttftEmitted = true
 						ttftMs = int(time.Since(start) / time.Millisecond)
-						Emit(ctx, ch, FluxStreamEvent{Type: "ttft", TTFT: ttftMs})
+						Emit(ctx, ch, MuxStreamEvent{Type: "ttft", TTFT: ttftMs})
 					}
 					t, ok := tools[tc.Index]
 					if !ok {
@@ -1034,7 +1034,7 @@ func ProcessOpenAIStreamWithOpts(ctx context.Context, sseEvents <-chan SSEEvent,
 	return ch
 }
 
-func Emit(ctx context.Context, ch chan<- FluxStreamEvent, evt FluxStreamEvent) {
+func Emit(ctx context.Context, ch chan<- MuxStreamEvent, evt MuxStreamEvent) {
 	select {
 	case ch <- evt:
 	case <-ctx.Done():

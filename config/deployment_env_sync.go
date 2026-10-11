@@ -3,7 +3,7 @@ package config
 import (
 	"sort"
 
-	"github.com/GrayCodeAI/flux/catalog"
+	"github.com/GrayCodeAI/mux/catalog"
 )
 
 // DeploymentConfigFromEnv builds deployment credentials from catalog env_fallbacks and env values.

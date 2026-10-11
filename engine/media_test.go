@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/flux/credentials"
+	"github.com/GrayCodeAI/mux/credentials"
 )
 
 func newMediaTestEngine(t *testing.T) *Engine {

@@ -11,7 +11,7 @@ body:
         of the form as you can — the more we know, the faster we can fix it.
 
         Before submitting:
-        - Search [existing issues](https://github.com/GrayCodeAI/flux/issues) to avoid duplicates.
+        - Search [existing issues](https://github.com/GrayCodeAI/mux/issues) to avoid duplicates.
         - If this is a security issue, please **do not** file a public issue. See `SECURITY.md`.
 
   - type: textarea
@@ -19,7 +19,7 @@ body:
     attributes:
       label: What happened?
       description: A clear, concise description of the bug.
-      placeholder: When I call `FluxClient.Chat(...)` against <provider>, I expected X but got Y.
+      placeholder: When I call `MuxClient.Chat(...)` against <provider>, I expected X but got Y.
     validations:
       required: true
 
@@ -30,7 +30,7 @@ body:
       description: Minimal Go snippet (or curl/CLI invocation) that reliably reproduces the problem.
       render: go
       placeholder: |
-        client := client.Client(&client.FluxConfig{
+        client := client.Client(&client.MuxConfig{
             Provider: client.DetectProvider(),
         })
         resp, err := client.Chat(ctx, msgs, client.ChatOptions{Model: "..."})
@@ -70,10 +70,10 @@ body:
       placeholder: "claude-opus-4-20250514"
 
   - type: input
-    id: flux-version
+    id: mux-version
     attributes:
-      label: flux version
-      description: Output of `flux version` or the `flux.Version` constant / git SHA you built from.
+      label: mux version
+      description: Output of `mux version` or the `mux.Version` constant / git SHA you built from.
       placeholder: "0.1.0"
     validations:
       required: true
@@ -83,7 +83,7 @@ body:
     attributes:
       label: Go version
       description: Output of `go version`.
-      placeholder: "go version go1.26.1 darwin/arm64"
+      placeholder: "go version go1.27.2 darwin/arm64"
     validations:
       required: true
 

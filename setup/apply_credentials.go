@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	"github.com/GrayCodeAI/flux/config"
+	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/mux/config"
 )
 
-// ApplyCredentialsResult is the full flux response after API keys are applied:
+// ApplyCredentialsResult is the full mux response after API keys are applied:
 // refreshed catalog, adapters.json (deployments + routing), and paths.
 type ApplyCredentialsResult struct {
 	Catalog            *catalog.RefreshResult
@@ -56,7 +56,7 @@ func ApplyCredentialsForProvider(ctx context.Context, providerID string, creds c
 }
 
 // ApplyCredentials discovers the model catalog from env API keys, then writes
-// ~/.rho/adapters.json deployments and routing derived from the catalog.
+// ~/.decoder/adapters.json deployments and routing derived from the catalog.
 func ApplyCredentials(ctx context.Context, creds catalog.Credentials) (*ApplyCredentialsResult, error) {
 	catResult, err := DiscoverModelCatalog(ctx, creds)
 	if err != nil {

@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GrayCodeAI/flux/llm"
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/llm"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 // MockMode controls how the mock provider responds.
@@ -42,7 +42,7 @@ type MockProvider struct {
 
 // MockCall records a single call to the mock provider.
 type MockCall struct {
-	Messages []core.FluxMessage
+	Messages []core.MuxMessage
 	Options  core.ChatOptions
 }
 
@@ -61,7 +61,7 @@ func (m *MockProvider) Name() string { return "mock" }
 func (m *MockProvider) Ping(_ context.Context) error { return nil }
 
 // Chat returns a mock response based on Mode.
-func (m *MockProvider) Chat(ctx context.Context, messages []core.FluxMessage, opts core.ChatOptions) (*core.FluxResponse, error) {
+func (m *MockProvider) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
 	m.mu.Lock()
 	m.Calls = append(m.Calls, MockCall{Messages: messages, Options: opts})
 	m.mu.Unlock()
@@ -76,9 +76,9 @@ func (m *MockProvider) Chat(ctx context.Context, messages []core.FluxMessage, op
 
 	switch m.Mode {
 	case MockModeError:
-		return nil, fmt.Errorf("flux: mock error")
+		return nil, fmt.Errorf("mux: mock error")
 	case MockModeMaxTokens:
-		return &core.FluxResponse{Content: "partial response", FinishReason: "max_tokens", Usage: &core.FluxUsage{PromptTokens: 10, CompletionTokens: 100, TotalTokens: 110}}, nil
+		return &core.MuxResponse{Content: "partial response", FinishReason: "max_tokens", Usage: &core.MuxUsage{PromptTokens: 10, CompletionTokens: 100, TotalTokens: 110}}, nil
 	case MockModeToolUse:
 		name := m.ToolName
 		if name == "" {
@@ -88,13 +88,13 @@ func (m *MockProvider) Chat(ctx context.Context, messages []core.FluxMessage, op
 		if args == nil {
 			args = map[string]interface{}{"input": "test"}
 		}
-		return &core.FluxResponse{
+		return &core.MuxResponse{
 			ToolCalls:    []core.ToolCall{{ID: "mock-tc-1", Name: name, Arguments: args}},
 			FinishReason: "tool_use",
-			Usage:        &core.FluxUsage{PromptTokens: 10, CompletionTokens: 5, TotalTokens: 15},
+			Usage:        &core.MuxUsage{PromptTokens: 10, CompletionTokens: 5, TotalTokens: 15},
 		}, nil
 	case MockModeFixed:
-		return &core.FluxResponse{Content: m.Response, FinishReason: "end_turn", Usage: &core.FluxUsage{PromptTokens: 10, CompletionTokens: 5, TotalTokens: 15}}, nil
+		return &core.MuxResponse{Content: m.Response, FinishReason: "end_turn", Usage: &core.MuxUsage{PromptTokens: 10, CompletionTokens: 5, TotalTokens: 15}}, nil
 	default: // echo
 		last := ""
 		for i := len(messages) - 1; i >= 0; i-- {
@@ -103,24 +103,24 @@ func (m *MockProvider) Chat(ctx context.Context, messages []core.FluxMessage, op
 				break
 			}
 		}
-		return &core.FluxResponse{Content: "echo: " + last, FinishReason: "end_turn", Usage: &core.FluxUsage{PromptTokens: 10, CompletionTokens: 5, TotalTokens: 15}}, nil
+		return &core.MuxResponse{Content: "echo: " + last, FinishReason: "end_turn", Usage: &core.MuxUsage{PromptTokens: 10, CompletionTokens: 5, TotalTokens: 15}}, nil
 	}
 }
 
 // StreamChat streams a mock response word by word.
-func (m *MockProvider) StreamChat(ctx context.Context, messages []core.FluxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (m *MockProvider) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	resp, err := m.Chat(ctx, messages, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	streamCtx, cancel := context.WithCancel(ctx)
-	ch := make(chan core.FluxStreamEvent, 64)
+	ch := make(chan core.MuxStreamEvent, 64)
 
 	go func() {
 		defer close(ch)
 		if resp.FinishReason == "tool_use" && len(resp.ToolCalls) > 0 {
-			core.Emit(streamCtx, ch, core.FluxStreamEvent{Type: "tool_call", ToolCall: &resp.ToolCalls[0]})
+			core.Emit(streamCtx, ch, core.MuxStreamEvent{Type: "tool_call", ToolCall: &resp.ToolCalls[0]})
 		} else {
 			words := strings.Fields(resp.Content)
 			for _, w := range words {
@@ -131,10 +131,10 @@ func (m *MockProvider) StreamChat(ctx context.Context, messages []core.FluxMessa
 						return
 					}
 				}
-				core.Emit(streamCtx, ch, core.FluxStreamEvent{Type: "content", Content: w + " "})
+				core.Emit(streamCtx, ch, core.MuxStreamEvent{Type: "content", Content: w + " "})
 			}
 		}
-		core.Emit(streamCtx, ch, core.FluxStreamEvent{Type: "done"})
+		core.Emit(streamCtx, ch, core.MuxStreamEvent{Type: "done"})
 	}()
 
 	return llm.NewStreamResult(ch, "", cancel), nil

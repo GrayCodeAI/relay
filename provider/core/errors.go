@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GrayCodeAI/flux/types"
+	"github.com/GrayCodeAI/mux/types"
 )
 
-// FluxError is a structured error that preserves provider context,
+// MuxError is a structured error that preserves provider context,
 // HTTP metadata, and request identification for debugging.
-type FluxError struct {
+type MuxError struct {
 	Provider   string
 	Op         string // operation that failed (e.g. "chat", "stream", "ping")
 	StatusCode int
@@ -19,8 +19,8 @@ type FluxError struct {
 	Err        error
 }
 
-func (e *FluxError) Error() string {
-	s := fmt.Sprintf("flux: %s %s failed", e.Provider, e.Op)
+func (e *MuxError) Error() string {
+	s := fmt.Sprintf("mux: %s %s failed", e.Provider, e.Op)
 	if e.StatusCode > 0 {
 		s += fmt.Sprintf(" (HTTP %d)", e.StatusCode)
 	}
@@ -36,10 +36,10 @@ func (e *FluxError) Error() string {
 	return s
 }
 
-func (e *FluxError) Unwrap() error { return e.Err }
+func (e *MuxError) Unwrap() error { return e.Err }
 
 // IsRetriable returns true if the error is likely transient and retrying may help.
-func (e *FluxError) IsRetriable() bool {
+func (e *MuxError) IsRetriable() bool {
 	switch e.StatusCode {
 	case 408, 429, 500, 502, 503, 504, 529:
 		return true
@@ -48,12 +48,12 @@ func (e *FluxError) IsRetriable() bool {
 }
 
 // IsAuthError returns true if the error indicates an authentication/authorization problem.
-func (e *FluxError) IsAuthError() bool {
+func (e *MuxError) IsAuthError() bool {
 	return e.StatusCode == 401 || e.StatusCode == 403
 }
 
 // IsRateLimited returns true if the error indicates rate limiting.
-func (e *FluxError) IsRateLimited() bool {
+func (e *MuxError) IsRateLimited() bool {
 	return e.StatusCode == 429
 }
 
@@ -77,7 +77,7 @@ var nonRetriableStatusCodes = map[int]bool{
 // In contrast, retry middleware (which uses IsTransient) should be conservative
 // to avoid wasting requests on errors that won't resolve with a retry.
 //
-// *FluxError (returned by FormatAPIError and friends) is preferred over
+// *MuxError (returned by FormatAPIError and friends) is preferred over
 // the string-based heuristic: it carries the structured status code so the
 // classification is exact rather than regex-parsed.
 func IsRetriableError(err error) bool {
@@ -90,12 +90,12 @@ func IsRetriableError(err error) bool {
 	if errors.Is(err, context.Canceled) {
 		return false
 	}
-	// Structured path: trust *FluxError's IsRetriable.
-	var fluxErr *FluxError
-	if errors.As(err, &fluxErr) {
-		return fluxErr.IsRetriable()
+	// Structured path: trust *MuxError's IsRetriable.
+	var muxErr *MuxError
+	if errors.As(err, &muxErr) {
+		return muxErr.IsRetriable()
 	}
-	// Heuristic path for legacy errors that predate the FluxError migration.
+	// Heuristic path for legacy errors that predate the MuxError migration.
 	if types.IsTransient(err) {
 		return true
 	}

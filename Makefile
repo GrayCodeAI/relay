@@ -1,20 +1,20 @@
 # Canonical graycode-eco Makefile for Go LIBRARY repos.
-# flux is a versioned Go library consumed by Rho (no standalone binary).
+# mux is a versioned Go library consumed by Decoder (no standalone binary).
 
 # ---------------------------------------------------------------------------
 # Project metadata
 # ---------------------------------------------------------------------------
-NAME      := flux
+NAME      := mux
 
 # ---------------------------------------------------------------------------
 # Versioning — sourced from VERSION file; falls back to git describe.
-# See https://github.com/GrayCodeAI/rho/blob/main/VERSIONING.md.
+# See https://github.com/GrayCodeAI/decoder/blob/main/VERSIONING.md.
 # ---------------------------------------------------------------------------
 VERSION ?= $(shell cat VERSION 2>/dev/null | head -n1 | tr -d '[:space:]' || git describe --tags --always --dirty 2>/dev/null || echo "dev")
 COMMIT  := $(shell git rev-parse --short HEAD 2>/dev/null || echo "none")
 DATE    := $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 
-# No LDFLAGS — flux is a library; the version comes from the VERSION file
+# No LDFLAGS — mux is a library; the version comes from the VERSION file
 # via go:embed (version.go), not from linker-injected package-main vars.
 
 # ---------------------------------------------------------------------------
@@ -49,7 +49,7 @@ all: lint test build ## Default — lint, test, build.
 # ---------------------------------------------------------------------------
 # Build / install / release.
 # ---------------------------------------------------------------------------
-build: ## Build all library packages (flux is a library consumed by rho; no standalone binary).
+build: ## Build all library packages (mux is a library consumed by decoder; no standalone binary).
 	go build ./...
 
 # ---------------------------------------------------------------------------
@@ -128,6 +128,6 @@ hooks: ## Install git hooks via lefthook (format, lint, conventional commits, co
 	git config --unset core.hooksPath 2>/dev/null || true
 	lefthook install
 
-sync-clone: ## Hard-reset flux to origin/main (post history rewrite).
+sync-clone: ## Hard-reset mux to origin/main (post history rewrite).
 	@chmod +x scripts/sync-clone.sh scripts/commit-clean.sh
 	@./scripts/sync-clone.sh

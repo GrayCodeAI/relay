@@ -7,9 +7,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	"github.com/GrayCodeAI/flux/catalog/live"
-	"github.com/GrayCodeAI/flux/credentials"
+	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/mux/catalog/live"
+	"github.com/GrayCodeAI/mux/credentials"
 )
 
 func TestListLiveModelsUsesInjectedStateWithoutMutatingCache(t *testing.T) {

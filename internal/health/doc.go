@@ -1,3 +1,3 @@
-// Package flux (internal/health) provides provider health-check tracking —
+// Package mux (internal/health) provides provider health-check tracking —
 // the HealthState type and helpers that record and report provider liveness.
-package flux
+package mux

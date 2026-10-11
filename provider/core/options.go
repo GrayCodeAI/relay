@@ -24,18 +24,18 @@ type Configurable interface {
 	SetMimoAuth()
 }
 
-// FluxConfigurable is the setter surface the top-level FluxClient exposes
+// MuxConfigurable is the setter surface the top-level MuxClient exposes
 // for options that configure the universal client rather than an adapter.
-type FluxConfigurable interface {
+type MuxConfigurable interface {
 	SetCoalescingTTL(ttl time.Duration)
 }
 
 // ClientOption configures clients. Options built with the constructors below
-// apply to any Configurable adapter; options built with NewFluxOption apply
-// to the top-level FluxClient.
+// apply to any Configurable adapter; options built with NewMuxOption apply
+// to the top-level MuxClient.
 type ClientOption struct {
 	applyConfigurable func(Configurable)
-	applyFlux         func(FluxConfigurable)
+	applyMux          func(MuxConfigurable)
 }
 
 // NewOption builds a ClientOption from an adapter-level apply function.
@@ -43,23 +43,23 @@ func NewOption(fn func(Configurable)) ClientOption {
 	return ClientOption{applyConfigurable: fn}
 }
 
-// NewFluxOption builds a ClientOption from an FluxClient-level apply function.
-func NewFluxOption(fn func(FluxConfigurable)) ClientOption {
-	return ClientOption{applyFlux: fn}
+// NewMuxOption builds a ClientOption from an MuxClient-level apply function.
+func NewMuxOption(fn func(MuxConfigurable)) ClientOption {
+	return ClientOption{applyMux: fn}
 }
 
-// Apply runs the option against an adapter. No-op for FluxClient-level options.
+// Apply runs the option against an adapter. No-op for MuxClient-level options.
 func (o ClientOption) Apply(c Configurable) {
 	if o.applyConfigurable != nil {
 		o.applyConfigurable(c)
 	}
 }
 
-// ApplyFlux runs the option against the top-level provider. No-op for
+// ApplyMux runs the option against the top-level provider. No-op for
 // adapter-level options.
-func (o ClientOption) ApplyFlux(e FluxConfigurable) {
-	if o.applyFlux != nil {
-		o.applyFlux(e)
+func (o ClientOption) ApplyMux(e MuxConfigurable) {
+	if o.applyMux != nil {
+		o.applyMux(e)
 	}
 }
 

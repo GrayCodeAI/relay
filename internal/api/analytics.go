@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	flux "github.com/GrayCodeAI/flux/internal/health"
-	"github.com/GrayCodeAI/flux/storage"
+	mux "github.com/GrayCodeAI/mux/internal/health"
+	"github.com/GrayCodeAI/mux/storage"
 )
 
 // --- Usage analytics (#166) ---
@@ -126,7 +126,7 @@ func (s *Server) handleProviderHealth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Collect ping-based health from the HealthChecker.
-	pingStatuses := make(map[string]flux.HealthStatus)
+	pingStatuses := make(map[string]mux.HealthStatus)
 	if s.healthChecker != nil {
 		pingStatuses = s.healthChecker.AllProviderHealth()
 	}

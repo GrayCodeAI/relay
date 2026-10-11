@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	fluxcfg "github.com/GrayCodeAI/flux/config"
-	"github.com/GrayCodeAI/flux/credentials"
+	"github.com/GrayCodeAI/mux/catalog"
+	muxcfg "github.com/GrayCodeAI/mux/config"
+	"github.com/GrayCodeAI/mux/credentials"
 )
 
 // PreflightStatus is ok, warn, or fail.
@@ -26,7 +26,7 @@ type PreflightCheck struct {
 	Detail string          `json:"detail"`
 }
 
-// PreflightReport summarizes whether rho can chat.
+// PreflightReport summarizes whether decoder can chat.
 type PreflightReport struct {
 	Ready  bool             `json:"ready"`
 	Checks []PreflightCheck `json:"checks"`
@@ -45,7 +45,7 @@ func Preflight(ctx context.Context) PreflightReport {
 	if !exists || size == 0 {
 		checks = append(checks, PreflightCheck{
 			Name: "catalog", Status: PreflightWarn,
-			Detail: "model catalog cache missing — rho will discover on /config or refresh automatically",
+			Detail: "model catalog cache missing — decoder will discover on /config or refresh automatically",
 		})
 	} else {
 		compiled, err := catalog.LoadCatalog(ctx, catalog.LoadCatalogOptions{
@@ -87,7 +87,7 @@ func Preflight(ctx context.Context) PreflightReport {
 	}
 
 	// Provider credentials configured
-	hasCreds := fluxcfg.HasAnyConfiguredDeployment(ctx)
+	hasCreds := muxcfg.HasAnyConfiguredDeployment(ctx)
 	if !hasCreds {
 		checks = append(checks, PreflightCheck{
 			Name: "credentials", Status: PreflightFail,

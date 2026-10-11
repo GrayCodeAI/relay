@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/flux/catalog/registry"
-	"github.com/GrayCodeAI/flux/config"
-	"github.com/GrayCodeAI/flux/credentials"
-	"github.com/GrayCodeAI/flux/provider/adapters"
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/catalog/registry"
+	"github.com/GrayCodeAI/mux/config"
+	"github.com/GrayCodeAI/mux/credentials"
+	"github.com/GrayCodeAI/mux/provider/adapters"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 // CustomGatewayCapabilities declares capabilities known to be supported by a
@@ -28,7 +28,7 @@ type CustomGatewayCapabilities struct {
 }
 
 // CustomGateway describes a user-configured OpenAI-compatible gateway. It
-// contains only routing metadata; credential material remains in Flux's
+// contains only routing metadata; credential material remains in Mux's
 // secret store and is discovered by CredentialEnv.
 type CustomGateway struct {
 	ID             string                     `json:"id"`
@@ -46,24 +46,24 @@ type CustomGateway struct {
 func normalizeCustomGateway(gateway CustomGateway) (CustomGateway, error) {
 	id := NormalizeProviderID(gateway.ID)
 	if id == "" {
-		return CustomGateway{}, fmt.Errorf("flux engine: custom gateway ID is required")
+		return CustomGateway{}, fmt.Errorf("mux engine: custom gateway ID is required")
 	}
 	if builtIn, ok := registry.SpecByProviderID(id); ok {
-		return CustomGateway{}, fmt.Errorf("flux engine: custom gateway ID %q collides with built-in gateway %q", id, builtIn.ProviderID)
+		return CustomGateway{}, fmt.Errorf("mux engine: custom gateway ID %q collides with built-in gateway %q", id, builtIn.ProviderID)
 	}
 	baseURL := strings.TrimSpace(gateway.BaseURL)
 	if baseURL == "" {
-		return CustomGateway{}, fmt.Errorf("flux engine: custom gateway %q base URL is required", id)
+		return CustomGateway{}, fmt.Errorf("mux engine: custom gateway %q base URL is required", id)
 	}
 	parsed, err := url.Parse(baseURL)
 	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
-		return CustomGateway{}, fmt.Errorf("flux engine: custom gateway %q has invalid baseURL %q (must be http/https with host)", id, baseURL)
+		return CustomGateway{}, fmt.Errorf("mux engine: custom gateway %q has invalid baseURL %q (must be http/https with host)", id, baseURL)
 	}
 	if parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" {
-		return CustomGateway{}, fmt.Errorf("flux engine: custom gateway %q baseURL must not contain userinfo, query, or fragment", id)
+		return CustomGateway{}, fmt.Errorf("mux engine: custom gateway %q baseURL must not contain userinfo, query, or fragment", id)
 	}
 	if gateway.ContextWindow < 0 {
-		return CustomGateway{}, fmt.Errorf("flux engine: custom gateway %q context window cannot be negative", id)
+		return CustomGateway{}, fmt.Errorf("mux engine: custom gateway %q context window cannot be negative", id)
 	}
 	if gateway.SortOrder <= 0 {
 		gateway.SortOrder = 10_000
@@ -76,7 +76,7 @@ func normalizeCustomGateway(gateway CustomGateway) (CustomGateway, error) {
 		maxTokensField = "max_tokens"
 	}
 	if maxTokensField != "max_tokens" && maxTokensField != "max_completion_tokens" {
-		return CustomGateway{}, fmt.Errorf("flux engine: custom gateway %q max tokens field must be max_tokens or max_completion_tokens", id)
+		return CustomGateway{}, fmt.Errorf("mux engine: custom gateway %q max tokens field must be max_tokens or max_completion_tokens", id)
 	}
 	gateway.ID = id
 	gateway.BaseURL = strings.TrimRight(baseURL, "/")
@@ -98,7 +98,7 @@ func customGatewaysForOptions(gateways []CustomGateway) (map[string]CustomGatewa
 			return nil, &Error{Code: ErrorInvalidRequest, Operation: "new", Message: err.Error(), Cause: err}
 		}
 		if _, exists := out[normalized.ID]; exists {
-			return nil, invalid("new", fmt.Sprintf("flux engine: duplicate custom gateway %q", normalized.ID))
+			return nil, invalid("new", fmt.Sprintf("mux engine: duplicate custom gateway %q", normalized.ID))
 		}
 		out[normalized.ID] = cloneCustomGateway(normalized)
 	}
@@ -149,7 +149,7 @@ func (e *Engine) resolveCustomSelection(req SelectionRequest) (Route, bool, erro
 	if modelID == "" {
 		return Route{}, true, &Error{
 			Code: ErrorModelUnavailable, Operation: "resolve", Provider: gateway.ID,
-			Message: fmt.Sprintf("flux engine: custom gateway %q requires a model", gateway.ID),
+			Message: fmt.Sprintf("mux engine: custom gateway %q requires a model", gateway.ID),
 		}
 	}
 	if err := validateCustomGatewayRequirements(gateway, modelID, req.Requirements); err != nil {
@@ -162,7 +162,7 @@ func validateCustomGatewayRequirements(gateway CustomGateway, modelID string, re
 	if gateway.ContextWindow > 0 && req.MinimumContext > gateway.ContextWindow {
 		return &Error{
 			Code: ErrorCapabilityMismatch, Operation: "resolve", Provider: gateway.ID, Model: modelID,
-			Message: fmt.Sprintf("flux engine: custom gateway %q context window %d is below requested %d", gateway.ID, gateway.ContextWindow, req.MinimumContext),
+			Message: fmt.Sprintf("mux engine: custom gateway %q context window %d is below requested %d", gateway.ID, gateway.ContextWindow, req.MinimumContext),
 		}
 	}
 	capabilities := gateway.Capabilities
@@ -179,7 +179,7 @@ func validateCustomGatewayRequirements(gateway CustomGateway, modelID string, re
 	}
 	return &Error{
 		Code: ErrorCapabilityMismatch, Operation: "resolve", Provider: gateway.ID, Model: modelID,
-		Message: fmt.Sprintf("flux engine: custom gateway %q does not satisfy requested capabilities", gateway.ID),
+		Message: fmt.Sprintf("mux engine: custom gateway %q does not satisfy requested capabilities", gateway.ID),
 	}
 }
 
@@ -195,19 +195,19 @@ func (e *Engine) customGatewayTransport(ctx context.Context, route Route) (core.
 		if errors.Is(err, credentials.ErrNotFound) {
 			return nil, true, &Error{
 				Code: ErrorCredentialMissing, Operation: "resolve_transport", Provider: gateway.ID, Model: route.Model,
-				Message: fmt.Sprintf("flux engine: credential for custom gateway %q is not configured", gateway.ID),
+				Message: fmt.Sprintf("mux engine: credential for custom gateway %q is not configured", gateway.ID),
 			}
 		}
 		if err != nil {
 			return nil, true, &Error{
 				Code: ErrorInternal, Operation: "resolve_transport", Provider: gateway.ID, Model: route.Model,
-				Message: fmt.Sprintf("flux engine: credential store unavailable for custom gateway %q", gateway.ID), Cause: err,
+				Message: fmt.Sprintf("mux engine: credential store unavailable for custom gateway %q", gateway.ID), Cause: err,
 			}
 		}
 		if strings.TrimSpace(secret) == "" || config.LooksLikePlaceholderSecret(secret) {
 			return nil, true, &Error{
 				Code: ErrorCredentialMissing, Operation: "resolve_transport", Provider: gateway.ID, Model: route.Model,
-				Message: fmt.Sprintf("flux engine: credential for custom gateway %q is not configured", gateway.ID),
+				Message: fmt.Sprintf("mux engine: credential for custom gateway %q is not configured", gateway.ID),
 			}
 		}
 	}
@@ -227,7 +227,7 @@ func (e *Engine) probeCustomGateway(ctx context.Context, gateway CustomGateway, 
 		}
 	}
 	if gateway.CredentialEnv != "" && (strings.TrimSpace(secret) == "" || config.LooksLikePlaceholderSecret(secret)) {
-		return &Error{Code: ErrorCredentialMissing, Operation: "probe_credential", Provider: gateway.ID, Message: "flux engine: custom gateway credential is not configured"}
+		return &Error{Code: ErrorCredentialMissing, Operation: "probe_credential", Provider: gateway.ID, Message: "mux engine: custom gateway credential is not configured"}
 	}
 	req, err := http.NewRequestWithContext(nonNilContext(ctx), http.MethodGet, strings.TrimRight(gateway.BaseURL, "/")+"/models", nil)
 	if err != nil {
@@ -247,7 +247,7 @@ func (e *Engine) probeCustomGateway(ctx context.Context, gateway CustomGateway, 
 		if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
 			code = ErrorAuthentication
 		}
-		return &Error{Code: code, Operation: "probe_credential", Provider: gateway.ID, Message: fmt.Sprintf("flux engine: custom gateway probe returned HTTP %d", resp.StatusCode)}
+		return &Error{Code: code, Operation: "probe_credential", Provider: gateway.ID, Message: fmt.Sprintf("mux engine: custom gateway probe returned HTTP %d", resp.StatusCode)}
 	}
 	return nil
 }

@@ -7,16 +7,16 @@ branch. References below to `RegisterDynamicProvider` and alias-based
 compatibility describe the old design, not the current API.
 **Author:** Claude (architecture review session)
 **Date:** 2026-07-12
-**Repos affected:** flux (all changes), rho (no code changes required; update
-the published Flux module pin)
+**Repos affected:** mux (all changes), decoder (no code changes required; update
+the published Mux module pin)
 
 ## Problem Statement
 
-`flux/provider` is a 63-file, ~14k-line (source, excluding tests) single package that
+`mux/provider` is a 63-file, ~14k-line (source, excluding tests) single package that
 mixes at least six distinct concerns:
 
-1. **Core contract & types** — `Provider` interface, `FluxMessage`, `FluxResponse`,
-   `FluxStreamEvent`, `StreamResult`, `ChatOptions`, `FluxClient` (`provider.go`,
+1. **Core contract & types** — `Provider` interface, `MuxMessage`, `MuxResponse`,
+   `MuxStreamEvent`, `StreamResult`, `ChatOptions`, `MuxClient` (`provider.go`,
    `options.go`, `chat.go`, `errors.go`, `retry.go`, `transport.go`, `stream.go`,
    `continuation.go`, `roles.go`, `merge.go`, `extract.go`)
 2. **Protocol adapters** — `anthropic.go`, `openai.go`, `gemini.go`, `azure.go`,
@@ -46,17 +46,17 @@ and a public API surface far larger than what consumers use.
   `buildAnthropicCachedRequest`, `defaultTimeout`, `emit`, `openAIImageURL`,
   `parseImageString`, `parseSSEStream`, `processAnthropicStream`,
   `processOpenAIStream`, `userAgent`.
-- rho (the primary consumer) accesses `flux/provider` from **4 files only** —
-  it maintains its own DTO layer (`rho/internal/types/provider.go`) and converts
-  at the boundary. Entry points consumed: `Client`, `FluxClient` methods
+- decoder (the primary consumer) accesses `mux/provider` from **4 files only** —
+  it maintains its own DTO layer (`decoder/internal/types/provider.go`) and converts
+  at the boundary. Entry points consumed: `Client`, `MuxClient` methods
   (`Chat`, `StreamChat`, `StreamChatContinue`, `SetAPIKey`, `Ping`,
   `GetProviders`), `StreamChatWithContinuation`, `ParseInlineToolCalls`,
   `DetectProvider`, `RegisterDynamicProvider`, `DefaultContinuationConfig`,
   `NewMockProvider`/`MockModeFixed`, `Provider`, and the DTO types
-  (`FluxMessage`, `FluxResponse`, `FluxStreamEvent`, `FluxUsage`,
+  (`MuxMessage`, `MuxResponse`, `MuxStreamEvent`, `MuxUsage`,
   `StreamResult`, `ChatOptions`, `ContinuationConfig`, `ContentPart`,
-  `ImageURLPart`, `InputAudioPart`, `ToolCall`, `ToolResult`, `FluxTool`,
-  `FluxConfig`, `ResponseFormat`, `ToolChoiceOption`).
+  `ImageURLPart`, `InputAudioPart`, `ToolCall`, `ToolResult`, `MuxTool`,
+  `MuxConfig`, `ResponseFormat`, `ToolChoiceOption`).
 
 The narrow consumed surface makes a **non-breaking, alias-based decomposition**
 practical.
@@ -66,14 +66,14 @@ practical.
 Extract a leaf `core` package holding the contract and wire-level plumbing, then
 move each concern into its own subpackage that imports `core`. The `client`
 package remains as a compatibility facade: every moved type becomes a Go type
-alias (`type FluxMessage = core.FluxMessage`), every moved function a thin
+alias (`type MuxMessage = core.MuxMessage`), every moved function a thin
 wrapper or function variable. Type aliases preserve type identity, so **no
 consumer code changes and no version bump semantics change**.
 
 Target layout:
 
 ```
-flux/
+mux/
   provider/            // facade: aliases + wrappers (shrinks each phase)
     core/            // Provider, messages, options, errors, retry, transport, SSE
     adapters/        // one file per protocol family; imports core only
@@ -92,7 +92,7 @@ inside the tree.
 
 - **Big-bang rename (`provider/v2`)** — breaks every consumer including examples
   and SDK bindings; rejected.
-- **Move whole package to `internal/`** — rho and examples import it; rejected.
+- **Move whole package to `internal/`** — decoder and examples import it; rejected.
 - **Split without a core package** (e.g., extract embeddings directly) — impossible
   without import cycles: subpackages need client types while the facade re-exports
   subpackage API. The core extraction is the unlock; everything else follows.
@@ -105,20 +105,20 @@ inside the tree.
 Phase 1 is DONE (2026-07-12):
 - [x] Created `provider/core` with `Provider`, message/response/stream/usage/tool
       types, `ChatOptions`, `ResponseFormat`, `ToolChoiceOption`,
-      `ContinuationConfig`, `FluxConfig`, `FluxError`, `RetryConfig` +
+      `ContinuationConfig`, `MuxConfig`, `MuxError`, `RetryConfig` +
       `DoWithRetry`, `ParseProviderError`/`FormatAPIError`, `CopyResponse`.
       (SSE parsing, transport, `userAgent`, `defaultTimeout` deferred to the
       adapters phase — embeddings did not need them.)
 - [x] Internal call sites use explicit `provider/core` imports; production
       aliases are not retained.
-- [x] `go test ./...` green in flux; rho builds + tests green.
+- [x] `go test ./...` green in mux; decoder builds + tests green.
 
 ### Phase 2: embeddings (smallest proven cluster, 4 deps)
 
 Phase 2 is DONE (2026-07-12):
 - [x] Moved embedding DTOs, `Embedder`, defaults, and `EmbeddingCachedProvider`
       to `provider/embeddings` (imports `core` only).
-- [x] `OpenAIClient.CreateEmbedding` / `FluxClient.CreateEmbedding` stayed in
+- [x] `OpenAIClient.CreateEmbedding` / `MuxClient.CreateEmbedding` stayed in
       `client` (`embedding_methods.go`) — methods must live with their
       receiver's package; they implement `embeddings.Embedder`.
 - [x] Embedding API is owned by `provider/embeddings`; the composition root
@@ -179,19 +179,19 @@ Learned in Phases 1–2 (apply to later phases):
       observability domains.
 
 ### Phase 5: enforcement + deprecation
-- [x] Add `scripts/check-provider-layering.sh` (mirror of rho's
-      `check-flux-client-imports.sh`) to CI: fail on any sibling→sibling import
+- [x] Add `scripts/check-provider-layering.sh` (mirror of decoder's
+      `check-mux-client-imports.sh`) to CI: fail on any sibling→sibling import
       that bypasses `core`, and on any in-tree import of the facade.
-- [x] Removed facade aliases and migrated flux-internal callers
+- [x] Removed facade aliases and migrated mux-internal callers
       (`conversation`, `router`, `runtime`, `setup`,
       examples) to the subpackages; external callers must migrate explicitly.
 
 ## Testing Strategy
 
 - Unit tests: move with their files; each phase must keep `go test ./...` green.
-- Integration tests: `catalogtest` + rho `internal/engine` suite against the
+- Integration tests: `catalogtest` + decoder `internal/engine` suite against the
   branch via `go.work` replace.
-- E2E tests: `rho path` smoke + one live streamed chat per protocol family
+- E2E tests: `decoder path` smoke + one live streamed chat per protocol family
   (anthropic-messages, openai-chat-completions, gemini-generate-content) before
   each merge.
 
@@ -202,11 +202,11 @@ Learned in Phases 1–2 (apply to later phases):
 | Hidden unexported coupling beyond the measured sets | med | Phases are one-cluster-at-a-time; the compiler finds every missed reference at move time; abort/expand `core` rather than weaken boundaries |
 | Type identity breakage for consumers doing type switches | high | Keep one canonical type in `provider/core`; make breaking ownership changes explicit |
 | Method sets split from their types | high | Methods move with their receiver's file into the same subpackage — never leave methods behind |
-| Flux module-pin drift in Rho during the refactor | low | Land phases as individual PRs; update Rho after each; `make sync` reports drift |
+| Mux module-pin drift in Decoder during the refactor | low | Land phases as individual PRs; update Decoder after each; `make sync` reports drift |
 | A new feature leaks into the composition root | low | Phase 5 CI boundary check and package ownership review |
 
 ## References
 
-- rho's boundary script: `rho/scripts/check-flux-client-imports.sh`
-- rho's DTO layer (proof the consumer surface is narrow): `rho/internal/types/provider.go`
-- Session decomposition precedent: `rho/docs/session-decomposition.md`
+- decoder's boundary script: `decoder/scripts/check-mux-client-imports.sh`
+- decoder's DTO layer (proof the consumer surface is narrow): `decoder/internal/types/provider.go`
+- Session decomposition precedent: `decoder/docs/session-decomposition.md`

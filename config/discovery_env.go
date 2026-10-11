@@ -5,13 +5,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	"github.com/GrayCodeAI/flux/catalog/xiaomi"
-	"github.com/GrayCodeAI/flux/credentials"
+	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/mux/catalog/xiaomi"
+	"github.com/GrayCodeAI/mux/credentials"
 )
 
 // DiscoveryCredentials loads API keys from the OS secret store (not process env or .env files),
-// merged with non-secret routing from ~/.rho/provider.json (e.g. MiMo Token Plan region/base URL).
+// merged with non-secret routing from ~/.decoder/provider.json (e.g. MiMo Token Plan region/base URL).
 func DiscoveryCredentials(ctx context.Context) catalog.Credentials {
 	if ctx == nil {
 		ctx = context.Background()

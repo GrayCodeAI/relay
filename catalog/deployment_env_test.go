@@ -3,7 +3,7 @@ package catalog
 import (
 	"testing"
 
-	"github.com/GrayCodeAI/flux/catalog/registry"
+	"github.com/GrayCodeAI/mux/catalog/registry"
 )
 
 func TestDefaultDeploymentEnvFallbacks_HasAllProviderDeployments(t *testing.T) {

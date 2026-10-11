@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 // ProviderCallback defines hooks that are invoked at various points during
@@ -16,16 +16,16 @@ import (
 type ProviderCallback interface {
 	// OnRequest is called before each Chat or StreamChat request.
 	// The messages and opts parameters must not be modified.
-	OnRequest(ctx context.Context, provider string, model string, messages []FluxMessage, opts ChatOptions)
+	OnRequest(ctx context.Context, provider string, model string, messages []MuxMessage, opts ChatOptions)
 
 	// OnResponse is called after a successful Chat request.
-	OnResponse(ctx context.Context, provider string, model string, response *FluxResponse, duration time.Duration)
+	OnResponse(ctx context.Context, provider string, model string, response *MuxResponse, duration time.Duration)
 
 	// OnError is called after a Chat or StreamChat request fails.
 	OnError(ctx context.Context, provider string, model string, err error, duration time.Duration)
 
 	// OnStreamEvent is called for each event emitted during streaming.
-	OnStreamEvent(ctx context.Context, provider string, model string, event FluxStreamEvent)
+	OnStreamEvent(ctx context.Context, provider string, model string, event MuxStreamEvent)
 }
 
 // CallbackProvider wraps any Provider and invokes registered ProviderCallback
@@ -50,7 +50,7 @@ var _ Provider = (*CallbackProvider)(nil)
 // The inner provider must not be nil; an error is returned otherwise.
 func NewCallbackProvider(inner Provider) (*CallbackProvider, error) {
 	if inner == nil {
-		return nil, errors.New("flux: NewCallbackProvider inner provider must not be nil")
+		return nil, errors.New("mux: NewCallbackProvider inner provider must not be nil")
 	}
 	return &CallbackProvider{
 		inner:  inner,
@@ -118,7 +118,7 @@ func (cp *CallbackProvider) Ping(ctx context.Context) error {
 
 // Chat sends a non-streaming chat request. OnRequest is called before the
 // request; OnResponse or OnError is called after.
-func (cp *CallbackProvider) Chat(ctx context.Context, messages []FluxMessage, opts ChatOptions) (*FluxResponse, error) {
+func (cp *CallbackProvider) Chat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*MuxResponse, error) {
 	model := opts.Model
 	provider := cp.inner.Name()
 
@@ -140,7 +140,7 @@ func (cp *CallbackProvider) Chat(ctx context.Context, messages []FluxMessage, op
 // StreamChat sends a streaming chat request. OnRequest is called before the
 // request. OnError is called if the initial request fails. OnStreamEvent is
 // called for each event in the resulting stream.
-func (cp *CallbackProvider) StreamChat(ctx context.Context, messages []FluxMessage, opts ChatOptions) (*StreamResult, error) {
+func (cp *CallbackProvider) StreamChat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*StreamResult, error) {
 	model := opts.Model
 	provider := cp.inner.Name()
 
@@ -154,7 +154,7 @@ func (cp *CallbackProvider) StreamChat(ctx context.Context, messages []FluxMessa
 	}
 
 	cbs := cp.snapshotCallbacks()
-	return core.TransformStreamResult(ctx, result, func(_ context.Context, evt FluxStreamEvent) (FluxStreamEvent, error) {
+	return core.TransformStreamResult(ctx, result, func(_ context.Context, evt MuxStreamEvent) (MuxStreamEvent, error) {
 		for _, cb := range cbs {
 			cp.safeCall("OnStreamEvent", func() {
 				cb.OnStreamEvent(ctx, provider, model, evt)
@@ -179,7 +179,7 @@ func (cp *CallbackProvider) snapshotCallbacks() []ProviderCallback {
 }
 
 // fireOnRequest invokes OnRequest on all callbacks in goroutines.
-func (cp *CallbackProvider) fireOnRequest(ctx context.Context, provider, model string, messages []FluxMessage, opts ChatOptions) {
+func (cp *CallbackProvider) fireOnRequest(ctx context.Context, provider, model string, messages []MuxMessage, opts ChatOptions) {
 	for _, cb := range cp.snapshotCallbacks() {
 		cp.safeCall("OnRequest", func() {
 			cb.OnRequest(ctx, provider, model, messages, opts)
@@ -188,7 +188,7 @@ func (cp *CallbackProvider) fireOnRequest(ctx context.Context, provider, model s
 }
 
 // fireOnResponse invokes OnResponse on all callbacks in goroutines.
-func (cp *CallbackProvider) fireOnResponse(ctx context.Context, provider, model string, response *FluxResponse, duration time.Duration) {
+func (cp *CallbackProvider) fireOnResponse(ctx context.Context, provider, model string, response *MuxResponse, duration time.Duration) {
 	for _, cb := range cp.snapshotCallbacks() {
 		cp.safeCall("OnResponse", func() {
 			cb.OnResponse(ctx, provider, model, response, duration)
@@ -215,7 +215,7 @@ func (cp *CallbackProvider) safeCall(method string, fn func()) {
 				cp.mu.RUnlock()
 				if logger != nil {
 					logger.Error(
-						"flux: callback panic recovered",
+						"mux: callback panic recovered",
 						"method", method,
 						"provider", cp.inner.Name(),
 						"panic", r,

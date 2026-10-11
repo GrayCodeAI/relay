@@ -1,11 +1,11 @@
 package config
 
 import (
-	"github.com/GrayCodeAI/flux/catalog/registry"
+	"github.com/GrayCodeAI/mux/catalog/registry"
 )
 
 // BuildRoutingPolicyFromDeployments builds deployment routing from configured deployments.
-// Rho should not author routing rules — consume this JSON from flux only.
+// Decoder should not author routing rules — consume this JSON from mux only.
 func BuildRoutingPolicyFromDeployments(deployments map[string]DeploymentConfig) *RoutingPolicy {
 	if len(deployments) == 0 {
 		return &RoutingPolicy{}
@@ -109,7 +109,7 @@ func longcatProviderStages(deployments map[string]DeploymentConfig) []RoutingSta
 		return nil
 	}
 	// Single OpenAI-compatible endpoint only (longcat-direct).
-	// Official LongCat also documents /anthropic; rho does not require it when OpenAI works.
+	// Official LongCat also documents /anthropic; decoder does not require it when OpenAI works.
 	return singleDeploymentStages("longcat-direct", 1)
 }
 

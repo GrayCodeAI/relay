@@ -20,21 +20,21 @@ Branch: `fix/audit-remediation`, stacked on `refactor/feature-oriented-monorepo`
 3. No `Co-authored-by` trailers (AGENTS.md; githook strips them).
 4. Conventional Commits. No push, no PR from the implementation agents.
 5. Do not touch the AGENTS.md "do not touch" list: `Provider` method set,
-   `FluxMessage`/`FluxResponse`/`ChatOptions` field **names**, `FluxError`,
-   `FluxConfig`. Additive fields are allowed and already landed (below).
-6. Rho must keep building where it built at baseline. See "Cross-repo gate".
+   `MuxMessage`/`MuxResponse`/`ChatOptions` field **names**, `MuxError`,
+   `MuxConfig`. Additive fields are allowed and already landed (below).
+6. Decoder must keep building where it built at baseline. See "Cross-repo gate".
 
 ## Contracts landed in Wave 0 (binding for all work packages)
 
 | Addition | Where | Purpose |
 |---|---|---|
 | `ToolCall.RawArguments`, `ToolCall.ProviderMetadata` | `tools/tool.go` | exact provider JSON; opaque per-call state (Gemini `thoughtSignature`) |
-| `ProviderBlock`, `FluxMessage.ProviderBlocks`, `FluxResponse.ProviderBlocks` | `llm/types.go` | round-trip signed thinking, `redacted_thinking`, OpenAI reasoning items |
-| `FluxStreamEvent.ProviderBlock`, `engine.EventProviderBlock` | `llm`, `engine` | deliver a completed opaque block on a stream |
-| `CallWarning`, `FluxResponse.Warnings` | `llm/types.go` | report ignored/adjusted settings |
-| `StreamErrorInfo`, `FluxStreamEvent.ErrorInfo`, `ErrKind*` | `llm/types.go` | typed stream errors instead of stringified ones |
+| `ProviderBlock`, `MuxMessage.ProviderBlocks`, `MuxResponse.ProviderBlocks` | `llm/types.go` | round-trip signed thinking, `redacted_thinking`, OpenAI reasoning items |
+| `MuxStreamEvent.ProviderBlock`, `engine.EventProviderBlock` | `llm`, `engine` | deliver a completed opaque block on a stream |
+| `CallWarning`, `MuxResponse.Warnings` | `llm/types.go` | report ignored/adjusted settings |
+| `StreamErrorInfo`, `MuxStreamEvent.ErrorInfo`, `ErrKind*` | `llm/types.go` | typed stream errors instead of stringified ones |
 | `ResolvedRoute.DeploymentID`, `.Attempts` | `llm/types.go` | which deployment actually served the request |
-| `FluxUsage` semantics documented | `llm/types.go` | see decision D1 |
+| `MuxUsage` semantics documented | `llm/types.go` | see decision D1 |
 
 ### Binding decisions
 
@@ -43,7 +43,7 @@ Branch: `fix/audit-remediation`, stacked on `refactor/feature-oriented-monorepo`
   are subsets. Anthropic adapters add cached tokens into `PromptTokens`.
 - **D2 Provider blocks.** An adapter replays only blocks whose `Provider` matches
   its own protocol and silently skips the rest. Hosts never edit a block.
-- **D3 Finish reasons.** Not normalised (Rho may compare raw values). Consumers
+- **D3 Finish reasons.** Not normalised (Decoder may compare raw values). Consumers
   that need "hit the limit" accept both `max_tokens` and `length`.
 - **D4 Tool arguments.** `Arguments` stays. When the provider's JSON is malformed,
   `Arguments` is nil, `RawArguments` holds the bytes, and the legacy
@@ -59,8 +59,8 @@ Branch: `fix/audit-remediation`, stacked on `refactor/feature-oriented-monorepo`
   when there is no explicit policy, or when the policy sets
   `AllowAutomaticFallback: true`.
 - **D8 Deletion criterion.** A package or file is deleted only when it has zero
-  non-test importers/callers in **both** `flux` and `../rho` (checked by grep and
-  `go list`, including test imports of Rho). Its tests are deleted with it.
+  non-test importers/callers in **both** `mux` and `../decoder` (checked by grep and
+  `go list`, including test imports of Decoder). Its tests are deleted with it.
 - **D9 Guardrails, moderation, budgets, virtual keys, response caching, adaptive
   rate limiting, request coalescing, condenser, role router** are product
   semantics or unreachable inert code. They are deleted, not repaired.
@@ -68,10 +68,10 @@ Branch: `fix/audit-remediation`, stacked on `refactor/feature-oriented-monorepo`
   fields. Production discovery starts from `BootstrapCatalog()`, never fixtures.
   A price of 0/0 means **unknown** unless the source marks the model free.
 - **D11 Embedded catalog.** A snapshot is embedded. The engine uses it only when
-  `Options.FallbackToEmbeddedCatalog` is true (default false), so Rho's existing
+  `Options.FallbackToEmbeddedCatalog` is true (default false), so Decoder's existing
   `ErrorCatalogUnavailable` → refresh flow is unchanged.
-- **D12 `flux/graph`.** Rho carries a diverged vendored copy. Flux cannot delete
-  it without breaking Rho's import; that is a Rho-side PR, recorded in the report.
+- **D12 `mux/graph`.** Decoder carries a diverged vendored copy. Mux cannot delete
+  it without breaking Decoder's import; that is a Decoder-side PR, recorded in the report.
 
 ## Work packages
 
@@ -88,7 +88,7 @@ isolated git worktrees; branches are merged and gated between waves.
 - `Proxy: http.ProxyFromEnvironment`, `ForceAttemptHTTP2`, `ResponseHeaderTimeout`;
   provide `core.WithoutClientTimeout(*http.Client)` for streams so `Client.Timeout`
   no longer caps stream bodies.
-- Retry: on exhaustion return a typed `*FluxError` built from the last response
+- Retry: on exhaustion return a typed `*MuxError` built from the last response
   (status, request id, `Retry-After`, redacted body); parse `Retry-After-Ms`,
   float seconds, `x-should-retry`; retry 408/409/504; never clamp `Retry-After`
   downward (surface it instead); drain bodies; clear stale `lastResp`;
@@ -132,7 +132,7 @@ isolated git worktrees; branches are merged and gated between waves.
   table if callers allow (D8), unused `opencodego` usage tracking, legacy
   `ModelCatalog` path. Replace `opencodego/models.go` wrong prices/windows with
   unknown rather than wrong data.
-- Neutral error text: no reference to the `rho` CLI in library errors.
+- Neutral error text: no reference to the `decoder` CLI in library errors.
 
 **WP4 credentials-config** — `credentials/**`, `config/**`, `docs/guides/CREDENTIAL-SETUP-FLOW.md`
 - `MigrateEnvFileCredentials`: delete a file only after every secret in it is
@@ -144,7 +144,7 @@ isolated git worktrees; branches are merged and gated between waves.
   longer negative-cache TTL; OIDC calls get a client timeout and a caller context.
 - Remove `DisallowUnknownFields` from the strict `provider.json` loader
   (forward compatible; keep the trailing-value check).
-- Derive `~/.rho`/`~/.hawk` paths and "Rho" strings from a settable name.
+- Derive `~/.decoder`/`~/.hawk` paths and "Decoder" strings from a settable name.
 - Delete: `category.go`, `user_profiles.go`, `agent_routing.go`, `runtime.go`,
   `ApplyProviderEnvToProcess`/`ApplyProviderConfigToEnv` (D8), stale hard-coded
   model IDs. Fix the credential flow doc (real path, 28 providers).
@@ -223,7 +223,7 @@ ollama opengateway openrouter stepfun mimo`) plus their tests in `provider/` and
 - `Options.FallbackToEmbeddedCatalog` (D11); remove `EnableCaching`,
   `EnableRateLimiting`, `CacheConfig`, `RateLimitConfig`; default `MaxTokens` from
   the catalog; fill `Route.DeploymentID`; wire `core.SetVersion` so the
-  User-Agent is not `flux/dev`.
+  User-Agent is not `mux/dev`.
 - Review `setup/` (~1,400 lines, unreviewed by the audit) and
   `engine/host_control.go` `MigrateProviderSecretsContext`. Add the OIDC
   `allowAmbient` decision. Cross-process lock for `provider.json`; honour or
@@ -267,11 +267,11 @@ and off. Rewrite `TracingProvider` (with a real `cancel`). Wired inside the engi
 
 **WP15 conformance** — vendor-doc fixtures replayed through adapter, router and
 engine for Anthropic, OpenAI (Chat + Responses), Gemini, Bedrock, Azure. A record
-mode (`FLUX_RECORD=1`, needs keys) so real cassettes can replace the fixtures.
+mode (`MUX_RECORD=1`, needs keys) so real cassettes can replace the fixtures.
 
 **WP16 docs** — README (compiling examples, 28 providers, wire-protocol table,
 honest status), AGENTS.md (regenerated file map; the old one cited 12 missing
-files), `docs/ARCHITECTURE.md` (no `flux serve`), SECURITY/CONTRIBUTING false
+files), `docs/ARCHITECTURE.md` (no `mux serve`), SECURITY/CONTRIBUTING false
 claims, CHANGELOG, examples through `engine`.
 
 **CI** (done by hand) — `-coverpkg=./...`, deadcode job gates on growth, an
@@ -286,9 +286,9 @@ claims, CHANGELOG, examples through `engine`.
 | P2C / peak-EWMA balancing | only matters with ≥2 deployments for one model and needs the persisted state and telemetry that land in this plan first |
 | Namespaced `ProviderOptions` replacing flat `ChatOptions` fields | a deliberate public API decision (AGENTS.md); adding an unread field would be dead surface |
 | Derived default deployment weights | P3, changes default behaviour for OpenAI+Azure users |
-| Delete `flux/graph` | Rho imports it; needs a Rho-side PR (D12) |
-| `OTEL-CONVENTIONS.md` correction | file lives in the Rho repo; recorded for a Rho PR |
-| Rho `internal/engine` unused import | pre-existing Rho build error, not flux's to fix |
+| Delete `mux/graph` | Decoder imports it; needs a Decoder-side PR (D12) |
+| `OTEL-CONVENTIONS.md` correction | file lives in the Decoder repo; recorded for a Decoder PR |
+| Decoder `internal/engine` unused import | pre-existing Decoder build error, not mux's to fix |
 
 ## Verification protocol (run twice, by different actors)
 
@@ -304,6 +304,6 @@ tree, read the diff for regressions and new dead code, try to break each fix, an
 check that docs match code. Plus `-count=3`, an `apidiff` against the base commit
 to enumerate every breaking change, and README snippets compiled as examples.
 
-**Cross-repo gate.** With a scratch `go.work` joining `flux` and `../rho`: the set
-of Rho packages failing to build must equal the baseline (`internal/engine` only),
-and `rho/internal/{provider/gateway,testaudit,config}` tests must pass.
+**Cross-repo gate.** With a scratch `go.work` joining `mux` and `../decoder`: the set
+of Decoder packages failing to build must equal the baseline (`internal/engine` only),
+and `decoder/internal/{provider/gateway,testaudit,config}` tests must pass.

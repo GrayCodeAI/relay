@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 // CondenseOptions controls how a ConversationCondenser reduces a message
@@ -26,7 +26,7 @@ type ConversationCondenser interface {
 	// Condense returns a reduced copy of messages according to opts. It must
 	// not mutate the input slice. When no reduction is needed it may return the
 	// input slice unchanged.
-	Condense(ctx context.Context, messages []core.FluxMessage, opts CondenseOptions) ([]core.FluxMessage, error)
+	Condense(ctx context.Context, messages []core.MuxMessage, opts CondenseOptions) ([]core.MuxMessage, error)
 }
 
 // LLMSummarizingCondenser condenses a conversation by summarizing its middle
@@ -96,7 +96,7 @@ func NewLLMSummarizingCondenser(provider core.Provider, opts ...CondenserOption)
 // Condense implements ConversationCondenser. When len(messages) exceeds
 // MaxSize, it keeps the first KeepFirst messages, summarizes the middle span,
 // inserts the summary as a system note, and keeps the remaining tail.
-func (c *LLMSummarizingCondenser) Condense(ctx context.Context, messages []core.FluxMessage, opts CondenseOptions) ([]core.FluxMessage, error) {
+func (c *LLMSummarizingCondenser) Condense(ctx context.Context, messages []core.MuxMessage, opts CondenseOptions) ([]core.MuxMessage, error) {
 	if opts.MaxSize <= 0 || len(messages) <= opts.MaxSize {
 		return messages, nil
 	}
@@ -131,12 +131,12 @@ func (c *LLMSummarizingCondenser) Condense(ctx context.Context, messages []core.
 		return nil, err
 	}
 
-	note := core.FluxMessage{
+	note := core.MuxMessage{
 		Role:    "system",
 		Content: "[summary of earlier conversation]\n" + summary,
 	}
 
-	out := make([]core.FluxMessage, 0, keepFirst+1+tailCount)
+	out := make([]core.MuxMessage, 0, keepFirst+1+tailCount)
 	out = append(out, messages[:keepFirst]...)
 	out = append(out, note)
 	out = append(out, messages[middleEnd:]...)
@@ -145,7 +145,7 @@ func (c *LLMSummarizingCondenser) Condense(ctx context.Context, messages []core.
 
 // summarize asks the provider (via the Weak role when available) to summarize
 // the given span of messages.
-func (c *LLMSummarizingCondenser) summarize(ctx context.Context, span []core.FluxMessage) (string, error) {
+func (c *LLMSummarizingCondenser) summarize(ctx context.Context, span []core.MuxMessage) (string, error) {
 	var b strings.Builder
 	for _, m := range span {
 		b.WriteString(m.Role)
@@ -158,7 +158,7 @@ func (c *LLMSummarizingCondenser) summarize(ctx context.Context, span []core.Flu
 		b.WriteByte('\n')
 	}
 
-	req := []core.FluxMessage{{Role: "user", Content: b.String()}}
+	req := []core.MuxMessage{{Role: "user", Content: b.String()}}
 	opts := core.ChatOptions{
 		Model:     ResolveRole(c.roles, RoleWeak),
 		System:    c.prompt,
@@ -207,7 +207,7 @@ func (p *CondensingProvider) Name() string { return p.inner.Name() }
 func (p *CondensingProvider) Ping(ctx context.Context) error { return p.inner.Ping(ctx) }
 
 // Chat condenses the messages, then delegates to the inner provider.
-func (p *CondensingProvider) Chat(ctx context.Context, messages []core.FluxMessage, opts core.ChatOptions) (*core.FluxResponse, error) {
+func (p *CondensingProvider) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
 	msgs, err := p.condense(ctx, messages)
 	if err != nil {
 		return nil, err
@@ -216,7 +216,7 @@ func (p *CondensingProvider) Chat(ctx context.Context, messages []core.FluxMessa
 }
 
 // StreamChat condenses the messages, then delegates to the inner provider.
-func (p *CondensingProvider) StreamChat(ctx context.Context, messages []core.FluxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (p *CondensingProvider) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	msgs, err := p.condense(ctx, messages)
 	if err != nil {
 		return nil, err
@@ -224,7 +224,7 @@ func (p *CondensingProvider) StreamChat(ctx context.Context, messages []core.Flu
 	return p.inner.StreamChat(ctx, msgs, opts)
 }
 
-func (p *CondensingProvider) condense(ctx context.Context, messages []core.FluxMessage) ([]core.FluxMessage, error) {
+func (p *CondensingProvider) condense(ctx context.Context, messages []core.MuxMessage) ([]core.MuxMessage, error) {
 	if p.condenser == nil || p.opts.MaxSize <= 0 {
 		return messages, nil
 	}

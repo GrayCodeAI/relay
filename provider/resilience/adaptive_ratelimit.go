@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 // RateLimitState holds the current rate limit tracking state for a provider.
@@ -218,7 +218,7 @@ var _ Provider = (*AdaptiveRateLimitProvider)(nil)
 // zero-valued for sensible defaults.
 func NewAdaptiveRateLimitProvider(inner Provider, config AdaptiveRateLimitConfig) (*AdaptiveRateLimitProvider, error) {
 	if inner == nil {
-		return nil, errors.New("flux: NewAdaptiveRateLimitProvider inner provider must not be nil")
+		return nil, errors.New("mux: NewAdaptiveRateLimitProvider inner provider must not be nil")
 	}
 	if config.ThresholdPercent <= 0 {
 		config.ThresholdPercent = 10
@@ -251,7 +251,7 @@ func (a *AdaptiveRateLimitProvider) Ping(ctx context.Context) error {
 }
 
 // Chat sends a non-streaming chat request with adaptive rate limiting.
-func (a *AdaptiveRateLimitProvider) Chat(ctx context.Context, messages []FluxMessage, opts ChatOptions) (*FluxResponse, error) {
+func (a *AdaptiveRateLimitProvider) Chat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*MuxResponse, error) {
 	if err := a.checkAndWait(ctx); err != nil {
 		return nil, err
 	}
@@ -268,7 +268,7 @@ func (a *AdaptiveRateLimitProvider) Chat(ctx context.Context, messages []FluxMes
 }
 
 // StreamChat sends a streaming chat request with adaptive rate limiting.
-func (a *AdaptiveRateLimitProvider) StreamChat(ctx context.Context, messages []FluxMessage, opts ChatOptions) (*StreamResult, error) {
+func (a *AdaptiveRateLimitProvider) StreamChat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*StreamResult, error) {
 	if err := a.checkAndWait(ctx); err != nil {
 		return nil, err
 	}
@@ -278,8 +278,8 @@ func (a *AdaptiveRateLimitProvider) StreamChat(ctx context.Context, messages []F
 		return nil, err
 	}
 
-	var previousUsage *core.FluxUsage
-	return core.TransformStreamResult(ctx, result, func(_ context.Context, evt FluxStreamEvent) (FluxStreamEvent, error) {
+	var previousUsage *core.MuxUsage
+	return core.TransformStreamResult(ctx, result, func(_ context.Context, evt MuxStreamEvent) (MuxStreamEvent, error) {
 		if evt.Type == "continuation" {
 			previousUsage = nil
 			return evt, nil
@@ -381,7 +381,7 @@ func (a *AdaptiveRateLimitProvider) checkAndWait(ctx context.Context) error {
 			delay := a.delayUntilReset(now)
 			if remaining <= 0 && delay > a.config.MaxDelay {
 				a.mu.Unlock()
-				return fmt.Errorf("flux: adaptive ratelimit: %s RPM limit reached (%d/%d), resets in %v",
+				return fmt.Errorf("mux: adaptive ratelimit: %s RPM limit reached (%d/%d), resets in %v",
 					a.inner.Name(), rpmUsed, a.rpmLimit, delay)
 			}
 			if delay > 0 && delay <= a.config.MaxDelay {
@@ -417,7 +417,7 @@ func (a *AdaptiveRateLimitProvider) checkAndWait(ctx context.Context) error {
 			delay := a.delayUntilReset(now)
 			if remaining <= 0 && delay > a.config.MaxDelay {
 				a.mu.Unlock()
-				return fmt.Errorf("flux: adaptive ratelimit: %s TPM limit reached (%d/%d), resets in %v",
+				return fmt.Errorf("mux: adaptive ratelimit: %s TPM limit reached (%d/%d), resets in %v",
 					a.inner.Name(), tpmUsed, a.tpmLimit, delay)
 			}
 			if delay > 0 && delay <= a.config.MaxDelay {
@@ -472,7 +472,7 @@ func (a *AdaptiveRateLimitProvider) recordTokens(tokens int) {
 
 // extractTokens gets the total token count from usage, falling back to
 // prompt + completion if total is not set.
-func (a *AdaptiveRateLimitProvider) extractTokens(usage *FluxUsage) int {
+func (a *AdaptiveRateLimitProvider) extractTokens(usage *MuxUsage) int {
 	if usage == nil {
 		return 0
 	}

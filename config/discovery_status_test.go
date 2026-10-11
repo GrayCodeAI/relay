@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	"github.com/GrayCodeAI/flux/credentials"
+	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/mux/credentials"
 )
 
 func TestHasAnyConfiguredDeployment_FromStore(t *testing.T) {
@@ -25,7 +25,7 @@ func (emptyCredentialStore) Get(context.Context, string) (string, error) { retur
 func (emptyCredentialStore) Delete(context.Context, string) error        { return nil }
 
 func TestHasAnyConfiguredDeployment_RejectsPlaceholder(t *testing.T) {
-	t.Setenv("FLUX_CONFIG_DIR", t.TempDir())
+	t.Setenv("MUX_CONFIG_DIR", t.TempDir())
 	credentials.SetDefaultStore(emptyCredentialStore{})
 	t.Cleanup(func() { credentials.SetDefaultStore(nil) })
 

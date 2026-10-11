@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 func TestNewGrokClient_OpenAI(t *testing.T) {
@@ -39,7 +39,7 @@ func TestGrokClient_ChatUsesOpenAIPath(t *testing.T) {
 	defer server.Close()
 
 	client := NewGrokClient("key", server.URL, &GrokCompat, core.WithRetry(core.NewRetryConfig(0, 0, 0)))
-	resp, err := client.Chat(context.Background(), []core.FluxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "grok-2", MaxTokens: 16})
+	resp, err := client.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "grok-2", MaxTokens: 16})
 	if err != nil {
 		t.Fatal(err)
 	}

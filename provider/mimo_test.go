@@ -3,18 +3,18 @@ package provider
 import (
 	"testing"
 
-	fluxcfg "github.com/GrayCodeAI/flux/config"
+	muxcfg "github.com/GrayCodeAI/mux/config"
 )
 
 func TestGetOrCreateProvider_XiaomiTokenPlanUsesMimoBase(t *testing.T) {
-	t.Setenv("FLUX_CONFIG_DIR", t.TempDir())
-	if err := fluxcfg.SaveProviderConfig(&fluxcfg.ProviderConfig{
+	t.Setenv("MUX_CONFIG_DIR", t.TempDir())
+	if err := muxcfg.SaveProviderConfig(&muxcfg.ProviderConfig{
 		XiaomiMimoTokenPlanRegion: "sgp",
 	}, ""); err != nil {
 		t.Fatalf("SaveProviderConfig: %v", err)
 	}
 
-	c := Client(&FluxConfig{Provider: "xiaomi_mimo_token_plan", APIKey: "tp-test-key"})
+	c := Client(&MuxConfig{Provider: "xiaomi_mimo_token_plan", APIKey: "tp-test-key"})
 	p, err := c.getOrCreateProvider("xiaomi_mimo_token_plan")
 	if err != nil {
 		t.Fatalf("getOrCreateProvider: %v", err)

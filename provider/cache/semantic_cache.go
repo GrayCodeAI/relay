@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 // CacheConfig controls the behavior of CachedProvider.
@@ -39,7 +39,7 @@ func DefaultCacheConfig() CacheConfig {
 
 // cachedResponse holds a cached API response along with LRU metadata.
 type cachedResponse struct {
-	response   *FluxResponse
+	response   *MuxResponse
 	createdAt  time.Time
 	lastAccess time.Time
 
@@ -103,7 +103,7 @@ func (cp *CachedProvider) Ping(ctx context.Context) error {
 
 // Chat checks the cache first. On a miss, it calls the inner provider and caches
 // the response (if the temperature is not too high).
-func (cp *CachedProvider) Chat(ctx context.Context, messages []FluxMessage, opts ChatOptions) (*FluxResponse, error) {
+func (cp *CachedProvider) Chat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*MuxResponse, error) {
 	if !cp.enabled {
 		return cp.inner.Chat(ctx, messages, opts)
 	}
@@ -135,7 +135,7 @@ func (cp *CachedProvider) Chat(ctx context.Context, messages []FluxMessage, opts
 
 // StreamChat delegates to the inner provider without caching. Streaming responses
 // are inherently incremental and not suitable for simple response caching.
-func (cp *CachedProvider) StreamChat(ctx context.Context, messages []FluxMessage, opts ChatOptions) (*StreamResult, error) {
+func (cp *CachedProvider) StreamChat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*StreamResult, error) {
 	return cp.inner.StreamChat(ctx, messages, opts)
 }
 
@@ -178,7 +178,7 @@ func (cp *CachedProvider) SetEnabled(enabled bool) {
 // get looks up a cache entry by key. It returns a copy of the response if the
 // entry exists and has not expired, and promotes it to the head of the LRU list.
 // Expired entries are evicted inline.
-func (cp *CachedProvider) get(key string) (*FluxResponse, bool) {
+func (cp *CachedProvider) get(key string) (*MuxResponse, bool) {
 	cp.mu.Lock()
 	defer cp.mu.Unlock()
 
@@ -201,7 +201,7 @@ func (cp *CachedProvider) get(key string) (*FluxResponse, bool) {
 }
 
 // put stores a response in the cache, evicting the LRU entry if necessary.
-func (cp *CachedProvider) put(key string, resp *FluxResponse) {
+func (cp *CachedProvider) put(key string, resp *MuxResponse) {
 	cp.mu.Lock()
 	defer cp.mu.Unlock()
 
@@ -297,7 +297,7 @@ func (cp *CachedProvider) evictExpiredLocked() {
 
 // cacheKeyVersion is part of every key so a change to the key derivation can
 // never serve an entry written under the old one.
-const cacheKeyVersion = "flux-response-cache/v2"
+const cacheKeyVersion = "mux-response-cache/v2"
 
 // buildCacheKey hashes everything that can change a response: every
 // ChatOptions field (tools, tool choice, max tokens, stop sequences, sampling,
@@ -310,11 +310,11 @@ const cacheKeyVersion = "flux-response-cache/v2"
 // identical to the provider. It returns "" when the request cannot be
 // encoded (for example an unsupported Conversation value or a NaN sampling
 // parameter); callers must then bypass the cache.
-func buildCacheKey(messages []FluxMessage, opts ChatOptions) string {
+func buildCacheKey(messages []MuxMessage, opts ChatOptions) string {
 	payload, err := json.Marshal(struct {
-		Version  string        `json:"version"`
-		Options  ChatOptions   `json:"options"`
-		Messages []FluxMessage `json:"messages"`
+		Version  string       `json:"version"`
+		Options  ChatOptions  `json:"options"`
+		Messages []MuxMessage `json:"messages"`
 	}{cacheKeyVersion, opts, messages})
 	if err != nil {
 		return ""
@@ -325,7 +325,7 @@ func buildCacheKey(messages []FluxMessage, opts ChatOptions) string {
 
 // BuildCacheKey returns the deterministic key used by the response cache, or
 // "" when the request cannot be cached.
-func BuildCacheKey(messages []FluxMessage, opts ChatOptions) string {
+func BuildCacheKey(messages []MuxMessage, opts ChatOptions) string {
 	return buildCacheKey(messages, opts)
 }
 

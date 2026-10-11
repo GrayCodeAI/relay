@@ -32,7 +32,7 @@
     <rect width="600" height="200" fill="url(#bg)"/>
 
     <!--
-      ICON: Abstract flux mark
+      ICON: Abstract mux mark
       Two interleaved flow arcs around a glowing bolt —
       provider traffic flowing in, one unified interface flowing out.
       Clean, geometric, scalable.
@@ -78,7 +78,7 @@
     <text x="196" y="96"
           font-family="'SF Mono','Fira Code','Cascadia Code','Courier New',monospace"
           font-size="72" font-weight="800"
-          fill="#4ECDC4" filter="url(#textGlow)" letter-spacing="-3">Flux</text>
+          fill="#4ECDC4" filter="url(#textGlow)" letter-spacing="-3">Mux</text>
 
     <text x="198" y="126"
           font-family="'SF Mono','Fira Code',monospace"
@@ -88,7 +88,7 @@
 
     <text x="198" y="157"
           font-family="'SF Mono','Fira Code',monospace"
-          font-size="12" fill="#4ECDC4" opacity="0.65" letter-spacing="1.5">the foundation layer for rho</text>
+          font-size="12" fill="#4ECDC4" opacity="0.65" letter-spacing="1.5">the foundation layer for decoder</text>
   </g>
 
   <rect width="600" height="200" fill="none" stroke="#4ecdc4" stroke-width="1" rx="12" opacity="0.6"/>

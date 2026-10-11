@@ -1,4 +1,4 @@
-// Package setup wires catalog-backed deployment routing for rho and flux CLIs.
+// Package setup wires catalog-backed deployment routing for decoder and mux CLIs.
 package setup
 
 import (
@@ -7,15 +7,15 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	"github.com/GrayCodeAI/flux/catalog/registry"
-	"github.com/GrayCodeAI/flux/catalog/xiaomi"
-	"github.com/GrayCodeAI/flux/catalog/zai"
-	"github.com/GrayCodeAI/flux/config"
-	"github.com/GrayCodeAI/flux/credentials"
-	"github.com/GrayCodeAI/flux/provider/adapters"
-	"github.com/GrayCodeAI/flux/provider/core"
-	"github.com/GrayCodeAI/flux/router"
+	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/mux/catalog/registry"
+	"github.com/GrayCodeAI/mux/catalog/xiaomi"
+	"github.com/GrayCodeAI/mux/catalog/zai"
+	"github.com/GrayCodeAI/mux/config"
+	"github.com/GrayCodeAI/mux/credentials"
+	"github.com/GrayCodeAI/mux/provider/adapters"
+	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/mux/router"
 )
 
 // oidcBedrockCreds and oidcVertexToken are injectable seams over the
@@ -27,10 +27,10 @@ var (
 )
 
 // oidcEnabled reports whether the OIDC opt-in branch should be considered for
-// the given deployment. It is gated by FLUX_OIDC=1 (or true/yes/on) OR by the
+// the given deployment. It is gated by MUX_OIDC=1 (or true/yes/on) OR by the
 // deployment specifying a roleARN / WIF audience. It is OFF by default.
 func oidcEnabled(deployment config.DeploymentConfig) bool {
-	switch strings.ToLower(strings.TrimSpace(os.Getenv("FLUX_OIDC"))) {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("MUX_OIDC"))) {
 	case "1", "true", "yes", "on":
 		return true
 	}
@@ -47,9 +47,9 @@ func storeSecret(envKeys ...string) string {
 	return ""
 }
 
-// UseDeploymentRouting mirrors flux CLI behavior: env override, then provider.json shape.
+// UseDeploymentRouting mirrors mux CLI behavior: env override, then provider.json shape.
 func UseDeploymentRouting(cfg *config.ProviderConfig) bool {
-	switch strings.ToLower(strings.TrimSpace(os.Getenv("FLUX_DEPLOYMENT_ROUTING"))) {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("MUX_DEPLOYMENT_ROUTING"))) {
 	case "1", "true", "yes", "on":
 		return true
 	case "0", "false", "no", "off":
@@ -68,7 +68,7 @@ func DeploymentRoutingFromState(cfg *config.ProviderConfig) bool {
 func DeploymentProvider(ctx context.Context, cfg *config.ProviderConfig) (core.Provider, error) {
 	compiled, err := catalog.LoadCatalog(ctx, catalog.LoadCatalogOptions{
 		CachePath:     catalog.DefaultCachePath(),
-		RefreshRemote: strings.EqualFold(os.Getenv("FLUX_MODEL_CATALOG_REFRESH"), "true"),
+		RefreshRemote: strings.EqualFold(os.Getenv("MUX_MODEL_CATALOG_REFRESH"), "true"),
 	})
 	if err != nil {
 		return nil, err

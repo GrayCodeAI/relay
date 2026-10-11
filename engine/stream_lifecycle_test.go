@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/flux/llm"
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/llm"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 var lifecycleRoute = Route{Provider: "mock", Model: "mock/model"}
@@ -41,8 +41,8 @@ func engineEventTypes(events []Event) []string {
 	return types
 }
 
-func streamOf(ctx context.Context, cancel context.CancelFunc, events ...core.FluxStreamEvent) *Stream {
-	source := make(chan core.FluxStreamEvent, len(events))
+func streamOf(ctx context.Context, cancel context.CancelFunc, events ...core.MuxStreamEvent) *Stream {
+	source := make(chan core.MuxStreamEvent, len(events))
 	for _, event := range events {
 		source <- event
 	}
@@ -53,17 +53,17 @@ func streamOf(ctx context.Context, cancel context.CancelFunc, events ...core.Flu
 func TestStreamProviderFailureWithLiveContextIsNotCancellation(t *testing.T) {
 	tests := []struct {
 		name  string
-		event core.FluxStreamEvent
+		event core.MuxStreamEvent
 	}{
-		{"upstream timeout error", core.FluxStreamEvent{
+		{"upstream timeout error", core.MuxStreamEvent{
 			Type: "error", Error: "context deadline exceeded (Client.Timeout exceeded while reading body)",
 			ErrorInfo: &llm.StreamErrorInfo{Kind: llm.ErrKindTimeout, Retryable: true},
 		}},
-		{"upstream canceled error", core.FluxStreamEvent{
+		{"upstream canceled error", core.MuxStreamEvent{
 			Type: "error", Error: "context canceled",
 			ErrorInfo: &llm.StreamErrorInfo{Kind: llm.ErrKindCanceled},
 		}},
-		{"upstream cancelled event", core.FluxStreamEvent{
+		{"upstream cancelled event", core.MuxStreamEvent{
 			Type: "cancelled", Error: "context canceled",
 			ErrorInfo: &llm.StreamErrorInfo{Kind: llm.ErrKindCanceled},
 		}},
@@ -113,7 +113,7 @@ func TestStreamCallerCancellationReportsContextCause(t *testing.T) {
 			ctx, cancel := tt.ctx()
 			// The provider reports the consequence of the caller's
 			// cancellation with a kind that does not match the context.
-			stream := streamOf(ctx, cancel, core.FluxStreamEvent{
+			stream := streamOf(ctx, cancel, core.MuxStreamEvent{
 				Type: "error", Error: "stream read error",
 				ErrorInfo: &llm.StreamErrorInfo{Kind: llm.ErrKindUnavailable, Retryable: true},
 			})
@@ -157,7 +157,7 @@ func TestStreamErrorKindsMapToEngineCodes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.kind, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
-			stream := streamOf(ctx, cancel, core.FluxStreamEvent{
+			stream := streamOf(ctx, cancel, core.MuxStreamEvent{
 				Type: "error", Error: "provider said no",
 				ErrorInfo: &llm.StreamErrorInfo{Kind: tt.kind, Retryable: tt.retryable},
 			})
@@ -179,9 +179,9 @@ func TestStreamErrorKindsMapToEngineCodes(t *testing.T) {
 }
 
 func TestStreamCancelReleasesProviderBeforeTerminalDelivery(t *testing.T) {
-	source := make(chan core.FluxStreamEvent, 64)
+	source := make(chan core.MuxStreamEvent, 64)
 	for i := 0; i < cap(source); i++ {
-		source <- core.FluxStreamEvent{Type: "content", Content: "x"}
+		source <- core.MuxStreamEvent{Type: "content", Content: "x"}
 	}
 	released := make(chan struct{})
 	var releaseOnce sync.Once
@@ -219,10 +219,10 @@ func TestStreamNoEventsAfterDone(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	stream := streamOf(
 		ctx, cancel,
-		core.FluxStreamEvent{Type: "content", Content: "hi"},
-		core.FluxStreamEvent{Type: "done", StopReason: "end_turn"},
-		core.FluxStreamEvent{Type: "content", Content: "late"},
-		core.FluxStreamEvent{Type: "error", Error: "late failure"},
+		core.MuxStreamEvent{Type: "content", Content: "hi"},
+		core.MuxStreamEvent{Type: "done", StopReason: "end_turn"},
+		core.MuxStreamEvent{Type: "content", Content: "late"},
+		core.MuxStreamEvent{Type: "error", Error: "late failure"},
 	)
 	defer stream.Close()
 
@@ -238,7 +238,7 @@ func TestStreamNoEventsAfterDone(t *testing.T) {
 func TestStreamCloseTwiceIsNoop(t *testing.T) {
 	var closes, cancels int
 	var mu sync.Mutex
-	source := llm.NewStreamResult(make(chan core.FluxStreamEvent), "", func() {
+	source := llm.NewStreamResult(make(chan core.MuxStreamEvent), "", func() {
 		mu.Lock()
 		closes++
 		mu.Unlock()

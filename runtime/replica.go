@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GrayCodeAI/flux/config"
-	"github.com/GrayCodeAI/flux/provider/core"
-	"github.com/GrayCodeAI/flux/router/controlplane"
-	"github.com/GrayCodeAI/flux/setup"
+	"github.com/GrayCodeAI/mux/config"
+	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/mux/router/controlplane"
+	"github.com/GrayCodeAI/mux/setup"
 )
 
 // NewReplicaFromState creates an independent chat data plane. Shared manifests

@@ -1,5 +1,5 @@
 # Binaries
-/flux
+/mux
 bin/
 *.exe
 *.test

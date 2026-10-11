@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/GrayCodeAI/flux/catalog/zai"
+	"github.com/GrayCodeAI/mux/catalog/zai"
 )
 
 // ResolveZAIOpenAIBase resolves the OpenAI-compat base for a Z.AI gateway id.

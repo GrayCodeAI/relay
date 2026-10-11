@@ -19,8 +19,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/flux/llm"
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/llm"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 const (
@@ -65,9 +65,9 @@ func NewBedrockClient(accessKeyID, secretAccessKey, sessionToken, region string)
 
 func (c *BedrockClient) Name() string { return "anthropic-bedrock" }
 
-func (c *BedrockClient) Chat(ctx context.Context, messages []core.FluxMessage, opts core.ChatOptions) (*core.FluxResponse, error) {
+func (c *BedrockClient) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
 	if opts.Model == "" {
-		return nil, fmt.Errorf("flux: model is required for bedrock")
+		return nil, fmt.Errorf("mux: model is required for bedrock")
 	}
 	body, err := c.buildBody(messages, opts)
 	if err != nil {
@@ -75,7 +75,7 @@ func (c *BedrockClient) Chat(ctx context.Context, messages []core.FluxMessage, o
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.modelURL(opts.Model), bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("flux: bedrock request creation failed: %w", err)
+		return nil, fmt.Errorf("mux: bedrock request creation failed: %w", err)
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
@@ -86,7 +86,7 @@ func (c *BedrockClient) Chat(ctx context.Context, messages []core.FluxMessage, o
 
 	resp, err := core.DoWithRetry(ctx, c.httpClient, req, c.retry, c.logger)
 	if err != nil {
-		return nil, fmt.Errorf("flux: bedrock request failed: %w", err)
+		return nil, fmt.Errorf("mux: bedrock request failed: %w", err)
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -100,20 +100,20 @@ func (c *BedrockClient) Chat(ctx context.Context, messages []core.FluxMessage, o
 
 	var ar anthropicResponse
 	if err := json.NewDecoder(resp.Body).Decode(&ar); err != nil {
-		return nil, fmt.Errorf("flux: bedrock decode failed: %w", err)
+		return nil, fmt.Errorf("mux: bedrock decode failed: %w", err)
 	}
-	fluxResp := ParseAnthropicResponse(ar, resp.Header.Get("X-Amzn-Requestid"), "")
+	muxResp := ParseAnthropicResponse(ar, resp.Header.Get("X-Amzn-Requestid"), "")
 
-	if err := core.ApplyGuardrails(ctx, fluxResp, c.guardrails); err != nil {
+	if err := core.ApplyGuardrails(ctx, muxResp, c.guardrails); err != nil {
 		return nil, err
 	}
 
-	return fluxResp, nil
+	return muxResp, nil
 }
 
-func (c *BedrockClient) StreamChat(ctx context.Context, messages []core.FluxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (c *BedrockClient) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	if opts.Model == "" {
-		return nil, fmt.Errorf("flux: model is required for bedrock")
+		return nil, fmt.Errorf("mux: model is required for bedrock")
 	}
 	body, err := c.buildBody(messages, opts)
 	if err != nil {
@@ -135,7 +135,7 @@ func (c *BedrockClient) StreamChat(ctx context.Context, messages []core.FluxMess
 	req, err := http.NewRequestWithContext(streamCtx, http.MethodPost, streamURL, bytes.NewReader(streamBody))
 	if err != nil {
 		cancel()
-		return nil, fmt.Errorf("flux: bedrock stream request creation failed: %w", err)
+		return nil, fmt.Errorf("mux: bedrock stream request creation failed: %w", err)
 	}
 	req.Header.Set("Accept", "application/vnd.amazon.eventstream")
 	req.Header.Set("Content-Type", "application/json")
@@ -148,7 +148,7 @@ func (c *BedrockClient) StreamChat(ctx context.Context, messages []core.FluxMess
 	resp, err := core.DoWithRetry(streamCtx, c.httpClient, req, c.retry, c.logger) //nolint:bodyclose // closed in goroutine for streaming
 	if err != nil {
 		cancel()
-		return nil, fmt.Errorf("flux: bedrock stream request failed: %w", err)
+		return nil, fmt.Errorf("mux: bedrock stream request failed: %w", err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		defer func() {
@@ -163,7 +163,7 @@ func (c *BedrockClient) StreamChat(ctx context.Context, messages []core.FluxMess
 
 	boundBody, cleanup := core.BindStreamBody(streamCtx, resp.Body, cancel)
 	resp.Body = boundBody
-	ch := make(chan core.FluxStreamEvent, 64)
+	ch := make(chan core.MuxStreamEvent, 64)
 
 	go func() {
 		defer close(ch)
@@ -175,7 +175,7 @@ func (c *BedrockClient) StreamChat(ctx context.Context, messages []core.FluxMess
 		}()
 
 		var contentBuf strings.Builder
-		var usage *core.FluxUsage
+		var usage *core.MuxUsage
 		var finishReason string
 
 		// Bedrock uses Amazon EventStream format. Parse it.
@@ -199,7 +199,7 @@ func (c *BedrockClient) StreamChat(ctx context.Context, messages []core.FluxMess
 			if err != nil {
 				if !errors.Is(err, io.EOF) {
 					select {
-					case ch <- core.FluxStreamEvent{Type: "error", Error: err.Error()}:
+					case ch <- core.MuxStreamEvent{Type: "error", Error: err.Error()}:
 					case <-streamCtx.Done():
 					}
 				}
@@ -217,7 +217,7 @@ func (c *BedrockClient) StreamChat(ctx context.Context, messages []core.FluxMess
 				if chunk.Delta != nil && chunk.Delta.Text != "" {
 					contentBuf.WriteString(chunk.Delta.Text)
 					select {
-					case ch <- core.FluxStreamEvent{Type: "content", Content: chunk.Delta.Text}:
+					case ch <- core.MuxStreamEvent{Type: "content", Content: chunk.Delta.Text}:
 					case <-streamCtx.Done():
 						return
 					}
@@ -225,7 +225,7 @@ func (c *BedrockClient) StreamChat(ctx context.Context, messages []core.FluxMess
 				if chunk.Delta != nil && chunk.Delta.Type == "input_json_delta" && chunk.Delta.PartialJSON != "" {
 					// Accumulate tool input JSON
 					select {
-					case ch <- core.FluxStreamEvent{Type: "tool_input_delta", Content: chunk.Delta.PartialJSON}:
+					case ch <- core.MuxStreamEvent{Type: "tool_input_delta", Content: chunk.Delta.PartialJSON}:
 					case <-streamCtx.Done():
 						return
 					}
@@ -236,7 +236,7 @@ func (c *BedrockClient) StreamChat(ctx context.Context, messages []core.FluxMess
 					_ = json.Unmarshal(chunk.ContentBlock.Input, &args)
 					tc := core.ToolCall{ID: chunk.ContentBlock.ID, Name: chunk.ContentBlock.Name, Arguments: args}
 					select {
-					case ch <- core.FluxStreamEvent{Type: "tool_call", ToolCall: &tc}:
+					case ch <- core.MuxStreamEvent{Type: "tool_call", ToolCall: &tc}:
 					case <-streamCtx.Done():
 						return
 					}
@@ -251,7 +251,7 @@ func (c *BedrockClient) StreamChat(ctx context.Context, messages []core.FluxMess
 					usage = mergeBedrockUsage(usage, chunk.Message.Usage)
 				}
 			case "message_stop":
-				doneEvt := core.FluxStreamEvent{Type: "done", StopReason: finishReason, Usage: usage}
+				doneEvt := core.MuxStreamEvent{Type: "done", StopReason: finishReason, Usage: usage}
 				select {
 				case ch <- doneEvt:
 				case <-streamCtx.Done():
@@ -267,7 +267,7 @@ func (c *BedrockClient) StreamChat(ctx context.Context, messages []core.FluxMess
 
 func (c *BedrockClient) Ping(ctx context.Context) error {
 	if c.region == "" || c.accessKeyID == "" || len(c.secretAccessKey) == 0 {
-		return fmt.Errorf("flux: bedrock credentials are incomplete")
+		return fmt.Errorf("mux: bedrock credentials are incomplete")
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("https://bedrock.%s.amazonaws.com/foundation-models", c.region), nil)
 	if err != nil {
@@ -278,16 +278,16 @@ func (c *BedrockClient) Ping(ctx context.Context) error {
 	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("flux: bedrock ping failed: %w", err)
+		return fmt.Errorf("mux: bedrock ping failed: %w", err)
 	}
 	_ = resp.Body.Close()
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		return fmt.Errorf("flux: bedrock: invalid credentials")
+		return fmt.Errorf("mux: bedrock: invalid credentials")
 	}
 	return nil
 }
 
-func (c *BedrockClient) buildBody(messages []core.FluxMessage, opts core.ChatOptions) ([]byte, error) {
+func (c *BedrockClient) buildBody(messages []core.MuxMessage, opts core.ChatOptions) ([]byte, error) {
 	messages = core.SanitizeMessages(messages)
 	msgs, system := buildAnthropicMessages(messages)
 	if opts.System != "" {
@@ -331,7 +331,7 @@ func (c *BedrockClient) buildBody(messages []core.FluxMessage, opts core.ChatOpt
 		return nil, err
 	}
 	if len(data) > maxBedrockRequestSize {
-		return nil, fmt.Errorf("flux: request size %d bytes exceeds Bedrock limit of %d bytes", len(data), maxBedrockRequestSize)
+		return nil, fmt.Errorf("mux: request size %d bytes exceeds Bedrock limit of %d bytes", len(data), maxBedrockRequestSize)
 	}
 	return data, nil
 }
@@ -367,12 +367,12 @@ type anthropicStreamChunk struct {
 	Usage *bedrockStreamUsage `json:"usage,omitempty"`
 }
 
-func mergeBedrockUsage(current *core.FluxUsage, update *bedrockStreamUsage) *core.FluxUsage {
+func mergeBedrockUsage(current *core.MuxUsage, update *bedrockStreamUsage) *core.MuxUsage {
 	if update == nil {
 		return current
 	}
 	if current == nil {
-		current = &core.FluxUsage{}
+		current = &core.MuxUsage{}
 	}
 	if update.InputTokens > 0 {
 		current.PromptTokens = update.InputTokens
@@ -487,7 +487,7 @@ func (es *eventStreamReader) ReadEvent() (*eventStreamFrame, error) {
 
 func (c *BedrockClient) sign(req *http.Request, body []byte, now time.Time) error {
 	if c.region == "" || c.accessKeyID == "" || len(c.secretAccessKey) == 0 {
-		return fmt.Errorf("flux: bedrock credentials are incomplete")
+		return fmt.Errorf("mux: bedrock credentials are incomplete")
 	}
 	service := "bedrock"
 	if strings.HasPrefix(req.URL.Host, "bedrock-runtime.") {
@@ -578,7 +578,7 @@ func (c *BedrockClient) ModelURL(model string) string {
 }
 
 // BuildBody creates the Anthropic-compatible Bedrock request payload.
-func (c *BedrockClient) BuildBody(messages []core.FluxMessage, opts core.ChatOptions) ([]byte, error) {
+func (c *BedrockClient) BuildBody(messages []core.MuxMessage, opts core.ChatOptions) ([]byte, error) {
 	return c.buildBody(messages, opts)
 }
 

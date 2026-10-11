@@ -3,7 +3,7 @@ package setup
 import (
 	"testing"
 
-	"github.com/GrayCodeAI/flux/catalog"
+	"github.com/GrayCodeAI/mux/catalog"
 )
 
 func TestBuildSetupUI_NilCatalog(t *testing.T) {

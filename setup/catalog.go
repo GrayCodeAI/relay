@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	"github.com/GrayCodeAI/flux/catalog/discover"
+	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/mux/catalog/discover"
 )
 
 // DiscoverModelCatalogOptions controls catalog discovery behavior.
@@ -14,13 +14,13 @@ type DiscoverModelCatalogOptions struct {
 	ForceRefresh bool
 }
 
-// DiscoverModelCatalog refreshes the remote flux catalog and enriches it using the supplied API keys.
-// Pass config.DiscoveryCredentials(ctx) or explicit keys; flux owns all model metadata.
+// DiscoverModelCatalog refreshes the remote mux catalog and enriches it using the supplied API keys.
+// Pass config.DiscoveryCredentials(ctx) or explicit keys; mux owns all model metadata.
 func DiscoverModelCatalog(ctx context.Context, creds catalog.Credentials) (*catalog.RefreshResult, error) {
 	return DiscoverModelCatalogWithOptions(ctx, creds, DiscoverModelCatalogOptions{})
 }
 
-// DiscoverModelCatalogWithOptions runs discover with optional force refresh (manual rho models refresh).
+// DiscoverModelCatalogWithOptions runs discover with optional force refresh (manual decoder models refresh).
 func DiscoverModelCatalogWithOptions(ctx context.Context, creds catalog.Credentials, opts DiscoverModelCatalogOptions) (*catalog.RefreshResult, error) {
 	cachePath := catalog.DefaultCachePath()
 	refreshRemote := opts.ForceRefresh

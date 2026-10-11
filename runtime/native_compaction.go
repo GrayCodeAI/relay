@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/flux/credentials"
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/credentials"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 const (
@@ -25,7 +25,7 @@ const (
 type NativeCompactionOpts struct {
 	Provider        string
 	Model           string
-	Messages        []core.FluxMessage
+	Messages        []core.MuxMessage
 	ContextWindow   int
 	ThresholdPct    int
 	MaxOutputTokens int
@@ -36,7 +36,7 @@ type NativeCompactionResult struct {
 	Summary string
 }
 
-// SupportsNativeCompaction reports whether Flux can compact this selection
+// SupportsNativeCompaction reports whether Mux can compact this selection
 // with a configured provider credential.
 func SupportsNativeCompaction(ctx context.Context, provider, model string) bool {
 	return SupportsNativeCompactionWithStore(ctx, provider, model, credentials.DefaultStore())
@@ -144,7 +144,7 @@ func supportsAnthropicCompactionSelection(provider, model string) bool {
 	return false
 }
 
-func anthropicCompactionMessages(messages []core.FluxMessage) ([]map[string]any, string) {
+func anthropicCompactionMessages(messages []core.MuxMessage) ([]map[string]any, string) {
 	var system string
 	out := make([]map[string]any, 0, len(messages))
 	for _, message := range messages {

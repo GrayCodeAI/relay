@@ -278,14 +278,14 @@ func TestMigrateEnvFileCredentials_BothPaths(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
 
-	rhoDir := filepath.Join(dir, ".rho")
-	if err := os.MkdirAll(rhoDir, 0o700); err != nil {
+	decoderDir := filepath.Join(dir, ".decoder")
+	if err := os.MkdirAll(decoderDir, 0o700); err != nil {
 		t.Fatal(err)
 	}
 
 	// Write both env files.
-	envPath := filepath.Join(rhoDir, "env")
-	dotEnvPath := filepath.Join(rhoDir, ".env")
+	envPath := filepath.Join(decoderDir, "env")
+	dotEnvPath := filepath.Join(decoderDir, ".env")
 	if err := os.WriteFile(envPath, []byte("ANTHROPIC_API_KEY=sk-from-env\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -304,10 +304,10 @@ func TestMigrateEnvFileCredentials_BothPaths(t *testing.T) {
 
 	// Both files should be removed.
 	if _, err := os.Stat(envPath); !os.IsNotExist(err) {
-		t.Error("~/.rho/env should be removed")
+		t.Error("~/.decoder/env should be removed")
 	}
 	if _, err := os.Stat(dotEnvPath); !os.IsNotExist(err) {
-		t.Error("~/.rho/.env should be removed")
+		t.Error("~/.decoder/.env should be removed")
 	}
 }
 
