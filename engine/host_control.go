@@ -212,6 +212,7 @@ func (e *Engine) SetGatewayRegion(ctx context.Context, providerID, value string)
 }
 
 // ApplyGatewayEnvironment derives process-local regional base URLs.
+//
 // Deprecated: invocation-scoped hosts must use Engine state directly and must
 // not mutate process environment. This remains only for legacy callers.
 func (e *Engine) ApplyGatewayEnvironment(_ context.Context, providerID string) {
