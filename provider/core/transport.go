@@ -5,14 +5,16 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/GrayCodeAI/mux/internal/buildversion"
 )
 
 // DefaultTimeout is the default end-to-end HTTP timeout for provider clients.
 const DefaultTimeout = 10 * time.Minute
 
 // Version is set by the root mux package's init() from the VERSION file
-// (via the provider runtime's SetVersion). Default is "dev".
-var Version = "dev"
+// (via the provider runtime's SetVersion). Its default is generated from VERSION.
+var Version = buildversion.Version
 
 // SetVersion wires the canonical version into this package.
 func SetVersion(v string) { Version = v }

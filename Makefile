@@ -7,10 +7,10 @@
 NAME      := mux
 
 # ---------------------------------------------------------------------------
-# Versioning — sourced from VERSION file; falls back to git describe.
-# See https://github.com/GrayCodeAI/decoder/blob/main/VERSIONING.md.
+# Versioning — sourced only from VERSION.
+# See https://github.com/GrayCodeAI/decoder/blob/main/docs/versioning.md.
 # ---------------------------------------------------------------------------
-VERSION ?= $(shell cat VERSION 2>/dev/null | head -n1 | tr -d '[:space:]' || git describe --tags --always --dirty 2>/dev/null || echo "dev")
+VERSION := $(shell tr -d '[:space:]' < VERSION)
 COMMIT  := $(shell git rev-parse --short HEAD 2>/dev/null || echo "none")
 DATE    := $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 
@@ -49,7 +49,7 @@ all: lint test build ## Default — lint, test, build.
 # ---------------------------------------------------------------------------
 # Build / install / release.
 # ---------------------------------------------------------------------------
-build: ## Build all library packages (mux is a library consumed by decoder; no standalone binary).
+build: version-sync ## Build all library packages (mux is a library consumed by decoder; no standalone binary).
 	go build ./...
 
 # ---------------------------------------------------------------------------
@@ -104,7 +104,7 @@ tidy: ## Tidy go.mod / go.sum.
 # ---------------------------------------------------------------------------
 # Composite gate used by CI and pre-push.
 # ---------------------------------------------------------------------------
-ci: tidy fmt vet lint boundaries check-replace test-race security ## Run everything CI runs.
+ci: version-check tidy fmt vet lint boundaries check-replace test-race security ## Run everything CI runs.
 	@echo "All CI checks passed."
 
 # ---------------------------------------------------------------------------
@@ -131,3 +131,10 @@ hooks: ## Install git hooks via lefthook (format, lint, conventional commits, co
 sync-clone: ## Hard-reset mux to origin/main (post history rewrite).
 	@chmod +x scripts/sync-clone.sh scripts/commit-clean.sh
 	@./scripts/sync-clone.sh
+
+.PHONY: version-sync version-check
+version-sync: ## Regenerate package/API metadata from VERSION.
+	python3 scripts/sync-version.py
+
+version-check: ## Reject stale generated version metadata.
+	python3 scripts/sync-version.py --check

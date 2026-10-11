@@ -400,3 +400,10 @@ Use [Conventional Commits](https://www.conventionalcommits.org/) for commit mess
 MIT — see [LICENSE](LICENSE) for details.
 
 © 2026 GrayCode AI
+
+## Project version
+
+[`VERSION`](./VERSION) is the single version source. Edit it once, then run
+`make version-sync` to regenerate package and OpenAPI metadata. CI and release
+workflows run `make version-check` to reject stale metadata. Plain Go builds
+also carry the canonical version when run outside the checkout.
