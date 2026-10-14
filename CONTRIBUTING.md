@@ -1,8 +1,8 @@
-# Contributing to flux
+# Contributing to mux
 
 Thanks for your interest! This guide covers the conventions used across the
 graycode-eco. The eco-wide standards (versioning, release tooling, repo layout)
-are defined in <https://github.com/GrayCodeAI/rho/blob/main/VERSIONING.md>.
+are defined in <https://github.com/GrayCodeAI/decoder/blob/main/docs/versioning.md>.
 
 ## Quick start
 
@@ -120,8 +120,8 @@ Before requesting review:
 
 ## Reporting bugs
 
-Open an issue using the bug-report template. Include the `flux`
-version (`flux --version` for binaries, `flux.Version` for
+Open an issue using the bug-report template. Include the `mux`
+version (`mux --version` for binaries, `mux.Version` for
 libraries — see this repo's `VERSION` file), reproduction steps, expected
 behaviour, and actual behaviour.
 

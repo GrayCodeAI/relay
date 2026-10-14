@@ -3,7 +3,7 @@ package config
 import (
 	"context"
 
-	"github.com/GrayCodeAI/flux/config/credential"
+	"github.com/GrayCodeAI/mux/config/credential"
 )
 
 func init() {

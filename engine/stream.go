@@ -6,8 +6,8 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/GrayCodeAI/flux/llm"
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/llm"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 // Stream is a normalized, pull-based event stream. Next must not be called
@@ -226,7 +226,7 @@ func (s *Stream) setError(err error) {
 	s.mu.Unlock()
 }
 
-func normalizeEvent(event core.FluxStreamEvent, route Route) (Event, error) {
+func normalizeEvent(event core.MuxStreamEvent, route Route) (Event, error) {
 	out := Event{
 		Content: event.Content, Thinking: event.Thinking, RequestID: event.RequestID,
 		Error: event.Error, Warning: event.Warning, ErrorInfo: cloneErrorInfo(event.ErrorInfo),
@@ -290,7 +290,7 @@ func normalizeEvent(event core.FluxStreamEvent, route Route) (Event, error) {
 // streamEventError converts a fatal provider stream event into the engine's
 // typed error. It prefers the event's ErrorInfo over its message text so hosts
 // can tell an authentication failure from a rate limit or an outage.
-func streamEventError(event core.FluxStreamEvent, route Route) *Error {
+func streamEventError(event core.MuxStreamEvent, route Route) *Error {
 	err := &Error{
 		Code: ErrorProviderUnavailable, Operation: "stream", Provider: route.Provider, Model: route.Model,
 		Message: event.Error,
@@ -353,6 +353,6 @@ func cloneToolCall(call *llm.ToolCall) *llm.ToolCall {
 
 // isTerminalFailure reports whether a provider event ends the stream with a
 // failure. Warning-marked errors are non-fatal diagnostics.
-func isTerminalFailure(event core.FluxStreamEvent) bool {
+func isTerminalFailure(event core.MuxStreamEvent) bool {
 	return event.Type == "cancelled" || event.Type == "canceled" || event.Type == "error" && event.Warning == ""
 }

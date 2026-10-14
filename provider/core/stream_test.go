@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/flux/llm"
+	"github.com/GrayCodeAI/mux/llm"
 )
 
 func testLogger() *slog.Logger {
@@ -135,19 +135,19 @@ func TestCoordinateStreamResultTerminalContract(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		events      []FluxStreamEvent
+		events      []MuxStreamEvent
 		wantTypes   []string
 		wantErrKind string
 	}{
 		{
 			name:        "truncated",
-			events:      []FluxStreamEvent{{Type: "content", Content: "partial"}},
+			events:      []MuxStreamEvent{{Type: "content", Content: "partial"}},
 			wantTypes:   []string{"content", "error"},
 			wantErrKind: llm.ErrKindTruncated,
 		},
 		{
 			name: "fatal before done",
-			events: []FluxStreamEvent{
+			events: []MuxStreamEvent{
 				{Type: "error", Error: "connection reset"},
 				{Type: "done"},
 			},
@@ -155,15 +155,15 @@ func TestCoordinateStreamResultTerminalContract(t *testing.T) {
 		},
 		{
 			name: "terminal before late usage",
-			events: []FluxStreamEvent{
+			events: []MuxStreamEvent{
 				{Type: "done", StopReason: "stop"},
-				{Type: "usage", Usage: &FluxUsage{TotalTokens: 1}},
+				{Type: "usage", Usage: &MuxUsage{TotalTokens: 1}},
 			},
 			wantTypes: []string{"done"},
 		},
 		{
 			name: "warning before done",
-			events: []FluxStreamEvent{
+			events: []MuxStreamEvent{
 				{Type: "error", Error: "empty response", Warning: "empty response"},
 				{Type: "done", StopReason: "stop"},
 			},
@@ -175,7 +175,7 @@ func TestCoordinateStreamResultTerminalContract(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			events := make(chan FluxStreamEvent, len(tt.events))
+			events := make(chan MuxStreamEvent, len(tt.events))
 			for _, event := range tt.events {
 				events <- event
 			}
@@ -184,7 +184,7 @@ func TestCoordinateStreamResultTerminalContract(t *testing.T) {
 			var closes atomic.Int32
 			source := llm.NewStreamResult(events, "request-1", func() { closes.Add(1) })
 			result := CoordinateStreamResult(context.Background(), source)
-			var got []FluxStreamEvent
+			var got []MuxStreamEvent
 			for event := range result.Events {
 				got = append(got, event)
 			}
@@ -217,7 +217,7 @@ func TestCoordinateStreamResultTerminalContract(t *testing.T) {
 func TestTransformStreamResultCloseUnblocksForwarder(t *testing.T) {
 	t.Parallel()
 
-	events := make(chan FluxStreamEvent)
+	events := make(chan MuxStreamEvent)
 	streamCtx, cancel := context.WithCancel(context.Background())
 	producerDone := make(chan struct{})
 	go func() {
@@ -231,7 +231,7 @@ func TestTransformStreamResultCloseUnblocksForwarder(t *testing.T) {
 		closes.Add(1)
 		cancel()
 	})
-	result := TransformStreamResult(context.Background(), source, func(_ context.Context, event FluxStreamEvent) (FluxStreamEvent, error) {
+	result := TransformStreamResult(context.Background(), source, func(_ context.Context, event MuxStreamEvent) (MuxStreamEvent, error) {
 		return event, nil
 	})
 	result.Close()
@@ -258,7 +258,7 @@ func TestTransformStreamResultCloseUnblocksForwarder(t *testing.T) {
 func TestCoordinateStreamResultCancellationEmitsTerminal(t *testing.T) {
 	t.Parallel()
 
-	events := make(chan FluxStreamEvent)
+	events := make(chan MuxStreamEvent)
 	ctx, cancel := context.WithCancel(context.Background())
 	result := CoordinateStreamResult(ctx, llm.NewStreamResult(events, "request-cancel", nil))
 	cancel()
@@ -293,16 +293,16 @@ func TestTransformStreamResultCancelWhileForwardingEmitsTerminal(t *testing.T) {
 	t.Parallel()
 
 	for run := 0; run < 100; run++ {
-		source := make(chan FluxStreamEvent)
+		source := make(chan MuxStreamEvent)
 		ctx, cancel := context.WithCancel(context.Background())
 		result := CoordinateStreamResult(ctx, llm.NewStreamResult(source, "request-busy", nil))
 
 		// The unbuffered wrapper takes the event and parks delivering it,
 		// because nobody is reading yet; then the caller cancels.
-		source <- FluxStreamEvent{Type: "content", Content: "pending"}
+		source <- MuxStreamEvent{Type: "content", Content: "pending"}
 		cancel()
 
-		var last FluxStreamEvent
+		var last MuxStreamEvent
 		deadline := time.After(time.Second)
 	drain:
 		for {
@@ -326,7 +326,7 @@ func TestTransformStreamResultCancelWhileForwardingEmitsTerminal(t *testing.T) {
 func TestTransformStreamResultCancelReleasesSourceBeforeTerminalDelivery(t *testing.T) {
 	t.Parallel()
 
-	source := make(chan FluxStreamEvent, 1)
+	source := make(chan MuxStreamEvent, 1)
 	released := make(chan struct{})
 	var releaseOnce sync.Once
 	ctx, cancel := context.WithCancel(context.Background())
@@ -336,9 +336,9 @@ func TestTransformStreamResultCancelReleasesSourceBeforeTerminalDelivery(t *test
 
 	// Fill the one-slot output buffer, then park the forwarder on the next
 	// event: the consumer never reads.
-	source <- FluxStreamEvent{Type: "content", Content: "one"}
+	source <- MuxStreamEvent{Type: "content", Content: "one"}
 	waitFor(t, func() bool { return len(result.Events) == cap(result.Events) })
-	source <- FluxStreamEvent{Type: "content", Content: "two"}
+	source <- MuxStreamEvent{Type: "content", Content: "two"}
 	cancel()
 
 	select {
@@ -366,7 +366,7 @@ func TestStreamResultCloseTwiceIsNoop(t *testing.T) {
 	t.Parallel()
 
 	var closes int32
-	source := make(chan FluxStreamEvent)
+	source := make(chan MuxStreamEvent)
 	result := CoordinateStreamResult(context.Background(), llm.NewStreamResult(source, "", func() {
 		atomic.AddInt32(&closes, 1)
 	}))
@@ -397,7 +397,7 @@ func TestCoordinateStreamResultSkipsIdenticalCoordination(t *testing.T) {
 	type ctxKey struct{}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	source := make(chan FluxStreamEvent, 1)
+	source := make(chan MuxStreamEvent, 1)
 	inner := CoordinateStreamResult(ctx, llm.NewStreamResult(source, "request-1", nil))
 	defer inner.Close()
 
@@ -412,7 +412,7 @@ func TestCoordinateStreamResultSkipsIdenticalCoordination(t *testing.T) {
 	wrapped := []*StreamResult{
 		CoordinateStreamResult(child, inner),
 		CoordinateStreamResult(ctx, llm.NewStreamResult(inner.Events, "other-request", nil)),
-		TransformStreamResult(ctx, inner, func(_ context.Context, e FluxStreamEvent) (FluxStreamEvent, error) { return e, nil }),
+		TransformStreamResult(ctx, inner, func(_ context.Context, e MuxStreamEvent) (MuxStreamEvent, error) { return e, nil }),
 	}
 	for i, got := range wrapped {
 		if got.Events == inner.Events {
@@ -425,9 +425,9 @@ func TestCoordinateStreamResultSkipsIdenticalCoordination(t *testing.T) {
 func TestCoordinatedStreamRegistryIsReleased(t *testing.T) {
 	t.Parallel()
 
-	source := make(chan FluxStreamEvent, 1)
+	source := make(chan MuxStreamEvent, 1)
 	result := CoordinateStreamResult(context.Background(), llm.NewStreamResult(source, "", nil))
-	source <- FluxStreamEvent{Type: "done"}
+	source <- MuxStreamEvent{Type: "done"}
 	if event := <-result.Events; event.Type != "done" {
 		t.Fatalf("event = %+v, want done", event)
 	}
@@ -444,9 +444,9 @@ func TestUsageDeltaHandlesCumulativeAndSplitUsage(t *testing.T) {
 	t.Parallel()
 
 	t.Run("cumulative", func(t *testing.T) {
-		var state *FluxUsage
+		var state *MuxUsage
 		var prompt, completion int
-		for _, usage := range []*FluxUsage{
+		for _, usage := range []*MuxUsage{
 			{PromptTokens: 1, CompletionTokens: 1, TotalTokens: 2},
 			{PromptTokens: 1, CompletionTokens: 2, TotalTokens: 3},
 		} {
@@ -463,9 +463,9 @@ func TestUsageDeltaHandlesCumulativeAndSplitUsage(t *testing.T) {
 	})
 
 	t.Run("split then aggregate", func(t *testing.T) {
-		var state *FluxUsage
+		var state *MuxUsage
 		var prompt, completion int
-		for _, usage := range []*FluxUsage{
+		for _, usage := range []*MuxUsage{
 			{PromptTokens: 10},
 			{CompletionTokens: 5},
 			{PromptTokens: 10, CompletionTokens: 5, TotalTokens: 15},
@@ -483,9 +483,9 @@ func TestUsageDeltaHandlesCumulativeAndSplitUsage(t *testing.T) {
 	})
 
 	t.Run("reverse split then aggregate", func(t *testing.T) {
-		var state *FluxUsage
+		var state *MuxUsage
 		var prompt, completion int
-		for _, usage := range []*FluxUsage{
+		for _, usage := range []*MuxUsage{
 			{CompletionTokens: 5},
 			{PromptTokens: 10},
 			{PromptTokens: 10, CompletionTokens: 5, TotalTokens: 15},
@@ -503,7 +503,7 @@ func TestUsageDeltaHandlesCumulativeAndSplitUsage(t *testing.T) {
 	})
 
 	t.Run("duplicate aggregate", func(t *testing.T) {
-		usage := &FluxUsage{PromptTokens: 3, CompletionTokens: 5, TotalTokens: 8}
+		usage := &MuxUsage{PromptTokens: 3, CompletionTokens: 5, TotalTokens: 8}
 		state := MergeUsage(nil, usage)
 		if delta := UsageDelta(state, usage); delta != nil {
 			t.Fatalf("delta = %+v, want nil", delta)
@@ -525,7 +525,7 @@ func TestSSEAnthropicContentBlockDelta(t *testing.T) {
 	ctx := context.Background()
 	ch := ProcessAnthropicStream(ctx, events, testLogger())
 
-	var results []FluxStreamEvent
+	var results []MuxStreamEvent
 	for evt := range ch {
 		results = append(results, evt)
 	}
@@ -566,13 +566,13 @@ func TestSSEAnthropicToolUse(t *testing.T) {
 	ctx := context.Background()
 	ch := ProcessAnthropicStream(ctx, events, testLogger())
 
-	var results []FluxStreamEvent
+	var results []MuxStreamEvent
 	for evt := range ch {
 		results = append(results, evt)
 	}
 
 	// Find the tool_call event
-	var toolCallEvt *FluxStreamEvent
+	var toolCallEvt *MuxStreamEvent
 	for i := range results {
 		if results[i].Type == "tool_call" {
 			toolCallEvt = &results[i]
@@ -607,7 +607,7 @@ func TestSSEAnthropicThinkingDelta(t *testing.T) {
 	ctx := context.Background()
 	ch := ProcessAnthropicStream(ctx, events, testLogger())
 
-	var results []FluxStreamEvent
+	var results []MuxStreamEvent
 	for evt := range ch {
 		results = append(results, evt)
 	}
@@ -664,7 +664,7 @@ func TestSSEAnthropicStopReason(t *testing.T) {
 	ctx := context.Background()
 	ch := ProcessAnthropicStream(ctx, events, testLogger())
 
-	var results []FluxStreamEvent
+	var results []MuxStreamEvent
 	for evt := range ch {
 		results = append(results, evt)
 	}
@@ -696,7 +696,7 @@ func TestSSEOpenAIChoicesDelta(t *testing.T) {
 	ctx := context.Background()
 	ch := ProcessOpenAIStream(ctx, events, testLogger())
 
-	var results []FluxStreamEvent
+	var results []MuxStreamEvent
 	for evt := range ch {
 		results = append(results, evt)
 	}
@@ -743,12 +743,12 @@ func TestSSEOpenAIToolCallsAccumulation(t *testing.T) {
 	ctx := context.Background()
 	ch := ProcessOpenAIStream(ctx, events, testLogger())
 
-	var results []FluxStreamEvent
+	var results []MuxStreamEvent
 	for evt := range ch {
 		results = append(results, evt)
 	}
 
-	var toolCallEvt *FluxStreamEvent
+	var toolCallEvt *MuxStreamEvent
 	for i := range results {
 		if results[i].Type == "tool_call" {
 			toolCallEvt = &results[i]
@@ -780,7 +780,7 @@ func TestSSEOpenAIFinishReason(t *testing.T) {
 	ctx := context.Background()
 	ch := ProcessOpenAIStream(ctx, events, testLogger())
 
-	var results []FluxStreamEvent
+	var results []MuxStreamEvent
 	for evt := range ch {
 		results = append(results, evt)
 	}
@@ -807,7 +807,7 @@ func TestSSEOpenAIUsage(t *testing.T) {
 	ctx := context.Background()
 	ch := ProcessOpenAIStream(ctx, events, testLogger())
 
-	var results []FluxStreamEvent
+	var results []MuxStreamEvent
 	for evt := range ch {
 		results = append(results, evt)
 	}
@@ -838,7 +838,7 @@ func TestSSEOpenAIChannelCloseDoesNotSynthesizeDone(t *testing.T) {
 	events <- SSEEvent{Data: `{"choices":[{"delta":{"content":"partial"},"finish_reason":null}]}`}
 	close(events)
 
-	var results []FluxStreamEvent
+	var results []MuxStreamEvent
 	for event := range ProcessOpenAIStream(context.Background(), events, testLogger()) {
 		results = append(results, event)
 	}
@@ -990,49 +990,49 @@ func TestEnsureStreamErrorInfo(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name        string
-		event       FluxStreamEvent
+		event       MuxStreamEvent
 		wantNil     bool
 		wantKind    string
 		wantRetries bool
 	}{
 		{
 			name:    "content event untouched",
-			event:   FluxStreamEvent{Type: "content", Content: "hi"},
+			event:   MuxStreamEvent{Type: "content", Content: "hi"},
 			wantNil: true,
 		},
 		{
 			name:    "done event untouched",
-			event:   FluxStreamEvent{Type: "done"},
+			event:   MuxStreamEvent{Type: "done"},
 			wantNil: true,
 		},
 		{
 			name:     "error gains inferred info",
-			event:    FluxStreamEvent{Type: "error", Error: "rate limit exceeded"},
+			event:    MuxStreamEvent{Type: "error", Error: "rate limit exceeded"},
 			wantKind: llm.ErrKindRateLimited, wantRetries: true,
 		},
 		{
 			name:     "bare error gains internal",
-			event:    FluxStreamEvent{Type: "error", Error: "boom"},
+			event:    MuxStreamEvent{Type: "error", Error: "boom"},
 			wantKind: llm.ErrKindInternal, wantRetries: true,
 		},
 		{
 			name:     "cancelled with unknown message stays canceled",
-			event:    FluxStreamEvent{Type: "cancelled", Error: "stopped"},
+			event:    MuxStreamEvent{Type: "cancelled", Error: "stopped"},
 			wantKind: llm.ErrKindCanceled, wantRetries: false,
 		},
 		{
 			name:     "cancelled with deadline is timeout",
-			event:    FluxStreamEvent{Type: "cancelled", Error: "context deadline exceeded"},
+			event:    MuxStreamEvent{Type: "cancelled", Error: "context deadline exceeded"},
 			wantKind: llm.ErrKindTimeout, wantRetries: false,
 		},
 		{
 			name:     "cancelled with provider wording stays canceled",
-			event:    FluxStreamEvent{Type: "cancelled", Error: "rate limit"},
+			event:    MuxStreamEvent{Type: "cancelled", Error: "rate limit"},
 			wantKind: llm.ErrKindCanceled, wantRetries: false,
 		},
 		{
 			name: "existing ErrorInfo is preserved",
-			event: FluxStreamEvent{
+			event: MuxStreamEvent{
 				Type:      "error",
 				Error:     "rate limit exceeded",
 				ErrorInfo: &llm.StreamErrorInfo{Kind: llm.ErrKindAuth, StatusCode: 401},

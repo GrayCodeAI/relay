@@ -6,13 +6,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	"github.com/GrayCodeAI/flux/catalog/registry"
-	"github.com/GrayCodeAI/flux/catalog/xiaomi"
-	"github.com/GrayCodeAI/flux/catalog/zai"
-	"github.com/GrayCodeAI/flux/config"
-	"github.com/GrayCodeAI/flux/credentials"
-	"github.com/GrayCodeAI/flux/setup"
+	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/mux/catalog/registry"
+	"github.com/GrayCodeAI/mux/catalog/xiaomi"
+	"github.com/GrayCodeAI/mux/catalog/zai"
+	"github.com/GrayCodeAI/mux/config"
+	"github.com/GrayCodeAI/mux/credentials"
+	"github.com/GrayCodeAI/mux/setup"
 )
 
 const (
@@ -388,7 +388,7 @@ func RefreshGatewayCatalog(ctx context.Context, providerID string) (string, erro
 // FormatApplyCredentialsSummary summarizes provider apply results for host UIs.
 func FormatApplyCredentialsSummary(result *setup.ApplyCredentialsResult) string {
 	if result == nil || result.Catalog == nil || result.Catalog.Compiled == nil {
-		return "Flux credentials applied"
+		return "Mux credentials applied"
 	}
 	models := len(result.Catalog.Compiled.ModelsByID)
 	deployments := 0
@@ -396,7 +396,7 @@ func FormatApplyCredentialsSummary(result *setup.ApplyCredentialsResult) string 
 		deployments = len(result.ProviderConfig.Deployments)
 	}
 	return fmt.Sprintf(
-		"Flux: %d models, %d deployments configured, routing updated -> %s",
+		"Mux: %d models, %d deployments configured, routing updated -> %s",
 		models, deployments, result.ProviderConfigPath,
 	)
 }

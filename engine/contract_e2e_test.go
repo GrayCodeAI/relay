@@ -5,37 +5,37 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	"github.com/GrayCodeAI/flux/credentials"
-	"github.com/GrayCodeAI/flux/llm"
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/mux/credentials"
+	"github.com/GrayCodeAI/mux/llm"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 type contractProvider struct {
-	chatMessages   []core.FluxMessage
+	chatMessages   []core.MuxMessage
 	chatOptions    core.ChatOptions
-	streamMessages []core.FluxMessage
+	streamMessages []core.MuxMessage
 	streamOptions  core.ChatOptions
 }
 
 func (p *contractProvider) Name() string               { return "contract" }
 func (p *contractProvider) Ping(context.Context) error { return nil }
 
-func (p *contractProvider) Chat(_ context.Context, messages []core.FluxMessage, opts core.ChatOptions) (*core.FluxResponse, error) {
+func (p *contractProvider) Chat(_ context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
 	p.chatMessages, p.chatOptions = messages, opts
-	return &core.FluxResponse{
+	return &core.MuxResponse{
 		Content: "complete", FinishReason: "end_turn", RequestID: "req-blocking",
-		Usage: &core.FluxUsage{PromptTokens: 4, CompletionTokens: 2, TotalTokens: 6},
+		Usage: &core.MuxUsage{PromptTokens: 4, CompletionTokens: 2, TotalTokens: 6},
 	}, nil
 }
 
-func (p *contractProvider) StreamChat(_ context.Context, messages []core.FluxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (p *contractProvider) StreamChat(_ context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	p.streamMessages, p.streamOptions = messages, opts
-	events := make(chan core.FluxStreamEvent, 4)
-	events <- core.FluxStreamEvent{Type: "content", Content: "checking"}
-	events <- core.FluxStreamEvent{Type: "tool_call", ToolCall: &core.ToolCall{ID: "call-1", Name: "read_file", Arguments: map[string]interface{}{"path": "main.go"}}}
-	events <- core.FluxStreamEvent{Type: "usage", Usage: &core.FluxUsage{PromptTokens: 5, CompletionTokens: 3, TotalTokens: 8}}
-	events <- core.FluxStreamEvent{Type: "done", StopReason: "end_turn", RequestID: "req-stream"}
+	events := make(chan core.MuxStreamEvent, 4)
+	events <- core.MuxStreamEvent{Type: "content", Content: "checking"}
+	events <- core.MuxStreamEvent{Type: "tool_call", ToolCall: &core.ToolCall{ID: "call-1", Name: "read_file", Arguments: map[string]interface{}{"path": "main.go"}}}
+	events <- core.MuxStreamEvent{Type: "usage", Usage: &core.MuxUsage{PromptTokens: 5, CompletionTokens: 3, TotalTokens: 8}}
+	events <- core.MuxStreamEvent{Type: "done", StopReason: "end_turn", RequestID: "req-stream"}
 	close(events)
 	return llm.NewStreamResult(events, "req-stream", nil), nil
 }
@@ -114,27 +114,27 @@ func TestEngineContractEndToEnd(t *testing.T) {
 
 type continuationProvider struct {
 	calls    int
-	requests [][]core.FluxMessage
+	requests [][]core.MuxMessage
 }
 
 func (p *continuationProvider) Name() string               { return "continuation" }
 func (p *continuationProvider) Ping(context.Context) error { return nil }
-func (p *continuationProvider) Chat(context.Context, []core.FluxMessage, core.ChatOptions) (*core.FluxResponse, error) {
+func (p *continuationProvider) Chat(context.Context, []core.MuxMessage, core.ChatOptions) (*core.MuxResponse, error) {
 	return nil, nil
 }
 
-func (p *continuationProvider) StreamChat(_ context.Context, messages []core.FluxMessage, _ core.ChatOptions) (*core.StreamResult, error) {
+func (p *continuationProvider) StreamChat(_ context.Context, messages []core.MuxMessage, _ core.ChatOptions) (*core.StreamResult, error) {
 	p.calls++
-	p.requests = append(p.requests, append([]core.FluxMessage(nil), messages...))
-	events := make(chan core.FluxStreamEvent, 3)
+	p.requests = append(p.requests, append([]core.MuxMessage(nil), messages...))
+	events := make(chan core.MuxStreamEvent, 3)
 	if p.calls == 1 {
-		events <- core.FluxStreamEvent{Type: "content", Content: "part one"}
-		events <- core.FluxStreamEvent{Type: "usage", Usage: &core.FluxUsage{CompletionTokens: 2, TotalTokens: 4}}
-		events <- core.FluxStreamEvent{Type: "done", StopReason: "max_tokens", RequestID: "request-1"}
+		events <- core.MuxStreamEvent{Type: "content", Content: "part one"}
+		events <- core.MuxStreamEvent{Type: "usage", Usage: &core.MuxUsage{CompletionTokens: 2, TotalTokens: 4}}
+		events <- core.MuxStreamEvent{Type: "done", StopReason: "max_tokens", RequestID: "request-1"}
 	} else {
-		events <- core.FluxStreamEvent{Type: "content", Content: "part two"}
-		events <- core.FluxStreamEvent{Type: "usage", Usage: &core.FluxUsage{CompletionTokens: 2, TotalTokens: 5}}
-		events <- core.FluxStreamEvent{Type: "done", StopReason: "end_turn", RequestID: "request-2"}
+		events <- core.MuxStreamEvent{Type: "content", Content: "part two"}
+		events <- core.MuxStreamEvent{Type: "usage", Usage: &core.MuxUsage{CompletionTokens: 2, TotalTokens: 5}}
+		events <- core.MuxStreamEvent{Type: "done", StopReason: "end_turn", RequestID: "request-2"}
 	}
 	close(events)
 	return llm.NewStreamResult(events, "request-id", nil), nil
@@ -144,7 +144,7 @@ func TestEngineContinuationPreservesEventsAndConversationShape(t *testing.T) {
 	mock := &continuationProvider{}
 	source, err := streamWithContinuation(
 		context.Background(), mock,
-		[]core.FluxMessage{{Role: "user", Content: "write a long answer"}},
+		[]core.MuxMessage{{Role: "user", Content: "write a long answer"}},
 		core.ChatOptions{Model: "model"},
 		Limits{MaxContinuations: 1, MaxTotalOutputTokens: 100},
 	)
@@ -152,7 +152,7 @@ func TestEngineContinuationPreservesEventsAndConversationShape(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer source.Close()
-	var events []core.FluxStreamEvent
+	var events []core.MuxStreamEvent
 	for event := range source.Events {
 		events = append(events, event)
 	}
@@ -180,14 +180,14 @@ type terminalErrorProvider struct{}
 
 func (*terminalErrorProvider) Name() string               { return "terminal-error" }
 func (*terminalErrorProvider) Ping(context.Context) error { return nil }
-func (*terminalErrorProvider) Chat(context.Context, []core.FluxMessage, core.ChatOptions) (*core.FluxResponse, error) {
+func (*terminalErrorProvider) Chat(context.Context, []core.MuxMessage, core.ChatOptions) (*core.MuxResponse, error) {
 	return nil, nil
 }
 
-func (*terminalErrorProvider) StreamChat(context.Context, []core.FluxMessage, core.ChatOptions) (*core.StreamResult, error) {
-	events := make(chan core.FluxStreamEvent, 2)
-	events <- core.FluxStreamEvent{Type: "error", Error: "connection reset"}
-	events <- core.FluxStreamEvent{Type: "done", StopReason: "stop"}
+func (*terminalErrorProvider) StreamChat(context.Context, []core.MuxMessage, core.ChatOptions) (*core.StreamResult, error) {
+	events := make(chan core.MuxStreamEvent, 2)
+	events <- core.MuxStreamEvent{Type: "error", Error: "connection reset"}
+	events <- core.MuxStreamEvent{Type: "done", StopReason: "stop"}
 	close(events)
 	return llm.NewStreamResult(events, "request-error", nil), nil
 }
@@ -195,7 +195,7 @@ func (*terminalErrorProvider) StreamChat(context.Context, []core.FluxMessage, co
 func TestEngineContinuationDoesNotAppendDoneAfterFatalError(t *testing.T) {
 	source, err := streamWithContinuation(
 		context.Background(), &terminalErrorProvider{},
-		[]core.FluxMessage{{Role: "user", Content: "hello"}},
+		[]core.MuxMessage{{Role: "user", Content: "hello"}},
 		core.ChatOptions{Model: "model"},
 		Limits{MaxContinuations: 1, MaxTotalOutputTokens: 100},
 	)
@@ -204,7 +204,7 @@ func TestEngineContinuationDoesNotAppendDoneAfterFatalError(t *testing.T) {
 	}
 	defer source.Close()
 
-	var events []core.FluxStreamEvent
+	var events []core.MuxStreamEvent
 	for event := range source.Events {
 		events = append(events, event)
 	}

@@ -1,3 +1,3 @@
-module github.com/GrayCodeAI/flux/sdk/go
+module github.com/GrayCodeAI/mux/sdk/go
 
-go 1.26.3
+go 1.27.2

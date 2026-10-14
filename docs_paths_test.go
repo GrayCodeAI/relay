@@ -1,4 +1,4 @@
-package flux_test
+package mux_test
 
 import (
 	"os"
@@ -36,7 +36,7 @@ func TestAgentsMDPathsExist(t *testing.T) {
 		case strings.ContainsAny(token, "<>"), // placeholder such as provider/<name>.go
 			strings.HasPrefix(token, "../"), // sibling checkout
 			strings.HasPrefix(token, "github.com/"),
-			strings.HasPrefix(token, "rho/"):
+			strings.HasPrefix(token, "decoder/"):
 			continue
 		}
 		path := strings.TrimSuffix(token, "/")
@@ -52,7 +52,7 @@ func TestAgentsMDPathsExist(t *testing.T) {
 
 func TestDocTreesListExistingPaths(t *testing.T) {
 	for _, tc := range []struct{ doc, root string }{
-		{"README.md", "flux/"},
+		{"README.md", "mux/"},
 		{"docs/README.md", "docs/"},
 	} {
 		data, err := os.ReadFile(filepath.FromSlash(tc.doc))
@@ -64,7 +64,7 @@ func TestDocTreesListExistingPaths(t *testing.T) {
 }
 
 // checkTree finds the fenced tree whose first line is root and verifies that
-// each entry exists. root "flux/" is the repository root.
+// each entry exists. root "mux/" is the repository root.
 func checkTree(t *testing.T, doc, root, text string) {
 	t.Helper()
 	lines := strings.Split(text, "\n")
@@ -79,7 +79,7 @@ func checkTree(t *testing.T, doc, root, text string) {
 		t.Fatalf("%s: no directory tree rooted at %q", doc, root)
 	}
 	base := strings.TrimSuffix(root, "/")
-	if root == "flux/" {
+	if root == "mux/" {
 		base = "."
 	}
 	stack := []string{base}

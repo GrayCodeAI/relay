@@ -7,13 +7,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GrayCodeAI/flux/credentials"
+	"github.com/GrayCodeAI/mux/credentials"
 )
 
 func TestDiscoveryCredentialsFromState_IsolatedFromProcessGlobals(t *testing.T) {
 	ambientDir := t.TempDir()
-	t.Setenv("FLUX_CONFIG_DIR", ambientDir)
-	t.Setenv("FLUX_CONFIG_DIR", t.TempDir())
+	t.Setenv("MUX_CONFIG_DIR", ambientDir)
+	t.Setenv("MUX_CONFIG_DIR", t.TempDir())
 	t.Setenv("OPENAI_API_KEY", "sk-process-openai-1234567890")
 	t.Setenv("GROQ_BASE_URL", "https://process-env.invalid/v1")
 	t.Setenv(EnvXiaomiTokenPlanRegion, "cn")

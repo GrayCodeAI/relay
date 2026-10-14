@@ -3,14 +3,14 @@ package provider
 import (
 	"context"
 
-	"github.com/GrayCodeAI/flux/provider/core"
-	"github.com/GrayCodeAI/flux/provider/media"
+	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/mux/provider/media"
 )
 
 // ChatWithStructuredOutput validates structured JSON responses while retaining
-// FluxClient's provider resolution and default-model behavior. The schema,
+// MuxClient's provider resolution and default-model behavior. The schema,
 // validation, prompting, and retry implementation lives in provider/media.
-func (c *FluxClient) ChatWithStructuredOutput(ctx context.Context, messages []core.FluxMessage, opts core.ChatOptions, validation core.SchemaValidation) (*core.FluxResponse, error) {
+func (c *MuxClient) ChatWithStructuredOutput(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions, validation core.SchemaValidation) (*core.MuxResponse, error) {
 	providerName := opts.Provider
 	if providerName == "" {
 		providerName = c.defaultProvider

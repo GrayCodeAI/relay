@@ -1,20 +1,20 @@
 # Canonical graycode-eco Makefile for Go LIBRARY repos.
-# flux is a versioned Go library consumed by Rho (no standalone binary).
+# mux is a versioned Go library consumed by Decoder (no standalone binary).
 
 # ---------------------------------------------------------------------------
 # Project metadata
 # ---------------------------------------------------------------------------
-NAME      := flux
+NAME      := mux
 
 # ---------------------------------------------------------------------------
-# Versioning — sourced from VERSION file; falls back to git describe.
-# See https://github.com/GrayCodeAI/rho/blob/main/VERSIONING.md.
+# Versioning — sourced only from VERSION.
+# See https://github.com/GrayCodeAI/decoder/blob/main/docs/versioning.md.
 # ---------------------------------------------------------------------------
-VERSION ?= $(shell cat VERSION 2>/dev/null | head -n1 | tr -d '[:space:]' || git describe --tags --always --dirty 2>/dev/null || echo "dev")
+VERSION := $(shell tr -d '[:space:]' < VERSION)
 COMMIT  := $(shell git rev-parse --short HEAD 2>/dev/null || echo "none")
 DATE    := $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 
-# No LDFLAGS — flux is a library; the version comes from the VERSION file
+# No LDFLAGS — mux is a library; the version comes from the VERSION file
 # via go:embed (version.go), not from linker-injected package-main vars.
 
 # ---------------------------------------------------------------------------
@@ -49,7 +49,7 @@ all: lint test build ## Default — lint, test, build.
 # ---------------------------------------------------------------------------
 # Build / install / release.
 # ---------------------------------------------------------------------------
-build: ## Build all library packages (flux is a library consumed by rho; no standalone binary).
+build: version-sync ## Build all library packages (mux is a library consumed by decoder; no standalone binary).
 	go build ./...
 
 # ---------------------------------------------------------------------------
@@ -104,7 +104,7 @@ tidy: ## Tidy go.mod / go.sum.
 # ---------------------------------------------------------------------------
 # Composite gate used by CI and pre-push.
 # ---------------------------------------------------------------------------
-ci: tidy fmt vet lint boundaries check-replace test-race security ## Run everything CI runs.
+ci: version-check tidy fmt vet lint boundaries check-replace test-race security ## Run everything CI runs.
 	@echo "All CI checks passed."
 
 # ---------------------------------------------------------------------------
@@ -128,6 +128,13 @@ hooks: ## Install git hooks via lefthook (format, lint, conventional commits, co
 	git config --unset core.hooksPath 2>/dev/null || true
 	lefthook install
 
-sync-clone: ## Hard-reset flux to origin/main (post history rewrite).
+sync-clone: ## Hard-reset mux to origin/main (post history rewrite).
 	@chmod +x scripts/sync-clone.sh scripts/commit-clean.sh
 	@./scripts/sync-clone.sh
+
+.PHONY: version-sync version-check
+version-sync: ## Regenerate package/API metadata from VERSION.
+	python3 scripts/sync-version.py
+
+version-check: ## Reject stale generated version metadata.
+	python3 scripts/sync-version.py --check

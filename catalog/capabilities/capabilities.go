@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/flux/catalog"
+	"github.com/GrayCodeAI/mux/catalog"
 )
 
 // ProviderFeatures tracks which capabilities each provider supports.

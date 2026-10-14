@@ -4,8 +4,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/GrayCodeAI/flux/config"
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/config"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 // ApplyProviderChatDefaults applies provider policy that host applications
@@ -26,7 +26,7 @@ func IsContextOverflow(err error) bool {
 	if err == nil {
 		return false
 	}
-	var providerErr *core.FluxError
+	var providerErr *core.MuxError
 	if errors.As(err, &providerErr) {
 		message := strings.ToLower(providerErr.Message)
 		if containsContextOverflowSignal(message) {

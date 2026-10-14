@@ -1,4 +1,4 @@
-"""Flux Conversation DAG HTTP API client."""
+"""Mux Conversation DAG HTTP API client."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from urllib.parse import urljoin
 import httpx
 
 
-class FluxClient:
-    """Synchronous client for the Flux conversation DAG HTTP API."""
+class MuxClient:
+    """Synchronous client for the Mux conversation DAG HTTP API."""
 
     def __init__(self, base_url: str, api_key: str = "", timeout: float = 120.0) -> None:
         self.base_url = base_url.rstrip("/")
@@ -89,8 +89,8 @@ class FluxClient:
         self.client.close()
 
 
-class AsyncFluxClient:
-    """Asynchronous client for the Flux conversation DAG HTTP API."""
+class AsyncMuxClient:
+    """Asynchronous client for the Mux conversation DAG HTTP API."""
 
     def __init__(self, base_url: str, api_key: str = "", timeout: float = 120.0) -> None:
         self.base_url = base_url.rstrip("/")

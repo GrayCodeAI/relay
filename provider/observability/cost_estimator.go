@@ -27,7 +27,7 @@ func NewCostEstimator() *CostEstimator {
 }
 
 // Estimate predicts cost for a set of messages + expected output.
-func (ce *CostEstimator) Estimate(messages []FluxMessage, model string, maxOutputTokens int) CostEstimate {
+func (ce *CostEstimator) Estimate(messages []MuxMessage, model string, maxOutputTokens int) CostEstimate {
 	inputTokens := ce.countInputTokens(messages)
 	if maxOutputTokens <= 0 {
 		maxOutputTokens = 4096 // default estimate
@@ -60,7 +60,7 @@ func (ce *CostEstimator) IsExpensive(est CostEstimate, threshold float64) bool {
 	return est.TotalCostUSD > threshold
 }
 
-func (ce *CostEstimator) countInputTokens(messages []FluxMessage) int {
+func (ce *CostEstimator) countInputTokens(messages []MuxMessage) int {
 	total := 0
 	for _, m := range messages {
 		total += estimateTextTokens(m.Content)
@@ -152,7 +152,7 @@ func NewPromptOptimizer(maxInputTokens int) *PromptOptimizer {
 // Optimize compresses messages to fit within the token budget.
 // Preserves: system message, first user message, last N messages.
 // Summarizes: middle messages.
-func (po *PromptOptimizer) Optimize(messages []FluxMessage) []FluxMessage {
+func (po *PromptOptimizer) Optimize(messages []MuxMessage) []MuxMessage {
 	totalTokens := 0
 	for _, m := range messages {
 		totalTokens += estimateTextTokens(m.Content) + 10 // +10 for overhead
@@ -176,8 +176,8 @@ func (po *PromptOptimizer) Optimize(messages []FluxMessage) []FluxMessage {
 	middle := messages[1 : len(messages)-keepEnd]
 	summary := compressMessages(middle)
 
-	result := make([]FluxMessage, 0, keepEnd+2)
-	result = append(result, messages[0], FluxMessage{
+	result := make([]MuxMessage, 0, keepEnd+2)
+	result = append(result, messages[0], MuxMessage{
 		Role:    "user",
 		Content: "[Earlier conversation summary: " + summary + "]",
 	})
@@ -185,7 +185,7 @@ func (po *PromptOptimizer) Optimize(messages []FluxMessage) []FluxMessage {
 	return result
 }
 
-func compressMessages(messages []FluxMessage) string {
+func compressMessages(messages []MuxMessage) string {
 	var parts []string
 	for _, m := range messages {
 		if m.Content != "" {

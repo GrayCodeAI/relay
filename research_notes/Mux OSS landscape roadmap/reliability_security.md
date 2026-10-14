@@ -1,4 +1,4 @@
-# Flux Reliability and Security Audit
+# Mux Reliability and Security Audit
 
 **Audit date:** 2026-09-24
 **Scope:** reliability, routing and resilience, streaming and continuation, credentials, storage, API boundaries, observability, catalog, batch, and adjacent security controls.
@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-Flux builds cleanly and the normal, race, vet, formatting, lint, vulnerability, and tagged gRPC checks pass. The repository nevertheless has several production-significant gaps at the boundaries where requests become provider calls and streams:
+Mux builds cleanly and the normal, race, vet, formatting, lint, vulnerability, and tagged gRPC checks pass. The repository nevertheless has several production-significant gaps at the boundaries where requests become provider calls and streams:
 
 - The host engine reloads catalog/config and reconstructs the provider stack for each request, so opt-in circuit/rate/cache state does not survive and credential lookups can occur repeatedly.
 - The conversation path drops structured tool calls, thinking/provider replay state, and Anthropic's separate usage events; a `max_tokens` response without usage can drive continuation indefinitely.
@@ -19,7 +19,7 @@ No single issue proves a universal critical vulnerability, but the combination o
 
 ## Verification Performed
 
-All commands were run from `/Users/lakshmanpatel/Desktop/OSS2026/graycode-eco/flux` without changing source files.
+All commands were run from `/Users/lakshmanpatel/Desktop/OSS2026/graycode-eco/mux` without changing source files.
 
 | Check | Result |
 |---|---|
@@ -152,7 +152,7 @@ Concurrent requests can all pass the same pre-check and exceed a limit. Retries,
 
 **Recommendation**
 
-Introduce a reservation operation that atomically reserves estimated spend, followed by an idempotent finalization keyed by a provider request ID or Flux operation ID. Define whether usage events are incremental or cumulative, finalize once per request, and make ledger/model attribution mandatory. Treat a failed charge as an operational error or a durable retryable outbox event, not an ignored value.
+Introduce a reservation operation that atomically reserves estimated spend, followed by an idempotent finalization keyed by a provider request ID or Mux operation ID. Define whether usage events are incremental or cumulative, finalize once per request, and make ledger/model attribution mandatory. Treat a failed charge as an operational error or a durable retryable outbox event, not an ignored value.
 
 ### F-06 — High — Embedded API exposure has unsafe default and mounting behavior
 
@@ -469,4 +469,4 @@ The following tests are especially important before production use:
 
 ## Final Assessment
 
-Flux has a strong provider abstraction and useful defensive controls, but its current reliability guarantees are mostly local to individual provider calls. Production readiness depends on making stream state, routing identity, budget accounting, credential migration, and admission control shared primitives rather than independent wrapper behavior. The highest-value next change is a small, versioned request-runtime/stream-terminal core used by engine, conversation, router, budget, and observability paths; it would address several findings without requiring a platform-wide rewrite.
+Mux has a strong provider abstraction and useful defensive controls, but its current reliability guarantees are mostly local to individual provider calls. Production readiness depends on making stream state, routing identity, budget accounting, credential migration, and admission control shared primitives rather than independent wrapper behavior. The highest-value next change is a small, versioned request-runtime/stream-terminal core used by engine, conversation, router, budget, and observability paths; it would address several findings without requiring a platform-wide rewrite.

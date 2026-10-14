@@ -5,14 +5,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GrayCodeAI/flux/llm"
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/llm"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 // streamWithContinuation implements continuation at the stable engine layer.
 // It owns continuation at the engine boundary so provider adapters stay
 // focused on one request/response exchange.
-func streamWithContinuation(ctx context.Context, provider core.Provider, messages []core.FluxMessage, opts core.ChatOptions, limits Limits) (*core.StreamResult, error) {
+func streamWithContinuation(ctx context.Context, provider core.Provider, messages []core.MuxMessage, opts core.ChatOptions, limits Limits) (*core.StreamResult, error) {
 	maxContinuations := limits.MaxContinuations
 	if maxContinuations <= 0 {
 		maxContinuations = core.DefaultContinuationConfig().MaxContinuations
@@ -27,19 +27,19 @@ func streamWithContinuation(ctx context.Context, provider core.Provider, message
 		cancel()
 		return nil, err
 	}
-	out := make(chan core.FluxStreamEvent, 64)
+	out := make(chan core.MuxStreamEvent, 64)
 	go func() {
 		defer close(out)
 		defer cancel()
 		current := first
 		requestID := first.RequestID
-		msgs := append([]core.FluxMessage(nil), messages...)
+		msgs := append([]core.MuxMessage(nil), messages...)
 		totalOutput := 0
 
 		for attempt := 0; ; attempt++ {
 			var segment strings.Builder
 			hadToolCall := false
-			var terminal core.FluxStreamEvent
+			var terminal core.MuxStreamEvent
 		segmentLoop:
 			for event := range current.Events {
 				switch event.Type {
@@ -77,19 +77,19 @@ func streamWithContinuation(ctx context.Context, provider core.Provider, message
 				return
 			}
 
-			if !emitEngineEvent(streamCtx, out, core.FluxStreamEvent{
+			if !emitEngineEvent(streamCtx, out, core.MuxStreamEvent{
 				Type: "continuation", Content: requestID, StopReason: strconv.Itoa(attempt + 1),
 			}) {
 				return
 			}
 			msgs = append(
 				msgs,
-				core.FluxMessage{Role: "assistant", Content: segment.String()},
-				core.FluxMessage{Role: "user", Content: "Continue."},
+				core.MuxMessage{Role: "assistant", Content: segment.String()},
+				core.MuxMessage{Role: "user", Content: "Continue."},
 			)
 			next, err := provider.StreamChat(streamCtx, msgs, opts)
 			if err != nil {
-				_ = emitEngineEvent(streamCtx, out, core.FluxStreamEvent{Type: "error", Error: err.Error(), RequestID: requestID})
+				_ = emitEngineEvent(streamCtx, out, core.MuxStreamEvent{Type: "error", Error: err.Error(), RequestID: requestID})
 				return
 			}
 			current = next
@@ -101,7 +101,7 @@ func streamWithContinuation(ctx context.Context, provider core.Provider, message
 	return llm.NewStreamResult(out, first.RequestID, cancel), nil
 }
 
-func emitEngineEvent(ctx context.Context, out chan<- core.FluxStreamEvent, event core.FluxStreamEvent) bool {
+func emitEngineEvent(ctx context.Context, out chan<- core.MuxStreamEvent, event core.MuxStreamEvent) bool {
 	select {
 	case out <- event:
 		return true

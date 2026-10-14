@@ -1,4 +1,4 @@
-# CODEOWNERS for flux (LLM client library)
+# CODEOWNERS for mux (LLM client library)
 * @GrayCodeAI/maintainers
 
 # Provider integration (security-sensitive — handles API keys)

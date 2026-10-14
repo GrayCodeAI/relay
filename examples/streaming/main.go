@@ -10,16 +10,16 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GrayCodeAI/flux/provider"
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/provider"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 func main() {
-	c := provider.Client(&core.FluxConfig{
+	c := provider.Client(&core.MuxConfig{
 		Provider: provider.DetectProvider(),
 	})
 
-	messages := []core.FluxMessage{
+	messages := []core.MuxMessage{
 		{Role: "user", Content: "Write a short poem about programming."},
 	}
 

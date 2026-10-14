@@ -1,6 +1,6 @@
 package provider
 
-import "github.com/GrayCodeAI/flux/provider/adapters"
+import "github.com/GrayCodeAI/mux/provider/adapters"
 
 // OpenAICompatConfig holds provider-specific compatibility flags.
 type OpenAICompatConfig = adapters.OpenAICompatConfig

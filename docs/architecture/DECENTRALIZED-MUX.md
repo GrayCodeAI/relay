@@ -1,4 +1,4 @@
-# Decentralized Flux routing
+# Decentralized Mux routing
 
 Status: implemented foundation, not a finished distributed control plane.
 
@@ -12,8 +12,8 @@ Status: implemented foundation, not a finished distributed control plane.
 | Outages | Local provider remains usable until process exits | A running replica keeps serving its last valid manifest when peers fail | Persist last-good manifest locally for cold-start survival |
 | Credentials | Local config/store | Manifests contain no secrets; `runtime.NewReplicaFromState` resolves explicit local credentials | Secret rotation without replacing the host's replica reference |
 
-Flux remains **one Go module in its own repository**. Feature-owned folders are
-useful boundaries, but calling this a monorepo would be inaccurate: Rho is a
+Mux remains **one Go module in its own repository**. Feature-owned folders are
+useful boundaries, but calling this a monorepo would be inaccurate: Decoder is a
 separate repository in the parent workspace.
 
 ## Data and control flow
@@ -75,7 +75,7 @@ the same deployment router and provider interfaces.
   circuit-breaker state. The runtime constructor also rebuilds adapters;
   custom resolvers may reuse them. Frequent publication should be avoided
   until resource reuse and health-state transfer are designed and measured.
-- The lower-level `FluxClient` supports instance-local custom provider
+- The lower-level `MuxClient` supports instance-local custom provider
   registration, but some catalog and credential defaults remain process-wide.
   Claiming the entire module is free of globals would still be false.
 - No production load or fault-injection benchmark has established a scaling

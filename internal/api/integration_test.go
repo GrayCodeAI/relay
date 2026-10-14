@@ -13,8 +13,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/flux/provider/core"
-	"github.com/GrayCodeAI/flux/storage"
+	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/mux/storage"
 )
 
 // Node, alias, prompt-from, rate-limit, error-simulation, content-type,
@@ -29,11 +29,11 @@ type errorProvider struct {
 
 func (e *errorProvider) Name() string                 { return "error-provider" }
 func (e *errorProvider) Ping(_ context.Context) error { return nil }
-func (e *errorProvider) Chat(_ context.Context, _ []core.FluxMessage, _ core.ChatOptions) (*core.FluxResponse, error) {
+func (e *errorProvider) Chat(_ context.Context, _ []core.MuxMessage, _ core.ChatOptions) (*core.MuxResponse, error) {
 	return nil, e.err
 }
 
-func (e *errorProvider) StreamChat(_ context.Context, _ []core.FluxMessage, _ core.ChatOptions) (*core.StreamResult, error) {
+func (e *errorProvider) StreamChat(_ context.Context, _ []core.MuxMessage, _ core.ChatOptions) (*core.StreamResult, error) {
 	return nil, e.err
 }
 
@@ -42,18 +42,18 @@ type streamingProvider struct{}
 
 func (s *streamingProvider) Name() string                 { return "streaming-provider" }
 func (s *streamingProvider) Ping(_ context.Context) error { return nil }
-func (s *streamingProvider) Chat(_ context.Context, _ []core.FluxMessage, _ core.ChatOptions) (*core.FluxResponse, error) {
-	return &core.FluxResponse{Content: "hello world", FinishReason: "end_turn", Usage: &core.FluxUsage{CompletionTokens: 2}}, nil
+func (s *streamingProvider) Chat(_ context.Context, _ []core.MuxMessage, _ core.ChatOptions) (*core.MuxResponse, error) {
+	return &core.MuxResponse{Content: "hello world", FinishReason: "end_turn", Usage: &core.MuxUsage{CompletionTokens: 2}}, nil
 }
 
-func (s *streamingProvider) StreamChat(_ context.Context, _ []core.FluxMessage, _ core.ChatOptions) (*core.StreamResult, error) {
-	ch := make(chan core.FluxStreamEvent, 5)
+func (s *streamingProvider) StreamChat(_ context.Context, _ []core.MuxMessage, _ core.ChatOptions) (*core.StreamResult, error) {
+	ch := make(chan core.MuxStreamEvent, 5)
 	go func() {
 		chunks := []string{"hello", " ", "world"}
 		for _, c := range chunks {
-			ch <- core.FluxStreamEvent{Type: "content", Content: c}
+			ch <- core.MuxStreamEvent{Type: "content", Content: c}
 		}
-		ch <- core.FluxStreamEvent{Type: "done", StopReason: "end_turn", Usage: &core.FluxUsage{CompletionTokens: 3}}
+		ch <- core.MuxStreamEvent{Type: "done", StopReason: "end_turn", Usage: &core.MuxUsage{CompletionTokens: 3}}
 		close(ch)
 	}()
 	return &core.StreamResult{Events: ch}, nil
@@ -64,15 +64,15 @@ type errorStreamProvider struct{}
 
 func (e *errorStreamProvider) Name() string                 { return "error-stream" }
 func (e *errorStreamProvider) Ping(_ context.Context) error { return nil }
-func (e *errorStreamProvider) Chat(_ context.Context, _ []core.FluxMessage, _ core.ChatOptions) (*core.FluxResponse, error) {
+func (e *errorStreamProvider) Chat(_ context.Context, _ []core.MuxMessage, _ core.ChatOptions) (*core.MuxResponse, error) {
 	return nil, fmt.Errorf("provider error")
 }
 
-func (e *errorStreamProvider) StreamChat(_ context.Context, _ []core.FluxMessage, _ core.ChatOptions) (*core.StreamResult, error) {
-	ch := make(chan core.FluxStreamEvent, 3)
+func (e *errorStreamProvider) StreamChat(_ context.Context, _ []core.MuxMessage, _ core.ChatOptions) (*core.StreamResult, error) {
+	ch := make(chan core.MuxStreamEvent, 3)
 	go func() {
-		ch <- core.FluxStreamEvent{Type: "content", Content: "partial"}
-		ch <- core.FluxStreamEvent{Type: "error", Error: "rate limit exceeded"}
+		ch <- core.MuxStreamEvent{Type: "content", Content: "partial"}
+		ch <- core.MuxStreamEvent{Type: "error", Error: "rate limit exceeded"}
 		close(ch)
 	}()
 	return &core.StreamResult{Events: ch}, nil

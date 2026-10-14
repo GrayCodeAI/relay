@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/flux/storage"
+	"github.com/GrayCodeAI/mux/storage"
 )
 
 type mockReranker struct {

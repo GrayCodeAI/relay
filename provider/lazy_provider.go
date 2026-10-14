@@ -3,19 +3,19 @@ package provider
 import (
 	"context"
 
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
-// LazyProvider adapts FluxClient to the core.Provider interface without eagerly
+// LazyProvider adapts MuxClient to the core.Provider interface without eagerly
 // resolving credentials or constructing a concrete provider.
 type LazyProvider struct {
-	client   *FluxClient
+	client   *MuxClient
 	provider string
 }
 
 // NewLazyProvider creates a provider wrapper that resolves the concrete
 // provider only when chat or ping operations are invoked.
-func NewLazyProvider(cfg *core.FluxConfig) *LazyProvider {
+func NewLazyProvider(cfg *core.MuxConfig) *LazyProvider {
 	c := Client(cfg)
 	provider := c.defaultProvider
 	if cfg != nil && cfg.Provider != "" {
@@ -27,14 +27,14 @@ func NewLazyProvider(cfg *core.FluxConfig) *LazyProvider {
 	}
 }
 
-func (p *LazyProvider) Chat(ctx context.Context, messages []core.FluxMessage, opts core.ChatOptions) (*core.FluxResponse, error) {
+func (p *LazyProvider) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
 	if opts.Provider == "" {
 		opts.Provider = p.provider
 	}
 	return p.client.Chat(ctx, messages, opts)
 }
 
-func (p *LazyProvider) StreamChat(ctx context.Context, messages []core.FluxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (p *LazyProvider) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	if opts.Provider == "" {
 		opts.Provider = p.provider
 	}

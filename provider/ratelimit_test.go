@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/flux/provider/resilience"
+	"github.com/GrayCodeAI/mux/provider/resilience"
 )
 
 func TestRateLimitAllowsWithinRate(t *testing.T) {
@@ -120,7 +120,7 @@ func TestRateLimitProviderDelegation(t *testing.T) {
 	}
 
 	// Chat delegation
-	resp, err := wrapped.Chat(context.Background(), []FluxMessage{
+	resp, err := wrapped.Chat(context.Background(), []MuxMessage{
 		{Role: "user", Content: "test"},
 	}, ChatOptions{Model: "test"})
 	if err != nil {
@@ -131,7 +131,7 @@ func TestRateLimitProviderDelegation(t *testing.T) {
 	}
 
 	// StreamChat delegation
-	sr, err := wrapped.StreamChat(context.Background(), []FluxMessage{
+	sr, err := wrapped.StreamChat(context.Background(), []MuxMessage{
 		{Role: "user", Content: "test"},
 	}, ChatOptions{Model: "test"})
 	if err != nil {
@@ -153,13 +153,13 @@ func TestRateLimitChatBlockedByContext(t *testing.T) {
 
 	ctx := context.Background()
 	// Exhaust the single token
-	_, _ = wrapped.Chat(ctx, []FluxMessage{{Role: "user", Content: "first"}}, ChatOptions{})
+	_, _ = wrapped.Chat(ctx, []MuxMessage{{Role: "user", Content: "first"}}, ChatOptions{})
 
 	// Now use an already-cancelled context
 	ctx2, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, err := wrapped.Chat(ctx2, []FluxMessage{{Role: "user", Content: "blocked"}}, ChatOptions{})
+	_, err := wrapped.Chat(ctx2, []MuxMessage{{Role: "user", Content: "blocked"}}, ChatOptions{})
 	if err == nil {
 		t.Error("expected error when rate limited with cancelled context")
 	}

@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GO_VERSION: "1.26.6"
+  GO_VERSION: "1.27.2"
   GOPRIVATE: "github.com/GrayCodeAI/*"
   GONOSUMDB: "github.com/GrayCodeAI/*"
   GONOSUMCHECK: "1"
@@ -32,6 +32,13 @@ env:
   GOWORK: "off"
 
 jobs:
+  version:
+    name: Canonical version metadata
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - run: python3 scripts/sync-version.py --check
+
   # -------------------------------------------------------------------------
   # 1. Format — gofumpt + goimports must be clean (zero tolerance).
   # -------------------------------------------------------------------------
@@ -59,7 +66,7 @@ jobs:
           fi
       - name: goimports
         run: |
-          go install golang.org/x/tools/cmd/goimports@v0.30.0
+          go install golang.org/x/tools/cmd/goimports@v0.52.0
           out=$(goimports -l .)
           if [ -n "$out" ]; then
             echo "::error::goimports would reformat:"
@@ -131,7 +138,7 @@ jobs:
           bash ./scripts/check-provider-layering.sh
       - name: Run golangci-lint
         run: |
-          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.0
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
           golangci-lint run --timeout=5m
 
   # -------------------------------------------------------------------------
@@ -186,11 +193,19 @@ jobs:
           cache: true
       - name: govulncheck
         run: |
-          go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
+          go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
           govulncheck ./...
       - name: gosec (advisory)
         run: |
-          go install github.com/securego/gosec/v2/cmd/gosec@v2.22.4
+          # gosec's release still pins an older Go export-data reader.
+          # Build it with Go 1.27-compatible x/tools in an isolated module.
+          tool_dir=$(mktemp -d)
+          (
+            cd "$tool_dir"
+            go mod init graycodeai.local/gosec-tool
+            go get github.com/securego/gosec/v2/cmd/gosec@v2.29.0 golang.org/x/tools@v0.52.0
+            go install github.com/securego/gosec/v2/cmd/gosec
+          )
           gosec -exclude=G104,G703,G704,G101,G107,G112,G114,G115,G201,G202,G203,G204,G301,G302,G304,G305,G306,G307,G401,G402,G403,G404,G501,G502,G503,G504,G505,G601,G602 -confidence=medium -severity=high ./...
 
   # -------------------------------------------------------------------------
@@ -207,7 +222,7 @@ jobs:
           cache: true
       - name: deadcode
         run: |
-          go install golang.org/x/tools/cmd/deadcode@v0.30.0
+          go install golang.org/x/tools/cmd/deadcode@v0.52.0
           deadcode -test ./...
 
   # -------------------------------------------------------------------------

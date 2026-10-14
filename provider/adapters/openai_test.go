@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/flux/provider/core"
-	"github.com/GrayCodeAI/flux/types"
+	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/mux/types"
 )
 
 func TestNewOpenAIClient(t *testing.T) {
@@ -67,7 +67,7 @@ func TestOpenAIClient_Chat_Success(t *testing.T) {
 	c := NewOpenAIClient("sk-test", "https://api.openai.com/v1", nil)
 	c.SetRetry(core.RetryConfig{RetryConfig: types.RetryConfig{MaxRetries: 0}})
 	c.httpClient = &http.Client{Transport: transport}
-	resp, err := c.Chat(context.Background(), []core.FluxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "gpt-4o", MaxTokens: 256})
+	resp, err := c.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "gpt-4o", MaxTokens: 256})
 	if err != nil {
 		t.Fatalf("Chat: %v", err)
 	}
@@ -82,7 +82,7 @@ func TestOpenAIClient_Chat_Success(t *testing.T) {
 func TestOpenAIClient_Chat_EmptyModel(t *testing.T) {
 	t.Parallel()
 	c := NewOpenAIClient("key", "", nil)
-	_, err := c.Chat(context.Background(), []core.FluxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: ""})
+	_, err := c.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: ""})
 	if err == nil {
 		t.Fatal("expected error for empty model")
 	}
@@ -98,7 +98,7 @@ func TestOpenAIClient_Chat_APIError(t *testing.T) {
 	c := NewOpenAIClient("sk-test", "https://api.openai.com/v1", nil)
 	c.SetRetry(core.RetryConfig{RetryConfig: types.RetryConfig{MaxRetries: 0}})
 	c.httpClient = &http.Client{Transport: transport}
-	_, err := c.Chat(context.Background(), []core.FluxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "gpt-4o", MaxTokens: 256})
+	_, err := c.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "gpt-4o", MaxTokens: 256})
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -117,7 +117,7 @@ func TestOpenAIClient_StreamChat_Success(t *testing.T) {
 	c := NewOpenAIClient("sk-test", "https://api.openai.com/v1", nil)
 	c.SetRetry(core.RetryConfig{RetryConfig: types.RetryConfig{MaxRetries: 0}})
 	c.httpClient = &http.Client{Transport: transport}
-	result, err := c.StreamChat(context.Background(), []core.FluxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "gpt-4o", MaxTokens: 256})
+	result, err := c.StreamChat(context.Background(), []core.MuxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "gpt-4o", MaxTokens: 256})
 	if err != nil {
 		t.Fatalf("StreamChat: %v", err)
 	}
@@ -146,7 +146,7 @@ func TestOpenAIClient_StreamChat_CloseClosesBody(t *testing.T) {
 	c := NewOpenAIClient("sk-test", "https://api.openai.com/v1", nil)
 	c.SetRetry(core.RetryConfig{RetryConfig: types.RetryConfig{MaxRetries: 0}})
 	c.httpClient = &http.Client{Transport: transport}
-	result, err := c.StreamChat(context.Background(), []core.FluxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "gpt-4o", MaxTokens: 256})
+	result, err := c.StreamChat(context.Background(), []core.MuxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "gpt-4o", MaxTokens: 256})
 	if err != nil {
 		t.Fatalf("StreamChat: %v", err)
 	}
@@ -178,7 +178,7 @@ func TestOpenAIClient_StreamChat_CloseClosesBody(t *testing.T) {
 func TestOpenAIClient_StreamChat_EmptyModel(t *testing.T) {
 	t.Parallel()
 	c := NewOpenAIClient("key", "", nil)
-	_, err := c.StreamChat(context.Background(), []core.FluxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: ""})
+	_, err := c.StreamChat(context.Background(), []core.MuxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: ""})
 	if err == nil {
 		t.Fatal("expected error for empty model")
 	}
@@ -228,7 +228,7 @@ func TestBuildRequestBase(t *testing.T) {
 	t.Parallel()
 	temp := 0.7
 	topP := 0.9
-	req := BuildRequestBase([]core.FluxMessage{
+	req := BuildRequestBase([]core.MuxMessage{
 		{Role: "user", Content: "hello"},
 	}, core.ChatOptions{
 		Model: "gpt-4o", MaxTokens: 256, Temperature: &temp,
@@ -248,7 +248,7 @@ func TestBuildRequestBase(t *testing.T) {
 func TestBuildRequestBase_MaxCompletionTokens(t *testing.T) {
 	t.Parallel()
 	compat := &OpenAICompatConfig{MaxTokensField: "max_completion_tokens"}
-	req := BuildRequestBase([]core.FluxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "o1", MaxTokens: 512}, false, compat)
+	req := BuildRequestBase([]core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "o1", MaxTokens: 512}, false, compat)
 	if req.MaxCompletionTokens == nil || *req.MaxCompletionTokens != 512 {
 		t.Errorf("MaxCompletionTokens = %v", req.MaxCompletionTokens)
 	}
@@ -263,7 +263,7 @@ func TestBuildRequestBase_OmitMaxTokens(t *testing.T) {
 	// can exceed the account balance and trigger insufficient_user_quota. With
 	// OmitMaxTokens set, neither max_tokens nor max_completion_tokens is sent.
 	compat := &OpenAICompatConfig{MaxTokensField: "max_tokens", OmitMaxTokens: true}
-	req := BuildRequestBase([]core.FluxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "agnes-2.5-pro-alpha", MaxTokens: 0}, false, compat)
+	req := BuildRequestBase([]core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "agnes-2.5-pro-alpha", MaxTokens: 0}, false, compat)
 	if req.MaxTokens != nil {
 		t.Errorf("MaxTokens should be nil when OmitMaxTokens is set, got %v", *req.MaxTokens)
 	}
@@ -274,7 +274,7 @@ func TestBuildRequestBase_OmitMaxTokens(t *testing.T) {
 
 func TestBuildRequestBase_StreamOptions(t *testing.T) {
 	t.Parallel()
-	req := BuildRequestBase([]core.FluxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "gpt-4o", MaxTokens: 256}, true, nil)
+	req := BuildRequestBase([]core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "gpt-4o", MaxTokens: 256}, true, nil)
 	if req.StreamOptions == nil || !req.StreamOptions.IncludeUsage {
 		t.Error("expected StreamOptions with IncludeUsage for streaming")
 	}
@@ -283,7 +283,7 @@ func TestBuildRequestBase_StreamOptions(t *testing.T) {
 func TestBuildRequestBase_NoStreamOptionsForIncompatible(t *testing.T) {
 	t.Parallel()
 	compat := &OpenAICompatConfig{SupportsUsageInStreaming: false}
-	req := BuildRequestBase([]core.FluxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "deepseek", MaxTokens: 256}, true, compat)
+	req := BuildRequestBase([]core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "deepseek", MaxTokens: 256}, true, compat)
 	if req.StreamOptions != nil {
 		t.Error("expected no StreamOptions for incompatible compat")
 	}
@@ -291,10 +291,10 @@ func TestBuildRequestBase_NoStreamOptionsForIncompatible(t *testing.T) {
 
 func TestBuildRequestBase_ToolChoice(t *testing.T) {
 	t.Parallel()
-	req := BuildRequestBase([]core.FluxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
+	req := BuildRequestBase([]core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
 		Model: "gpt-4o", MaxTokens: 256,
 		ToolChoice: &core.ToolChoiceOption{Type: "tool", Name: "get_weather"},
-		Tools:      []core.FluxTool{{Name: "get_weather", Description: "Get weather", Parameters: map[string]interface{}{"type": "object"}}},
+		Tools:      []core.MuxTool{{Name: "get_weather", Description: "Get weather", Parameters: map[string]interface{}{"type": "object"}}},
 	}, false, &OpenAICompat)
 	if req.ToolChoice == nil {
 		t.Fatal("expected ToolChoice")
@@ -310,7 +310,7 @@ func TestBuildRequestBase_ToolChoice(t *testing.T) {
 
 func TestBuildRequestBase_ResponseFormat(t *testing.T) {
 	t.Parallel()
-	req := BuildRequestBase([]core.FluxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
+	req := BuildRequestBase([]core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
 		Model: "gpt-4o", MaxTokens: 256,
 		ResponseFormat: &core.ResponseFormat{Type: "json_object"},
 	}, false, &OpenAICompat)
@@ -322,7 +322,7 @@ func TestBuildRequestBase_ResponseFormat(t *testing.T) {
 func TestBuildRequestBase_ReasoningEffort(t *testing.T) {
 	t.Parallel()
 	compat := &OpenAICompatConfig{SupportsReasoningEffort: true}
-	req := BuildRequestBase([]core.FluxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
+	req := BuildRequestBase([]core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
 		Model: "o3", MaxTokens: 1024, ReasoningEffort: "high",
 	}, false, compat)
 	if req.ReasoningEffort != "high" {
@@ -386,7 +386,7 @@ func TestOpenAIClient_MimoAuthRetry(t *testing.T) {
 	c.SetRetry(core.RetryConfig{RetryConfig: types.RetryConfig{MaxRetries: 0}})
 	c.SetMimoAuth()
 	c.httpClient = &http.Client{Transport: transport}
-	resp, err := c.Chat(context.Background(), []core.FluxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "gpt-4o", MaxTokens: 256})
+	resp, err := c.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "gpt-4o", MaxTokens: 256})
 	if err != nil {
 		t.Fatalf("Chat: %v", err)
 	}
@@ -400,7 +400,7 @@ func TestOpenAIClient_MimoAuthRetry(t *testing.T) {
 
 func TestBuildRequestBase_ToolResults(t *testing.T) {
 	t.Parallel()
-	req := BuildRequestBase([]core.FluxMessage{
+	req := BuildRequestBase([]core.MuxMessage{
 		{Role: "user", ToolResults: []core.ToolResult{{ToolUseID: "call_1", Content: "42"}}},
 	}, core.ChatOptions{Model: "gpt-4o", MaxTokens: 256}, false, nil)
 	if len(req.Messages) != 1 {
@@ -416,7 +416,7 @@ func TestBuildRequestBase_ToolResults(t *testing.T) {
 
 func TestBuildRequestBase_ToolUse(t *testing.T) {
 	t.Parallel()
-	req := BuildRequestBase([]core.FluxMessage{
+	req := BuildRequestBase([]core.MuxMessage{
 		{Role: "assistant", Content: "Let me check", ToolUse: []core.ToolCall{{ID: "call_1", Name: "get_weather", Arguments: map[string]interface{}{"city": "NYC"}}}},
 	}, core.ChatOptions{Model: "gpt-4o", MaxTokens: 256}, false, nil)
 	if len(req.Messages) != 1 {
@@ -433,7 +433,7 @@ func TestBuildRequestBase_ToolUse(t *testing.T) {
 
 func TestBuildRequestBase_ContentParts(t *testing.T) {
 	t.Parallel()
-	req := BuildRequestBase([]core.FluxMessage{
+	req := BuildRequestBase([]core.MuxMessage{
 		{Role: "user", ContentParts: []core.ContentPart{
 			{Type: "text", Text: "desc"},
 			{Type: "image_url", ImageURL: &core.ImageURLPart{URL: "https://example.com/img.png", Detail: "high"}},
@@ -450,7 +450,7 @@ func TestBuildRequestBase_ContentParts(t *testing.T) {
 
 func TestBuildRequestBase_LegacyImages(t *testing.T) {
 	t.Parallel()
-	req := BuildRequestBase([]core.FluxMessage{
+	req := BuildRequestBase([]core.MuxMessage{
 		{Role: "user", Content: "Check", Images: []string{"https://example.com/img.png"}},
 	}, core.ChatOptions{Model: "gpt-4o", MaxTokens: 256}, false, nil)
 	content := req.Messages[0]["content"].([]map[string]interface{})
@@ -462,7 +462,7 @@ func TestBuildRequestBase_LegacyImages(t *testing.T) {
 func TestBuildRequestBase_CacheRole(t *testing.T) {
 	t.Parallel()
 	compat := &OpenAICompatConfig{SupportsCacheRole: true}
-	req := BuildRequestBase([]core.FluxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
+	req := BuildRequestBase([]core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
 		Model: "moonshot-v1", MaxTokens: 256,
 		KimiContextCacheID: "cache_abc", KimiCacheResetTTL: true,
 	}, false, compat)
@@ -481,7 +481,7 @@ func TestBuildRequestBase_ZAIThinking(t *testing.T) {
 	t.Parallel()
 	enabled := true
 	compat := &OpenAICompatConfig{ThinkingFormat: "zai"}
-	req := BuildRequestBase([]core.FluxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
+	req := BuildRequestBase([]core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
 		Model: "glm-4", MaxTokens: 256,
 		GLMThinkingEnabled: &enabled,
 	}, false, compat)
@@ -492,14 +492,14 @@ func TestBuildRequestBase_ZAIThinking(t *testing.T) {
 
 func TestBuildRequestBase_LongCatDefaultsThinkingDisabled(t *testing.T) {
 	t.Parallel()
-	req := BuildRequestBase([]core.FluxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
+	req := BuildRequestBase([]core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
 		Model: "LongCat-2.0", MaxTokens: 256,
 	}, false, &LongCatCompat)
 	if req.Thinking == nil || req.Thinking["type"] != "disabled" {
 		t.Fatalf("LongCat default Thinking = %v, want type=disabled", req.Thinking)
 	}
 	enabled := true
-	reqOn := BuildRequestBase([]core.FluxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
+	reqOn := BuildRequestBase([]core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
 		Model: "LongCat-2.0", MaxTokens: 256,
 		GLMThinkingEnabled: &enabled,
 	}, false, &LongCatCompat)
@@ -512,7 +512,7 @@ func TestBuildRequestBase_AgnesThinking(t *testing.T) {
 	t.Parallel()
 	enabled := true
 	compat := &OpenAICompatConfig{ThinkingFormat: "agnes", OmitMaxTokens: true}
-	req := BuildRequestBase([]core.FluxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
+	req := BuildRequestBase([]core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
 		Model: "agnes-2.0-flash", MaxTokens: 0,
 		GLMThinkingEnabled: &enabled,
 	}, false, compat)
@@ -528,13 +528,13 @@ func TestBuildRequestBase_OpenRouterReasoning(t *testing.T) {
 	t.Parallel()
 	enabled := true
 	disabled := false
-	reqOn := BuildRequestBase([]core.FluxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
+	reqOn := BuildRequestBase([]core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
 		Model: "openrouter/auto", MaxTokens: 256, ThinkingEnabled: &enabled,
 	}, false, &OpenRouterCompat)
 	if reqOn.Reasoning == nil || reqOn.Reasoning["enabled"] != true {
 		t.Fatalf("OpenRouter on Reasoning = %v", reqOn.Reasoning)
 	}
-	reqOff := BuildRequestBase([]core.FluxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
+	reqOff := BuildRequestBase([]core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
 		Model: "openrouter/auto", MaxTokens: 256, ThinkingEnabled: &disabled,
 	}, false, &OpenRouterCompat)
 	if reqOff.Reasoning == nil || reqOff.Reasoning["enabled"] != false {
@@ -553,14 +553,14 @@ func TestBuildRequestBase_KimiDeepSeekXiaomiThinking(t *testing.T) {
 		{"xiaomi", &XiaomiCompat},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			req := BuildRequestBase([]core.FluxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
+			req := BuildRequestBase([]core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
 				Model: "m", MaxTokens: 256,
 			}, false, tc.compat)
 			if req.Thinking == nil || req.Thinking["type"] != "disabled" {
 				t.Fatalf("default Thinking = %v, want type=disabled", req.Thinking)
 			}
 			enabled := true
-			reqOn := BuildRequestBase([]core.FluxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
+			reqOn := BuildRequestBase([]core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
 				Model: "m", MaxTokens: 256, ThinkingEnabled: &enabled,
 			}, false, tc.compat)
 			if reqOn.Thinking == nil || reqOn.Thinking["type"] != "enabled" {
@@ -572,14 +572,14 @@ func TestBuildRequestBase_KimiDeepSeekXiaomiThinking(t *testing.T) {
 
 func TestBuildRequestBase_MiniMaxThinkingAdaptive(t *testing.T) {
 	t.Parallel()
-	req := BuildRequestBase([]core.FluxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
+	req := BuildRequestBase([]core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
 		Model: "MiniMax-M3", MaxTokens: 256,
 	}, false, &MiniMaxCompat)
 	if req.Thinking == nil || req.Thinking["type"] != "disabled" {
 		t.Fatalf("default Thinking = %v, want type=disabled", req.Thinking)
 	}
 	enabled := true
-	reqOn := BuildRequestBase([]core.FluxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
+	reqOn := BuildRequestBase([]core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
 		Model: "MiniMax-M3", MaxTokens: 256, ThinkingEnabled: &enabled,
 	}, false, &MiniMaxCompat)
 	if reqOn.Thinking == nil || reqOn.Thinking["type"] != "adaptive" {
@@ -612,7 +612,7 @@ func TestOpenAIClient_Ping_MimoAuthRetry(t *testing.T) {
 func TestOpenAIClient_BuildOpenAIRequest(t *testing.T) {
 	t.Parallel()
 	c := NewOpenAIClient("sk-test", "https://api.openai.com/v1", nil)
-	req, body, err := c.BuildOpenAIRequest(context.Background(), []core.FluxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "gpt-4o", MaxTokens: 256, Temperature: float64Ptr(0.5)}, false)
+	req, body, err := c.BuildOpenAIRequest(context.Background(), []core.MuxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "gpt-4o", MaxTokens: 256, Temperature: float64Ptr(0.5)}, false)
 	if err != nil {
 		t.Fatalf("BuildOpenAIRequest: %v", err)
 	}

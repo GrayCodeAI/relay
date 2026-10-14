@@ -1,4 +1,4 @@
-# CODEOWNERS for flux (universal LLM provider runtime)
+# CODEOWNERS for mux (universal LLM provider runtime)
 * @GrayCodeAI/maintainers
 
 # Engine core
