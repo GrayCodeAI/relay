@@ -1,0 +1,30 @@
+# Mux — LLM provider runtime for Go
+
+Mux is a host-neutral provider runtime. It owns credentials, catalog/route
+resolution, provider transports, normalized request/response streams, retries,
+fallback and usage. Hosts (Decoder, etc.) import exactly four packages:
+engine, llm, graph, tools. Everything else is engine-internal.
+
+## Start here
+- README.md — overview, supported providers, architecture
+- AGENTS.md — design principles, conventions, pitfalls, API patterns, testing
+- docs/architecture/HOST-ENGINE-BOUNDARY.md — frozen host-facing contract
+- docs/guides/CREDENTIAL-SETUP-FLOW.md — API keys and credentials store
+- engine/ — stable host facade (engine/provider.go re-exports llm types)
+- llm/ — host-facing DTOs (MuxMessage, MuxResponse, MuxTool, MuxUsage)
+- graph/ — portable execution graph vocabulary
+- tools/ — tool call/result contracts
+- provider/ — runtime composition root (internal)
+- catalog/ — model catalog, discovery, pricing
+- credentials/ — API key storage and safe projection
+- router/, runtime/ — route policy and resolution
+
+## Tests and CI
+- `go test ./...` (46 packages)
+- `make ci` — gofmt, goimports, vet, golangci-lint, boundary checks, race tests, govulncheck
+- provider/testkit — mock providers for offline tests (needs multi-turn scripted recorder, see Decoder adoption plan PR3)
+
+## Conventions
+- Go 1.27.2+, pure Go, no CGO
+- gofumpt formatting, Conventional Commits
+- boundary protected by engine/host_surface_test.go (touching unreachable set breaks CI)

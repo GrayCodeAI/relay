@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestContinuation_StopsWhenNotMaxTokens(t *testing.T) {
@@ -359,4 +360,23 @@ func (s *sequentialMock) StreamChat(ctx context.Context, messages []MuxMessage, 
 	}()
 
 	return NewStreamResult(ch, cancel), nil
+}
+
+func TestContinuation_RespectsCancellation(t *testing.T) {
+	t.Parallel()
+	mock := NewMockProvider(MockModeEcho)
+	mock.Delay = 1 * time.Second
+	mock.Response = "partial"
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	msgs := []MuxMessage{{Role: "user", Content: "hello"}}
+	opts := ChatOptions{Model: "test"}
+	cfg := ContinuationConfig{MaxContinuations: 3, MaxTotalTokens: 32000}
+
+	_, err := ChatWithContinuation(ctx, mock, msgs, opts, cfg)
+	if err == nil {
+		t.Fatal("expected context cancellation error")
+	}
 }
