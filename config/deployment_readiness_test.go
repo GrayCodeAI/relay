@@ -3,7 +3,7 @@ package config
 import (
 	"testing"
 
-	"github.com/GrayCodeAI/flux/catalog"
+	"github.com/GrayCodeAI/mux/catalog"
 )
 
 func TestDeploymentConfiguredMatchesStrictFactoryRequirements(t *testing.T) {

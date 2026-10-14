@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 func classify(operation string, route Route, err error) error {
@@ -25,7 +25,7 @@ func classify(operation string, route Route, err error) error {
 		code = ErrorProviderUnavailable
 		retryable = true
 	default:
-		var providerErr *core.FluxError
+		var providerErr *core.MuxError
 		if errors.As(err, &providerErr) {
 			retryable = providerErr.IsRetriable()
 			switch {

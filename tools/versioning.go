@@ -110,13 +110,13 @@ type ToolMeta struct {
 type ToolNamespace string
 
 const (
-	ToolNamespaceUnspecified     ToolNamespace = ""          // unspecified
-	ToolNamespaceRhoBuild        ToolNamespace = "rho_build" // rho
-	ToolNamespaceRhoBuildConcise ToolNamespace = "rho_build_concise"
-	ToolNamespaceCodex           ToolNamespace = "codex"    // codex harness
-	ToolNamespaceOpencode        ToolNamespace = "opencode" // opencode harness
-	ToolNamespaceMcp             ToolNamespace = "mcp"      // MCP servers (falcon)
-	ToolNamespaceAcp             ToolNamespace = "acp"      // reserved: ACP harness
+	ToolNamespaceUnspecified         ToolNamespace = ""              // unspecified
+	ToolNamespaceDecoderBuild        ToolNamespace = "decoder_build" // decoder
+	ToolNamespaceDecoderBuildConcise ToolNamespace = "decoder_build_concise"
+	ToolNamespaceCodex               ToolNamespace = "codex"    // codex harness
+	ToolNamespaceOpencode            ToolNamespace = "opencode" // opencode harness
+	ToolNamespaceMcp                 ToolNamespace = "mcp"      // MCP servers (falcon)
+	ToolNamespaceAcp                 ToolNamespace = "acp"      // reserved: ACP harness
 )
 
 // ToolNamespaceFrom parses a namespace string into a ToolNamespace. The set is
@@ -125,8 +125,8 @@ const (
 // typed deserialization (see the closed-enum forward-safety rule above).
 func ToolNamespaceFrom(s string) (ToolNamespace, error) {
 	switch ToolNamespace(s) {
-	case ToolNamespaceUnspecified, ToolNamespaceRhoBuild,
-		ToolNamespaceRhoBuildConcise, ToolNamespaceCodex,
+	case ToolNamespaceUnspecified, ToolNamespaceDecoderBuild,
+		ToolNamespaceDecoderBuildConcise, ToolNamespaceCodex,
 		ToolNamespaceOpencode, ToolNamespaceMcp, ToolNamespaceAcp:
 		return ToolNamespace(s), nil
 	default:

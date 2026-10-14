@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 // StructuredOutputError represents a validation failure with details.
@@ -147,7 +147,7 @@ func validateArray(value interface{}, schema map[string]interface{}) error {
 
 // BuildStructuredPrompt adds JSON schema instructions to the message system prompt.
 // It prepends schema requirements to ensure the LLM outputs valid JSON matching the schema.
-func BuildStructuredPrompt(messages []core.FluxMessage, schema map[string]interface{}) []core.FluxMessage {
+func BuildStructuredPrompt(messages []core.MuxMessage, schema map[string]interface{}) []core.MuxMessage {
 	schemaJSON, err := json.MarshalIndent(schema, "", "  ")
 	if err != nil {
 		// Fallback: return messages unchanged if schema can't be marshaled
@@ -164,7 +164,7 @@ Important:
 - All required fields must be present`, string(schemaJSON))
 
 	// Find system message and prepend to it, or create new one
-	result := make([]core.FluxMessage, 0, len(messages)+1)
+	result := make([]core.MuxMessage, 0, len(messages)+1)
 	systemFound := false
 
 	for _, msg := range messages {
@@ -185,8 +185,8 @@ Important:
 
 	if !systemFound {
 		// Insert system message at the beginning
-		systemMsg := core.FluxMessage{Role: "system", Content: schemaInstruction}
-		result = append([]core.FluxMessage{systemMsg}, result...)
+		systemMsg := core.MuxMessage{Role: "system", Content: schemaInstruction}
+		result = append([]core.MuxMessage{systemMsg}, result...)
 	}
 
 	return result
@@ -200,9 +200,9 @@ func WithStructuredOutput(schema map[string]interface{}, maxRetries int) core.Cl
 // ChatWithStructuredOutput sends a chat request with structured output
 // validation through a provider. If the response doesn't match the schema, it
 // retries with error feedback.
-func ChatWithStructuredOutput(ctx context.Context, p core.Provider, provider string, messages []core.FluxMessage, opts core.ChatOptions, validation core.SchemaValidation) (*core.FluxResponse, error) {
+func ChatWithStructuredOutput(ctx context.Context, p core.Provider, provider string, messages []core.MuxMessage, opts core.ChatOptions, validation core.SchemaValidation) (*core.MuxResponse, error) {
 	if len(messages) == 0 {
-		return nil, fmt.Errorf("flux: messages must not be empty")
+		return nil, fmt.Errorf("mux: messages must not be empty")
 	}
 
 	maxRetries := validation.MaxRetries
@@ -226,7 +226,7 @@ func ChatWithStructuredOutput(ctx context.Context, p core.Provider, provider str
 		structuredMessages = addAnthropicPrefill(structuredMessages)
 	}
 
-	var lastResp *core.FluxResponse
+	var lastResp *core.MuxResponse
 	var lastErr error
 
 	for attempt := 0; attempt <= maxRetries; attempt++ {
@@ -275,9 +275,9 @@ func ChatWithStructuredOutput(ctx context.Context, p core.Provider, provider str
 }
 
 // addAnthropicPrefill adds an assistant message prefill for Anthropic to encourage JSON output.
-func addAnthropicPrefill(messages []core.FluxMessage) []core.FluxMessage {
+func addAnthropicPrefill(messages []core.MuxMessage) []core.MuxMessage {
 	// Add assistant message with opening brace to force JSON output
-	prefillMsg := core.FluxMessage{
+	prefillMsg := core.MuxMessage{
 		Role:    "assistant",
 		Content: "```json\n{",
 	}
@@ -285,7 +285,7 @@ func addAnthropicPrefill(messages []core.FluxMessage) []core.FluxMessage {
 }
 
 // addRetryFeedback adds error feedback to messages for retry attempts.
-func addRetryFeedback(messages []core.FluxMessage, lastResponse string, validationErr error, schema map[string]interface{}) []core.FluxMessage {
+func addRetryFeedback(messages []core.MuxMessage, lastResponse string, validationErr error, schema map[string]interface{}) []core.MuxMessage {
 	schemaJSON, _ := json.MarshalIndent(schema, "", "  ")
 
 	feedback := fmt.Sprintf(`Your previous response was invalid. Error: %v
@@ -305,7 +305,7 @@ Remember:
 		string(schemaJSON))
 
 	// Add as user message
-	feedbackMsg := core.FluxMessage{
+	feedbackMsg := core.MuxMessage{
 		Role:    "user",
 		Content: feedback,
 	}

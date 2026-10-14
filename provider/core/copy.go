@@ -1,8 +1,8 @@
 package core
 
-// CopyResponse returns a deep copy of an FluxResponse so that callers
+// CopyResponse returns a deep copy of an MuxResponse so that callers
 // cannot mutate the cached version.
-func CopyResponse(resp *FluxResponse) *FluxResponse {
+func CopyResponse(resp *MuxResponse) *MuxResponse {
 	if resp == nil {
 		return nil
 	}

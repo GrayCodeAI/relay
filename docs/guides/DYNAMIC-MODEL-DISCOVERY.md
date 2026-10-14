@@ -1,14 +1,14 @@
 # Dynamic Model Discovery
 
-Status: implemented through the `flux/engine` contract v2.
+Status: implemented through the `mux/engine` contract v2.
 
-This guide describes the host-facing path used by Rho. Rho is the face; Flux
+This guide describes the host-facing path used by Decoder. Decoder is the face; Mux
 is the engine and source of truth for provider metadata, credentials, live
 model discovery, catalog compilation, selection, and provider transport.
 
 ## Ownership
 
-| Rho owns | Flux owns |
+| Decoder owns | Mux owns |
 |---|---|
 | credential and model-picker UX | safe credential resolution and persistence |
 | conversation/session state | provider registry and deployment metadata |
@@ -17,17 +17,17 @@ model discovery, catalog compilation, selection, and provider transport.
 | product settings and lifecycle | model ownership, aliases, selection, and routing |
 | normalized request construction | provider adapters, streams, usage, and errors |
 
-Rho calls its integration wrapper, which delegates to `flux/engine`. Rho UI,
-command, and conversation packages do not call Flux's lower-level runtime or
+Decoder calls its integration wrapper, which delegates to `mux/engine`. Decoder UI,
+command, and conversation packages do not call Mux's lower-level runtime or
 client packages.
 
 ## End-to-end path
 
 ```text
-User enters API key or custom-gateway settings in Rho
+User enters API key or custom-gateway settings in Decoder
   |
   v
-Rho integration --> Engine.ResolveCredential
+Decoder integration --> Engine.ResolveCredential
   |
   v
 Engine.SaveCredential
@@ -47,10 +47,10 @@ Engine.ApplyCredentials / Engine.ListLiveModels
   `--> atomically compile the injected catalog path
   |
   v
-Engine.ListModels --> Rho picker --> Engine.SetSelection
+Engine.ListModels --> Decoder picker --> Engine.SetSelection
   |
   v
-Rho conversation --> Engine.Generate or Engine.Stream --> provider API
+Decoder conversation --> Engine.Generate or Engine.Stream --> provider API
   |
   `--> normalized route, content, thinking, tool-call, usage, and done events
 ```
@@ -61,7 +61,7 @@ exist in the same store.
 
 ## Engine construction and isolation
 
-Create the Engine once at Rho's composition root and inject all host-owned
+Create the Engine once at Decoder's composition root and inject all host-owned
 state:
 
 ```go
@@ -76,7 +76,7 @@ e, err := engine.New(engine.Options{
 ```
 
 - `StateDir` derives default catalog and provider paths; explicit paths win.
-- An empty `RemoteCatalogURL` selects Flux's compiled-in HTTPS seed and does
+- An empty `RemoteCatalogURL` selects Mux's compiled-in HTTPS seed and does
   not consult a process-environment override.
 - Custom gateways are normalized, validated, and snapshotted per Engine.
 - Custom gateways must be supplied through `Options.CustomGateways`; there is
@@ -89,7 +89,7 @@ custom gateways to coexist safely in one process.
 
 ## Catalog sources
 
-Flux keeps three complementary sources:
+Mux keeps three complementary sources:
 
 ```text
 published remote catalog
@@ -110,13 +110,13 @@ that do not require the host to reproduce provider logic.
 The stable model DTO intentionally distinguishes:
 
 - `ID`: provider-native/listed model identifier.
-- `CanonicalID`: Flux's canonical alias target where known.
+- `CanonicalID`: Mux's canonical alias target where known.
 - `Owner`: catalog model owner.
 - `ProviderID`: provider associated with the offering.
 - `GatewayID`: selected/listed gateway or deployment identity.
 - `Source` and `LiveMetadata`: origin and provider-native metadata.
 
-Rho should render these fields; it should not infer ownership from model-name
+Decoder should render these fields; it should not infer ownership from model-name
 prefixes or parse raw provider responses.
 
 ## Provider registry
@@ -134,7 +134,7 @@ ProviderSpec
 
 Provider-specific HTTP parsing remains inside registered fetchers/adapters.
 Adding a built-in provider should normally require registry data, its adapter
-or live fetcher, and tests—not new branches in Rho UI code.
+or live fetcher, and tests—not new branches in Decoder UI code.
 
 Custom OpenAI-compatible gateways are invocation-scoped Engine options rather
 than registry mutations. Their URLs must be HTTP(S) with a host and must not
@@ -181,14 +181,14 @@ failed live response is not silently represented as successful live readiness.
 
 ## Selection and conversation handoff
 
-Rho persists a choice through `Engine.SetSelection(provider, model)`. Flux
+Decoder persists a choice through `Engine.SetSelection(provider, model)`. Mux
 validates provider/model ownership, preserves custom model IDs, canonicalizes
 built-in aliases, and stores routing metadata at the injected provider path.
 
-At generation time Rho passes provider-neutral messages, tools,
+At generation time Decoder passes provider-neutral messages, tools,
 requirements, preferences, limits, and metadata. `Resolve`, `Generate`, and
 `Stream` use the same Engine-owned catalog, provider state, credentials, and
-custom-gateway snapshot. Rho neither constructs a provider client nor exports
+custom-gateway snapshot. Decoder neither constructs a provider client nor exports
 credentials into the process environment.
 
 ## Local and live preflight
@@ -211,7 +211,7 @@ Live (VerifyLive=true)
 
 Local preflight is safe for normal startup and offline diagnostics. Live
 preflight is an explicit network check and should be labeled accordingly in
-Rho.
+Decoder.
 
 ## State and secret safety
 
@@ -230,7 +230,7 @@ Engine provider-state mutations:
 
 `MigrateProviderSecretsContext` is the explicit legacy migration. If mapping or
 store persistence fails, it aborts and restores the original provider state.
-Rho diagnostics can use `ProviderStateSecurityStatus`, `CatalogHealth`, and
+Decoder diagnostics can use `ProviderStateSecurityStatus`, `CatalogHealth`, and
 the safe credential/gateway reports without reading either file directly.
 
 ## Failure handling
@@ -246,26 +246,26 @@ the safe credential/gateway reports without reading either file directly.
 | custom gateway URL contains embedded data | reject configuration |
 | stream caller exits | close the Engine stream (cancelling its context alone leaves the terminal event waiting for a reader) |
 
-Provider-specific friendly error formatting remains Flux-owned; Rho decides
+Provider-specific friendly error formatting remains Mux-owned; Decoder decides
 where and how to display it.
 
-## Release order for Rho
+## Release order for Decoder
 
-Flux is changed and released before Rho advances its dependency:
+Mux is changed and released before Decoder advances its dependency:
 
 ```text
-standalone Flux change
-  --> Flux tests (two passes)
-  --> signed Flux commit
-  --> publish a resolvable Flux module release/commit
-  --> update Rho module dependency when needed
-  --> update Rho's Flux module pin to the same published commit
-  --> Rho integration + boundary + clean-clone verification (two passes)
-  --> commit Rho code and gitlink together
+standalone Mux change
+  --> Mux tests (two passes)
+  --> signed Mux commit
+  --> publish a resolvable Mux module release/commit
+  --> update Decoder module dependency when needed
+  --> update Decoder's Mux module pin to the same published commit
+  --> Decoder integration + boundary + clean-clone verification (two passes)
+  --> commit Decoder code and gitlink together
 ```
 
-The parent workspace must use a committed Flux checkout, never working-tree-
-only code, and Rho's module pin must resolve to that same published commit.
+The parent workspace must use a committed Mux checkout, never working-tree-
+only code, and Decoder's module pin must resolve to that same published commit.
 Both workspace builds and `GOWORK=off` builds must expose the same Engine
 contract.
 
@@ -274,4 +274,4 @@ contract.
 - `docs/architecture/HOST-ENGINE-BOUNDARY.md` — ownership and compatibility
   policy.
 - `CREDENTIAL-SETUP-FLOW.md` — product setup flow.
-- Rho's dynamic-model and architecture docs — host integration and UI behavior.
+- Decoder's dynamic-model and architecture docs — host integration and UI behavior.

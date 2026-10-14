@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GrayCodeAI/flux/conversation"
-	flux "github.com/GrayCodeAI/flux/internal/health"
-	"github.com/GrayCodeAI/flux/internal/httputil"
-	"github.com/GrayCodeAI/flux/provider/core"
-	"github.com/GrayCodeAI/flux/provider/observability"
-	"github.com/GrayCodeAI/flux/storage"
+	"github.com/GrayCodeAI/mux/conversation"
+	mux "github.com/GrayCodeAI/mux/internal/health"
+	"github.com/GrayCodeAI/mux/internal/httputil"
+	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/mux/provider/observability"
+	"github.com/GrayCodeAI/mux/storage"
 )
 
 const maxRequestBodyBytes = 1 << 20
@@ -21,7 +21,7 @@ type Server struct {
 	engine        *conversation.Engine
 	store         storage.Store
 	analytics     storage.AnalyticsStore
-	healthChecker *flux.HealthChecker
+	healthChecker *mux.HealthChecker
 	reranker      Reranker // optional: provider-backed /rerank; nil => lexical fallback
 	apiKey        string
 	virtualKeyFor func(token string) string // optional: maps a bearer token to a virtual key id
@@ -36,8 +36,8 @@ type Config struct {
 	Store         storage.Store
 	Analytics     storage.AnalyticsStore // optional: enables /api/usage, /api/costs
 	Provider      core.Provider
-	HealthChecker *flux.HealthChecker // optional: enables /api/health/providers
-	Reranker      Reranker            // optional: provider-backed /rerank; nil => lexical fallback
+	HealthChecker *mux.HealthChecker // optional: enables /api/health/providers
+	Reranker      Reranker           // optional: provider-backed /rerank; nil => lexical fallback
 	APIKey        string
 	Port          int
 	// VirtualKeyResolver optionally maps an inbound bearer/API-key token to a
@@ -161,12 +161,12 @@ func (s *Server) handleReady(w http.ResponseWriter, _ *http.Request) {
 }
 
 type promptRequest struct {
-	Message      string          `json:"message"`
-	Model        string          `json:"model,omitempty"`
-	SystemPrompt string          `json:"system_prompt,omitempty"`
-	MaxTokens    int             `json:"max_tokens,omitempty"`
-	Stream       bool            `json:"stream,omitempty"`
-	Tools        []core.FluxTool `json:"tools,omitempty"`
+	Message      string         `json:"message"`
+	Model        string         `json:"model,omitempty"`
+	SystemPrompt string         `json:"system_prompt,omitempty"`
+	MaxTokens    int            `json:"max_tokens,omitempty"`
+	Stream       bool           `json:"stream,omitempty"`
+	Tools        []core.MuxTool `json:"tools,omitempty"`
 }
 
 func (s *Server) handlePrompt(w http.ResponseWriter, r *http.Request) {

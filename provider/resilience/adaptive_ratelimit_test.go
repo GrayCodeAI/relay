@@ -13,30 +13,30 @@ import (
 // mockProvider is a minimal Provider for testing.
 type mockProvider struct {
 	name     string
-	chatFn   func(ctx context.Context, messages []FluxMessage, opts ChatOptions) (*FluxResponse, error)
-	streamFn func(ctx context.Context, messages []FluxMessage, opts ChatOptions) (*StreamResult, error)
+	chatFn   func(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*MuxResponse, error)
+	streamFn func(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*StreamResult, error)
 }
 
 func (m *mockProvider) Name() string                   { return m.name }
 func (m *mockProvider) Ping(ctx context.Context) error { return nil }
-func (m *mockProvider) Chat(ctx context.Context, messages []FluxMessage, opts ChatOptions) (*FluxResponse, error) {
+func (m *mockProvider) Chat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*MuxResponse, error) {
 	if m.chatFn != nil {
 		return m.chatFn(ctx, messages, opts)
 	}
-	return &FluxResponse{
+	return &MuxResponse{
 		Content: "ok",
-		Usage:   &FluxUsage{TotalTokens: 100},
+		Usage:   &MuxUsage{TotalTokens: 100},
 	}, nil
 }
 
-func (m *mockProvider) StreamChat(ctx context.Context, messages []FluxMessage, opts ChatOptions) (*StreamResult, error) {
+func (m *mockProvider) StreamChat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*StreamResult, error) {
 	if m.streamFn != nil {
 		return m.streamFn(ctx, messages, opts)
 	}
-	ch := make(chan FluxStreamEvent, 4)
-	ch <- FluxStreamEvent{Type: "content", Content: "hello"}
-	ch <- FluxStreamEvent{Type: "usage", Usage: &FluxUsage{TotalTokens: 50}}
-	ch <- FluxStreamEvent{Type: "done"}
+	ch := make(chan MuxStreamEvent, 4)
+	ch <- MuxStreamEvent{Type: "content", Content: "hello"}
+	ch <- MuxStreamEvent{Type: "usage", Usage: &MuxUsage{TotalTokens: 50}}
+	ch <- MuxStreamEvent{Type: "done"}
 	close(ch)
 	return &StreamResult{Events: ch}, nil
 }
@@ -209,7 +209,7 @@ func TestAdaptiveRateLimitProvider_StreamChat(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	var events []FluxStreamEvent
+	var events []MuxStreamEvent
 	for evt := range result.Events {
 		events = append(events, evt)
 	}
@@ -230,13 +230,13 @@ func TestAdaptiveRateLimitProvider_StreamChat(t *testing.T) {
 
 func TestAdaptiveRateLimitProvider_ResetsUsageAtContinuation(t *testing.T) {
 	t.Parallel()
-	inner := &mockProvider{name: "test", streamFn: func(context.Context, []FluxMessage, ChatOptions) (*StreamResult, error) {
-		events := make(chan FluxStreamEvent, 4)
-		usage := &FluxUsage{PromptTokens: 3, CompletionTokens: 5, TotalTokens: 8}
-		events <- FluxStreamEvent{Type: "usage", Usage: usage}
-		events <- FluxStreamEvent{Type: "continuation"}
-		events <- FluxStreamEvent{Type: "usage", Usage: usage}
-		events <- FluxStreamEvent{Type: "done", Usage: usage}
+	inner := &mockProvider{name: "test", streamFn: func(context.Context, []MuxMessage, ChatOptions) (*StreamResult, error) {
+		events := make(chan MuxStreamEvent, 4)
+		usage := &MuxUsage{PromptTokens: 3, CompletionTokens: 5, TotalTokens: 8}
+		events <- MuxStreamEvent{Type: "usage", Usage: usage}
+		events <- MuxStreamEvent{Type: "continuation"}
+		events <- MuxStreamEvent{Type: "usage", Usage: usage}
+		events <- MuxStreamEvent{Type: "done", Usage: usage}
 		close(events)
 		return NewStreamResult(events, "", func() {}), nil
 	}}
@@ -541,7 +541,7 @@ func ExampleAdaptiveRateLimitProvider() {
 	}
 
 	// Use the provider normally
-	resp, err := provider.Chat(context.Background(), []FluxMessage{
+	resp, err := provider.Chat(context.Background(), []MuxMessage{
 		{Role: "user", Content: "Hello!"},
 	}, ChatOptions{Model: "gpt-4"})
 	if err != nil {

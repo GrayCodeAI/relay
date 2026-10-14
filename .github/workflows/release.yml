@@ -1,7 +1,7 @@
-# Release workflow for flux (Go library — no binaries).
+# Release workflow for mux (Go library — no binaries).
 # Triggered when a v* tag is pushed; publishes a GitHub Release with
 # auto-generated notes. Consumers depend on the tag via
-# `go get github.com/GrayCodeAI/flux@vX.Y.Z`.
+# `go get github.com/GrayCodeAI/mux@vX.Y.Z`.
 
 name: release
 
@@ -20,6 +20,13 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+
+      - name: Verify canonical version metadata
+        run: python3 scripts/sync-version.py --check
+
+      - name: Verify tag matches VERSION
+        shell: bash
+        run: test "$GITHUB_REF_NAME" = "v$(tr -d '[:space:]' < VERSION)"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # v2.2.2

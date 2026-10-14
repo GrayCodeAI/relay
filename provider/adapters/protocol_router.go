@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GrayCodeAI/flux/llm"
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/llm"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
-// ChatProtocol selects which existing flux client handles a gateway request.
+// ChatProtocol selects which existing mux client handles a gateway request.
 type ChatProtocol int
 
 const (
@@ -19,9 +19,9 @@ const (
 	ChatProtocolMessages
 )
 
-type streamOpener func(context.Context, []core.FluxMessage, core.ChatOptions) (*core.StreamResult, error)
+type streamOpener func(context.Context, []core.MuxMessage, core.ChatOptions) (*core.StreamResult, error)
 
-type chatOpener func(context.Context, []core.FluxMessage, core.ChatOptions) (*core.FluxResponse, error)
+type chatOpener func(context.Context, []core.MuxMessage, core.ChatOptions) (*core.MuxResponse, error)
 
 // protocolStreamFallback retries a reasoning-only /v1/messages stream via the
 // alternate protocol. Non-streaming Chat is tried first because OpenCode Go
@@ -34,7 +34,7 @@ type protocolStreamFallback struct {
 
 // ProtocolChatFallback decides whether to retry via the alternate protocol
 // after the primary attempt. resp is non-nil only when primary returned err=nil.
-type ProtocolChatFallback func(primaryErr error, primaryResp *core.FluxResponse) bool
+type ProtocolChatFallback func(primaryErr error, primaryResp *core.MuxResponse) bool
 
 // ProtocolRouter picks between OpenAIClient and AnthropicClient for gateways
 // that expose both APIs (OpenCode Go, MiMo). All HTTP work stays in openai.go
@@ -53,7 +53,7 @@ type ProtocolStreamConfig struct {
 
 // Chat sends a request via the primary protocol, optionally falling back to the
 // alternate protocol when fallback returns true.
-func (r ProtocolRouter) Chat(ctx context.Context, messages []core.FluxMessage, opts core.ChatOptions, primary ChatProtocol, fallback ProtocolChatFallback) (*core.FluxResponse, error) {
+func (r ProtocolRouter) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions, primary ChatProtocol, fallback ProtocolChatFallback) (*core.MuxResponse, error) {
 	primaryClient, fallbackClient := r.providers(primary)
 	resp, err := primaryClient.Chat(ctx, messages, opts)
 	if fallback == nil || !fallback(err, resp) {
@@ -70,7 +70,7 @@ func (r ProtocolRouter) Chat(ctx context.Context, messages []core.FluxMessage, o
 // the alternate protocol is tried immediately. When ReasoningOnlyFallback is set
 // and the primary is /v1/messages, an empty reasoning-only stream retries via
 // chat/completions.
-func (r ProtocolRouter) StreamChat(ctx context.Context, messages []core.FluxMessage, opts core.ChatOptions, cfg ProtocolStreamConfig) (*core.StreamResult, error) {
+func (r ProtocolRouter) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions, cfg ProtocolStreamConfig) (*core.StreamResult, error) {
 	primaryClient, fallbackClient := r.providers(cfg.Primary)
 	result, err := primaryClient.StreamChat(ctx, messages, opts)
 	if err != nil {
@@ -86,10 +86,10 @@ func (r ProtocolRouter) StreamChat(ctx context.Context, messages []core.FluxMess
 	if cfg.ReasoningOnlyFallback && cfg.Primary == ChatProtocolMessages {
 		fallback := fallbackClient
 		fallbackStream := newStreamWithReasoningFallback(ctx, messages, opts, result, protocolStreamFallback{
-			chat: func(ctx context.Context, messages []core.FluxMessage, opts core.ChatOptions) (*core.FluxResponse, error) {
+			chat: func(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
 				return fallback.Chat(ctx, messages, opts)
 			},
-			stream: func(ctx context.Context, messages []core.FluxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+			stream: func(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 				return fallback.StreamChat(ctx, messages, opts)
 			},
 		})
@@ -105,7 +105,7 @@ func (r ProtocolRouter) providers(primary ChatProtocol) (core.Provider, core.Pro
 	return r.OpenAI, r.Anthropic
 }
 
-func (f protocolStreamFallback) open(ctx context.Context, messages []core.FluxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (f protocolStreamFallback) open(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	if f.chat != nil {
 		resp, err := f.chat(ctx, messages, opts)
 		if err == nil && core.ResponseHasContent(resp) {
@@ -115,11 +115,11 @@ func (f protocolStreamFallback) open(ctx context.Context, messages []core.FluxMe
 	if f.stream != nil {
 		return f.stream(ctx, messages, opts)
 	}
-	return nil, fmt.Errorf("flux: protocol stream fallback is not configured")
+	return nil, fmt.Errorf("mux: protocol stream fallback is not configured")
 }
 
-func newStreamWithReasoningFallback(ctx context.Context, messages []core.FluxMessage, opts core.ChatOptions, primary *core.StreamResult, fallback protocolStreamFallback) *core.StreamResult {
-	out := make(chan core.FluxStreamEvent, core.StreamChannelBuffer)
+func newStreamWithReasoningFallback(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions, primary *core.StreamResult, fallback protocolStreamFallback) *core.StreamResult {
+	out := make(chan core.MuxStreamEvent, core.StreamChannelBuffer)
 	cancelCtx, cancel := context.WithCancel(ctx)
 	go func() {
 		defer close(out)
@@ -130,7 +130,7 @@ func newStreamWithReasoningFallback(ctx context.Context, messages []core.FluxMes
 			sawReasoning bool
 			content      strings.Builder
 			toolCalls    int
-			buffered     []core.FluxStreamEvent
+			buffered     []core.MuxStreamEvent
 			streamErr    bool
 		)
 		flush := func() {
@@ -184,7 +184,7 @@ func newStreamWithReasoningFallback(ctx context.Context, messages []core.FluxMes
 		if err != nil {
 			flush()
 			select {
-			case out <- core.FluxStreamEvent{Type: "error", Error: err.Error()}:
+			case out <- core.MuxStreamEvent{Type: "error", Error: err.Error()}:
 			case <-cancelCtx.Done():
 			}
 			return

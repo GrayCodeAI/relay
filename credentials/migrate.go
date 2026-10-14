@@ -11,7 +11,7 @@ import (
 // once. The marker file name is stable so upgraded installs do not re-import.
 func envFileMigrationMarkerPath() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".rho", ".legacy-env-migrated")
+	return filepath.Join(home, ".decoder", ".legacy-env-migrated")
 }
 
 func envFileMigrationDone() bool {
@@ -25,7 +25,7 @@ func markEnvFileMigrationDone() {
 }
 
 // MigrateEnvFileCredentials imports API keys from plaintext credential files
-// (~/.rho/env, ~/.rho/.env) into the OS secret store and removes them. It also
+// (~/.decoder/env, ~/.decoder/.env) into the OS secret store and removes them. It also
 // checks the pre-rename host config directory (~/.hawk/env, ~/.hawk/.env) so
 // installs created before the rename still migrate.
 func MigrateEnvFileCredentials(ctx context.Context) (int, error) {
@@ -36,7 +36,7 @@ func MigrateEnvFileCredentials(ctx context.Context) (int, error) {
 		return 0, nil
 	}
 	total := 0
-	for _, path := range []string{rhoEnvPath(), rhoDotEnvPath(), legacyEnvPath(), legacyDotEnvPath()} {
+	for _, path := range []string{decoderEnvPath(), decoderDotEnvPath(), legacyEnvPath(), legacyDotEnvPath()} {
 		n, err := migrateEnvFileAt(ctx, path)
 		if err != nil && !os.IsNotExist(err) {
 			return total, err
@@ -85,14 +85,14 @@ func migrateEnvFileAt(ctx context.Context, path string) (int, error) {
 	return migrated, nil
 }
 
-func rhoEnvPath() string {
+func decoderEnvPath() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".rho", "env")
+	return filepath.Join(home, ".decoder", "env")
 }
 
-func rhoDotEnvPath() string {
+func decoderDotEnvPath() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".rho", ".env")
+	return filepath.Join(home, ".decoder", ".env")
 }
 
 // legacyEnvPath is the pre-rename host config file path, kept so installs
@@ -109,7 +109,7 @@ func legacyDotEnvPath() string {
 }
 
 func readEnvFile(path string) (map[string]string, error) {
-	data, err := os.ReadFile(path) // #nosec G304 -- path is built from os.UserHomeDir() in rhoDotEnvPath, not untrusted input
+	data, err := os.ReadFile(path) // #nosec G304 -- path is built from os.UserHomeDir() in decoderDotEnvPath, not untrusted input
 	if err != nil {
 		return nil, err
 	}

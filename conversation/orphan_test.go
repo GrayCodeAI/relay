@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/flux/provider/core"
-	"github.com/GrayCodeAI/flux/storage"
+	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/mux/storage"
 )
 
 type orphanMockProvider struct{}
@@ -17,14 +17,14 @@ func (orphanMockProvider) Ping(_ context.Context) error {
 	return nil
 }
 
-func (orphanMockProvider) Chat(_ context.Context, _ []core.FluxMessage, _ core.ChatOptions) (*core.FluxResponse, error) {
-	return &core.FluxResponse{Content: "ok", FinishReason: "end_turn"}, nil
+func (orphanMockProvider) Chat(_ context.Context, _ []core.MuxMessage, _ core.ChatOptions) (*core.MuxResponse, error) {
+	return &core.MuxResponse{Content: "ok", FinishReason: "end_turn"}, nil
 }
 
-func (orphanMockProvider) StreamChat(_ context.Context, _ []core.FluxMessage, _ core.ChatOptions) (*core.StreamResult, error) {
-	ch := make(chan core.FluxStreamEvent, 2)
-	ch <- core.FluxStreamEvent{Type: "content", Content: "ok"}
-	ch <- core.FluxStreamEvent{Type: "done", StopReason: "end_turn"}
+func (orphanMockProvider) StreamChat(_ context.Context, _ []core.MuxMessage, _ core.ChatOptions) (*core.StreamResult, error) {
+	ch := make(chan core.MuxStreamEvent, 2)
+	ch <- core.MuxStreamEvent{Type: "content", Content: "ok"}
+	ch <- core.MuxStreamEvent{Type: "done", StopReason: "end_turn"}
 	close(ch)
 	return &core.StreamResult{Events: ch}, nil
 }

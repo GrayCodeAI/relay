@@ -3,8 +3,8 @@ package engine
 import (
 	"testing"
 
-	llm "github.com/GrayCodeAI/flux/llm"
-	"github.com/GrayCodeAI/flux/provider/core"
+	llm "github.com/GrayCodeAI/mux/llm"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 func TestToClientMessages_ReturnsMessagesUnchanged(t *testing.T) {
@@ -29,7 +29,7 @@ func TestToClientOptions_MapsBasicFields(t *testing.T) {
 		OutputSchema: "{}",
 		Limits:       llm.Limits{MaxOutputTokens: 1000},
 		Metadata:     llm.Metadata{SessionID: "sess-1", TurnID: "turn-2", UserID: "user-3", ProjectID: "proj-4"},
-		Tools:        []llm.FluxTool{{Name: "read", Description: "read a file"}},
+		Tools:        []llm.MuxTool{{Name: "read", Description: "read a file"}},
 	}
 	route := Route{Provider: "anthropic", Model: "claude-sonnet-4-20250514"}
 
@@ -222,7 +222,7 @@ func TestToClientOptions_NoOutputSchemaLeavesResponseFormatNil(t *testing.T) {
 func TestToClientOptions_ClonesSlicesAndMaps(t *testing.T) {
 	// Verify that mutating the request after conversion does not affect the options.
 	req := llm.GenerateRequest{
-		Tools:        []llm.FluxTool{{Name: "a"}, {Name: "b"}},
+		Tools:        []llm.MuxTool{{Name: "a"}, {Name: "b"}},
 		Options:      llm.GenerationOptions{StopSequences: []string{"x", "y"}},
 		OutputSchema: "orig",
 	}
@@ -246,7 +246,7 @@ func TestToClientOptions_ClonesSlicesAndMaps(t *testing.T) {
 }
 
 func TestFromClientResponse_AttachesRoute(t *testing.T) {
-	resp := &core.FluxResponse{Content: "hello"}
+	resp := &core.MuxResponse{Content: "hello"}
 	route := Route{Provider: "anthropic", Model: "claude-sonnet-4-20250514"}
 	out := fromClientResponse(resp, route)
 
@@ -265,7 +265,7 @@ func TestFromClientResponse_AttachesRoute(t *testing.T) {
 }
 
 func TestFromClientResponse_PreservesActualRoute(t *testing.T) {
-	resp := &core.FluxResponse{
+	resp := &core.MuxResponse{
 		Content: "hello",
 		Route: &Route{
 			Provider: "router", Model: "planned/model", DeploymentID: "deployment-2", Attempts: 2,
@@ -294,7 +294,7 @@ func TestFromClientResponse_NilResponse(t *testing.T) {
 }
 
 func TestFromClientUsage_ReturnsUnchanged(t *testing.T) {
-	usage := &core.FluxUsage{PromptTokens: 10, CompletionTokens: 20, TotalTokens: 30}
+	usage := &core.MuxUsage{PromptTokens: 10, CompletionTokens: 20, TotalTokens: 30}
 	out := fromClientUsage(usage)
 	if out != usage {
 		t.Error("fromClientUsage should return the same pointer")

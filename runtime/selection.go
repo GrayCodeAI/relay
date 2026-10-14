@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	"github.com/GrayCodeAI/flux/catalog/registry"
-	"github.com/GrayCodeAI/flux/config"
-	client "github.com/GrayCodeAI/flux/provider"
-	"github.com/GrayCodeAI/flux/setup"
+	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/mux/catalog/registry"
+	"github.com/GrayCodeAI/mux/config"
+	client "github.com/GrayCodeAI/mux/provider"
+	"github.com/GrayCodeAI/mux/setup"
 )
 
 type selectionRuntimeState struct {
@@ -113,13 +113,13 @@ func ActiveProvider(ctx context.Context) string {
 }
 
 // NormalizeProviderID resolves catalog aliases and host-facing variants to the
-// runtime provider identifier used by Flux adapters and setup gateways.
+// runtime provider identifier used by Mux adapters and setup gateways.
 func NormalizeProviderID(provider string) string {
 	return normalizeRuntimeProviderID(provider)
 }
 
 // ActiveProviderID canonicalizes a host-facing provider/gateway id through the
-// runtime provider-id rules used by Flux.
+// runtime provider-id rules used by Mux.
 func ActiveProviderID(provider string) string {
 	return NormalizeProviderID(provider)
 }

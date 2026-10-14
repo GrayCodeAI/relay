@@ -13,20 +13,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	"github.com/GrayCodeAI/flux/provider/core"
-	"github.com/GrayCodeAI/flux/router"
+	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/mux/router"
 )
 
 type replyProvider string
 
 func (p replyProvider) Name() string               { return string(p) }
 func (p replyProvider) Ping(context.Context) error { return nil }
-func (p replyProvider) Chat(context.Context, []core.FluxMessage, core.ChatOptions) (*core.FluxResponse, error) {
-	return &core.FluxResponse{Content: string(p)}, nil
+func (p replyProvider) Chat(context.Context, []core.MuxMessage, core.ChatOptions) (*core.MuxResponse, error) {
+	return &core.MuxResponse{Content: string(p)}, nil
 }
 
-func (p replyProvider) StreamChat(context.Context, []core.FluxMessage, core.ChatOptions) (*core.StreamResult, error) {
+func (p replyProvider) StreamChat(context.Context, []core.MuxMessage, core.ChatOptions) (*core.StreamResult, error) {
 	return nil, nil
 }
 

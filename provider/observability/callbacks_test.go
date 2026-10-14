@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/flux/llm"
+	"github.com/GrayCodeAI/mux/llm"
 )
 
 // --- test helpers ---
@@ -47,14 +47,14 @@ type recordingCallback struct {
 type requestRecord struct {
 	provider string
 	model    string
-	messages []FluxMessage
+	messages []MuxMessage
 	opts     ChatOptions
 }
 
 type responseRecord struct {
 	provider string
 	model    string
-	response *FluxResponse
+	response *MuxResponse
 	duration time.Duration
 }
 
@@ -68,10 +68,10 @@ type errorRecord struct {
 type streamEventRecord struct {
 	provider string
 	model    string
-	event    FluxStreamEvent
+	event    MuxStreamEvent
 }
 
-func (r *recordingCallback) OnRequest(_ context.Context, provider, model string, messages []FluxMessage, opts ChatOptions) {
+func (r *recordingCallback) OnRequest(_ context.Context, provider, model string, messages []MuxMessage, opts ChatOptions) {
 	if r.panicOnRequest {
 		panic("intentional test panic")
 	}
@@ -80,7 +80,7 @@ func (r *recordingCallback) OnRequest(_ context.Context, provider, model string,
 	r.requests = append(r.requests, requestRecord{provider, model, messages, opts})
 }
 
-func (r *recordingCallback) OnResponse(_ context.Context, provider, model string, response *FluxResponse, duration time.Duration) {
+func (r *recordingCallback) OnResponse(_ context.Context, provider, model string, response *MuxResponse, duration time.Duration) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.responses = append(r.responses, responseRecord{provider, model, response, duration})
@@ -92,7 +92,7 @@ func (r *recordingCallback) OnError(_ context.Context, provider, model string, e
 	r.errors = append(r.errors, errorRecord{provider, model, err, duration})
 }
 
-func (r *recordingCallback) OnStreamEvent(_ context.Context, provider, model string, event FluxStreamEvent) {
+func (r *recordingCallback) OnStreamEvent(_ context.Context, provider, model string, event MuxStreamEvent) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.streamEvents = append(r.streamEvents, streamEventRecord{provider, model, event})
@@ -188,7 +188,7 @@ func TestCallbackBasicInvocation(t *testing.T) {
 	cb := &recordingCallback{}
 	cp.AddCallback(cb)
 
-	msgs := []FluxMessage{{Role: "user", Content: "hello"}}
+	msgs := []MuxMessage{{Role: "user", Content: "hello"}}
 	opts := ChatOptions{Model: "test-model"}
 
 	resp, err := cp.Chat(context.Background(), msgs, opts)
@@ -243,7 +243,7 @@ func TestCallbackErrorInvocation(t *testing.T) {
 	cb := &recordingCallback{}
 	cp.AddCallback(cb)
 
-	msgs := []FluxMessage{{Role: "user", Content: "test"}}
+	msgs := []MuxMessage{{Role: "user", Content: "test"}}
 	_, err := cp.Chat(context.Background(), msgs, ChatOptions{Model: "m"})
 	if err == nil {
 		t.Fatal("expected error from Chat")
@@ -263,8 +263,8 @@ func TestCallbackErrorInvocation(t *testing.T) {
 	if len(cb.errors) != 1 {
 		t.Fatalf("OnError called %d times, want 1", len(cb.errors))
 	}
-	if cb.errors[0].err == nil || cb.errors[0].err.Error() != "flux: mock error" {
-		t.Errorf("OnError err = %v, want %q", cb.errors[0].err, "flux: mock error")
+	if cb.errors[0].err == nil || cb.errors[0].err.Error() != "mux: mock error" {
+		t.Errorf("OnError err = %v, want %q", cb.errors[0].err, "mux: mock error")
 	}
 
 	// OnResponse should NOT have been called.
@@ -287,7 +287,7 @@ func TestCallbackMultipleCallbacks(t *testing.T) {
 		t.Fatalf("Callbacks() returned %d, want 2", len(cp.Callbacks()))
 	}
 
-	msgs := []FluxMessage{{Role: "user", Content: "hi"}}
+	msgs := []MuxMessage{{Role: "user", Content: "hi"}}
 	_, err := cp.Chat(context.Background(), msgs, ChatOptions{Model: "m"})
 	if err != nil {
 		t.Fatalf("Chat: %v", err)
@@ -329,7 +329,7 @@ func TestCallbackRemoveCallback(t *testing.T) {
 	}
 
 	// Only cb2 should fire.
-	msgs := []FluxMessage{{Role: "user", Content: "test"}}
+	msgs := []MuxMessage{{Role: "user", Content: "test"}}
 	cp.Chat(context.Background(), msgs, ChatOptions{Model: "m"})
 
 	waitUntil(t, 2*time.Second, func() bool {
@@ -357,7 +357,7 @@ func TestCallbackPanicRecovery(t *testing.T) {
 	cp.AddCallback(panicCb)
 	cp.AddCallback(safeCb)
 
-	msgs := []FluxMessage{{Role: "user", Content: "test"}}
+	msgs := []MuxMessage{{Role: "user", Content: "test"}}
 	resp, err := cp.Chat(context.Background(), msgs, ChatOptions{Model: "m"})
 	if err != nil {
 		t.Fatalf("Chat should succeed despite callback panic: %v", err)
@@ -391,7 +391,7 @@ func TestCallbackPanicRecoveryDefaultLogger(t *testing.T) {
 	cp.SetLogger(nil) // should be a no-op
 
 	// Should not panic.
-	msgs := []FluxMessage{{Role: "user", Content: "test"}}
+	msgs := []MuxMessage{{Role: "user", Content: "test"}}
 	_, err := cp.Chat(context.Background(), msgs, ChatOptions{})
 	if err != nil {
 		t.Fatalf("Chat: %v", err)
@@ -427,7 +427,7 @@ func TestCallbackThreadSafety(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for j := 0; j < callsPerGoroutine; j++ {
-				msgs := []FluxMessage{{Role: "user", Content: "test"}}
+				msgs := []MuxMessage{{Role: "user", Content: "test"}}
 				cp.Chat(context.Background(), msgs, ChatOptions{Model: "m"})
 			}
 		}()
@@ -502,7 +502,7 @@ func TestCallbackStreamChat(t *testing.T) {
 	cb := &recordingCallback{}
 	cp.AddCallback(cb)
 
-	msgs := []FluxMessage{{Role: "user", Content: "Hello world"}}
+	msgs := []MuxMessage{{Role: "user", Content: "Hello world"}}
 	sr, err := cp.StreamChat(context.Background(), msgs, ChatOptions{Model: "stream-model"})
 	if err != nil {
 		t.Fatalf("StreamChat: %v", err)
@@ -547,7 +547,7 @@ func TestCallbackStreamChatError(t *testing.T) {
 	cb := &recordingCallback{}
 	cp.AddCallback(cb)
 
-	msgs := []FluxMessage{{Role: "user", Content: "test"}}
+	msgs := []MuxMessage{{Role: "user", Content: "test"}}
 	_, err := cp.StreamChat(context.Background(), msgs, ChatOptions{Model: "m"})
 	if err == nil {
 		t.Fatal("expected error from StreamChat")
@@ -585,7 +585,7 @@ func TestCallbackEmptyCallbacksNoop(t *testing.T) {
 	cp := mustCallbackProvider(t, mock)
 
 	// No callbacks registered — should still work fine.
-	msgs := []FluxMessage{{Role: "user", Content: "test"}}
+	msgs := []MuxMessage{{Role: "user", Content: "test"}}
 	resp, err := cp.Chat(context.Background(), msgs, ChatOptions{Model: "m"})
 	if err != nil {
 		t.Fatalf("Chat: %v", err)
@@ -606,12 +606,12 @@ type truncatedStreamProvider struct{}
 
 func (*truncatedStreamProvider) Name() string               { return "truncated-stream" }
 func (*truncatedStreamProvider) Ping(context.Context) error { return nil }
-func (*truncatedStreamProvider) Chat(context.Context, []FluxMessage, ChatOptions) (*FluxResponse, error) {
+func (*truncatedStreamProvider) Chat(context.Context, []MuxMessage, ChatOptions) (*MuxResponse, error) {
 	return nil, nil
 }
 
-func (*truncatedStreamProvider) StreamChat(context.Context, []FluxMessage, ChatOptions) (*StreamResult, error) {
-	events := make(chan FluxStreamEvent)
+func (*truncatedStreamProvider) StreamChat(context.Context, []MuxMessage, ChatOptions) (*StreamResult, error) {
+	events := make(chan MuxStreamEvent)
 	close(events)
 	return NewStreamResult(events, func() {}), nil
 }
@@ -621,7 +621,7 @@ func TestCallbackStreamChatObservesTruncation(t *testing.T) {
 	callback := &recordingCallback{}
 	provider := mustCallbackProvider(t, &truncatedStreamProvider{})
 	provider.AddCallback(callback)
-	result, err := provider.StreamChat(context.Background(), []FluxMessage{{Role: "user", Content: "hello"}}, ChatOptions{Model: "test"})
+	result, err := provider.StreamChat(context.Background(), []MuxMessage{{Role: "user", Content: "hello"}}, ChatOptions{Model: "test"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -645,17 +645,17 @@ type continuationUsageProvider struct{}
 
 func (*continuationUsageProvider) Name() string               { return "continuation-usage" }
 func (*continuationUsageProvider) Ping(context.Context) error { return nil }
-func (*continuationUsageProvider) Chat(context.Context, []FluxMessage, ChatOptions) (*FluxResponse, error) {
+func (*continuationUsageProvider) Chat(context.Context, []MuxMessage, ChatOptions) (*MuxResponse, error) {
 	return nil, nil
 }
 
-func (*continuationUsageProvider) StreamChat(context.Context, []FluxMessage, ChatOptions) (*StreamResult, error) {
-	events := make(chan FluxStreamEvent, 4)
-	usage := &FluxUsage{PromptTokens: 3, CompletionTokens: 5, TotalTokens: 8}
-	events <- FluxStreamEvent{Type: "usage", Usage: usage}
-	events <- FluxStreamEvent{Type: "continuation"}
-	events <- FluxStreamEvent{Type: "usage", Usage: usage}
-	events <- FluxStreamEvent{Type: "done", Usage: usage}
+func (*continuationUsageProvider) StreamChat(context.Context, []MuxMessage, ChatOptions) (*StreamResult, error) {
+	events := make(chan MuxStreamEvent, 4)
+	usage := &MuxUsage{PromptTokens: 3, CompletionTokens: 5, TotalTokens: 8}
+	events <- MuxStreamEvent{Type: "usage", Usage: usage}
+	events <- MuxStreamEvent{Type: "continuation"}
+	events <- MuxStreamEvent{Type: "usage", Usage: usage}
+	events <- MuxStreamEvent{Type: "done", Usage: usage}
 	close(events)
 	return NewStreamResultWithRequestID(events, "continuation", func() {}), nil
 }
@@ -667,7 +667,7 @@ func TestUsageLimitResetsUsageAtContinuation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := provider.StreamChat(context.Background(), []FluxMessage{{Role: "user", Content: "hello"}}, ChatOptions{Model: "test"})
+	result, err := provider.StreamChat(context.Background(), []MuxMessage{{Role: "user", Content: "hello"}}, ChatOptions{Model: "test"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -685,13 +685,13 @@ type blockingTraceProvider struct {
 
 func (*blockingTraceProvider) Name() string               { return "blocking-trace" }
 func (*blockingTraceProvider) Ping(context.Context) error { return nil }
-func (*blockingTraceProvider) Chat(context.Context, []FluxMessage, ChatOptions) (*FluxResponse, error) {
+func (*blockingTraceProvider) Chat(context.Context, []MuxMessage, ChatOptions) (*MuxResponse, error) {
 	return nil, nil
 }
 
-func (p *blockingTraceProvider) StreamChat(ctx context.Context, _ []FluxMessage, _ ChatOptions) (*StreamResult, error) {
+func (p *blockingTraceProvider) StreamChat(ctx context.Context, _ []MuxMessage, _ ChatOptions) (*StreamResult, error) {
 	streamCtx, cancel := context.WithCancel(ctx)
-	events := make(chan FluxStreamEvent)
+	events := make(chan MuxStreamEvent)
 	go func() {
 		<-streamCtx.Done()
 		close(events)
@@ -706,7 +706,7 @@ func TestTracingStreamClosePropagates(t *testing.T) {
 	t.Parallel()
 	inner := &blockingTraceProvider{}
 	tracing := NewTracingProvider(inner)
-	result, err := tracing.StreamChat(context.Background(), []FluxMessage{{Role: "user", Content: "hello"}}, ChatOptions{Model: "test"})
+	result, err := tracing.StreamChat(context.Background(), []MuxMessage{{Role: "user", Content: "hello"}}, ChatOptions{Model: "test"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -734,11 +734,11 @@ type countingCallback struct {
 	errors    *atomic.Int64
 }
 
-func (c *countingCallback) OnRequest(_ context.Context, _, _ string, _ []FluxMessage, _ ChatOptions) {
+func (c *countingCallback) OnRequest(_ context.Context, _, _ string, _ []MuxMessage, _ ChatOptions) {
 	c.requests.Add(1)
 }
 
-func (c *countingCallback) OnResponse(_ context.Context, _, _ string, _ *FluxResponse, _ time.Duration) {
+func (c *countingCallback) OnResponse(_ context.Context, _, _ string, _ *MuxResponse, _ time.Duration) {
 	c.responses.Add(1)
 }
 
@@ -746,7 +746,7 @@ func (c *countingCallback) OnError(_ context.Context, _, _ string, _ error, _ ti
 	c.errors.Add(1)
 }
 
-func (c *countingCallback) OnStreamEvent(_ context.Context, _, _ string, _ FluxStreamEvent) {
+func (c *countingCallback) OnStreamEvent(_ context.Context, _, _ string, _ MuxStreamEvent) {
 }
 
 // Ensure we're using the fmt package for potential debug printing.

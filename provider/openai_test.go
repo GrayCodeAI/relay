@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/flux/provider/adapters"
+	"github.com/GrayCodeAI/mux/provider/adapters"
 )
 
 // StreamChat tests live in openai_stream_test.go; Ping, compat, image,
@@ -28,8 +28,8 @@ func defaultChatOpts() ChatOptions {
 	return ChatOptions{Model: "gpt-4o"}
 }
 
-func basicMessages() []FluxMessage {
-	return []FluxMessage{{Role: "user", Content: "Hello"}}
+func basicMessages() []MuxMessage {
+	return []MuxMessage{{Role: "user", Content: "Hello"}}
 }
 
 // --- TestOpenAIChat ---
@@ -230,7 +230,7 @@ func TestOpenAIChat_ToolCallsInResponse(t *testing.T) {
 	c := newTestOpenAIClient(srv.URL, nil)
 	opts := ChatOptions{
 		Model: "gpt-4o",
-		Tools: []FluxTool{
+		Tools: []MuxTool{
 			{
 				Name:        "get_weather",
 				Description: "Get the current weather",

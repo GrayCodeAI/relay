@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	"github.com/GrayCodeAI/flux/credentials"
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/mux/credentials"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 // newNilTransportEngine builds an Engine with a valid selection but a transport

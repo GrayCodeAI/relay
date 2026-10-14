@@ -1,12 +1,12 @@
-// Package llm is the canonical provider port contract for the rho ecosystem.
+// Package llm is the canonical provider port contract for the decoder ecosystem.
 //
 // It is the single source of truth for the conversation DTOs and the Provider
-// interface that rho (product face) and flux (provider engine) speak across
+// interface that decoder (product face) and mux (provider engine) speak across
 // their boundary. Both sides alias to these types, so there is exactly one
 // definition of each DTO and no per-call conversion.
 //
-// rho owns the product vocabulary (hence names like FluxMessage); flux
-// implements the port. flux's internal transport types stay flux-scoped and
+// decoder owns the product vocabulary (hence names like MuxMessage); mux
+// implements the port. mux's internal transport types stay mux-scoped and
 // never appear here.
 package llm
 
@@ -15,11 +15,11 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/GrayCodeAI/flux/tools"
+	"github.com/GrayCodeAI/mux/tools"
 )
 
-// FluxConfig holds client configuration.
-type FluxConfig struct {
+// MuxConfig holds client configuration.
+type MuxConfig struct {
 	Provider   string `json:"provider,omitempty"`
 	APIKey     string `json:"-"`
 	BaseURL    string `json:"base_url,omitempty"`
@@ -47,8 +47,8 @@ type InputAudioPart struct {
 	Format string `json:"format"`
 }
 
-// FluxMessage is the provider-neutral conversation message shape.
-type FluxMessage struct {
+// MuxMessage is the provider-neutral conversation message shape.
+type MuxMessage struct {
 	Role         string        `json:"role"`
 	Content      string        `json:"content,omitempty"`
 	Thinking     string        `json:"thinking,omitempty"`
@@ -114,8 +114,8 @@ type ToolCall = tools.ToolCall
 // ToolResult is a tool execution result. Aliased to tools.ToolResult.
 type ToolResult = tools.ToolResult
 
-// FluxTool is a tool definition.
-type FluxTool struct {
+// MuxTool is a tool definition.
+type MuxTool struct {
 	Name        string                 `json:"name"`
 	Description string                 `json:"description"`
 	Parameters  map[string]interface{} `json:"parameters"`
@@ -141,7 +141,7 @@ type ChatOptions struct {
 	Temperature          *float64        `json:"temperature,omitempty"`
 	MaxTokens            int             `json:"max_tokens,omitempty"`
 	Stream               bool            `json:"stream,omitempty"`
-	Tools                []FluxTool      `json:"tools,omitempty"`
+	Tools                []MuxTool       `json:"tools,omitempty"`
 	System               string          `json:"system,omitempty"`
 	EnableCaching        bool            `json:"enable_caching,omitempty"`
 	ResponseFormat       *ResponseFormat `json:"response_format,omitempty"`
@@ -218,14 +218,14 @@ type ContinuationConfig struct {
 	MaxTotalTokens   int
 }
 
-// FluxUsage tracks token usage.
+// MuxUsage tracks token usage.
 //
 // Semantics are identical for every provider: PromptTokens is the TOTAL input
 // token count and already includes CacheReadTokens and CacheCreationTokens;
 // CompletionTokens is the total output count and includes ThinkingTokens where
 // the provider bills reasoning as output. Adapters whose wire format reports
 // cached tokens separately (Anthropic) must add them into PromptTokens.
-type FluxUsage struct {
+type MuxUsage struct {
 	PromptTokens        int `json:"prompt_tokens"`
 	CompletionTokens    int `json:"completion_tokens"`
 	TotalTokens         int `json:"total_tokens"`
@@ -247,25 +247,25 @@ type ResolvedRoute struct {
 	Attempts int `json:"attempts,omitempty"`
 }
 
-// FluxResponse is the chat response DTO.
-type FluxResponse struct {
+// MuxResponse is the chat response DTO.
+type MuxResponse struct {
 	Content        string         `json:"content"`
 	Thinking       string         `json:"thinking,omitempty"`
-	Usage          *FluxUsage     `json:"usage,omitempty"`
+	Usage          *MuxUsage      `json:"usage,omitempty"`
 	ToolCalls      []ToolCall     `json:"tool_calls,omitempty"`
 	FinishReason   string         `json:"finish_reason"`
 	RequestID      string         `json:"request_id,omitempty"`
 	OrganizationID string         `json:"organization_id,omitempty"`
 	Route          *ResolvedRoute `json:"route,omitempty"`
 	// ProviderBlocks is opaque provider state to replay on the next turn; see
-	// FluxMessage.ProviderBlocks.
+	// MuxMessage.ProviderBlocks.
 	ProviderBlocks []ProviderBlock `json:"provider_blocks,omitempty"`
 	// Warnings lists request settings the provider ignored or adjusted.
 	Warnings []CallWarning `json:"warnings,omitempty"`
 }
 
-// FluxStreamEvent is a streaming event.
-type FluxStreamEvent struct {
+// MuxStreamEvent is a streaming event.
+type MuxStreamEvent struct {
 	Type     string    `json:"type"`
 	Content  string    `json:"content,omitempty"`
 	ToolCall *ToolCall `json:"tool_call,omitempty"`
@@ -277,7 +277,7 @@ type FluxStreamEvent struct {
 	ProviderBlock *ProviderBlock   `json:"provider_block,omitempty"`
 	RequestID     string           `json:"request_id,omitempty"`
 	ErrorInfo     *StreamErrorInfo `json:"error_info,omitempty"`
-	Usage         *FluxUsage       `json:"usage,omitempty"`
+	Usage         *MuxUsage        `json:"usage,omitempty"`
 	StopReason    string           `json:"stop_reason,omitempty"`
 	// TTFT and TTFTms both carry time-to-first-token in milliseconds but ride
 	// different events: the dedicated "ttft" event populates TTFT, while the
@@ -295,14 +295,14 @@ type FluxStreamEvent struct {
 // terminal "cancelled" event, and the goroutine delivering it waits until that
 // event is read or Close is called. Close is idempotent.
 type StreamResult struct {
-	Events    <-chan FluxStreamEvent
+	Events    <-chan MuxStreamEvent
 	RequestID string
 	cancel    context.CancelFunc
 }
 
 // NewStreamResult constructs a stream result. The cancel function is optional
 // and must be idempotent.
-func NewStreamResult(events <-chan FluxStreamEvent, requestID string, cancel context.CancelFunc) *StreamResult {
+func NewStreamResult(events <-chan MuxStreamEvent, requestID string, cancel context.CancelFunc) *StreamResult {
 	if cancel != nil {
 		cleanup := cancel
 		var once sync.Once

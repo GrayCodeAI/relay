@@ -27,7 +27,7 @@ func TestBatchSubmitSendsCorrectFormat(t *testing.T) {
 	requests := []BatchRequest{
 		{
 			CustomID: "req-1",
-			Messages: []FluxMessage{
+			Messages: []MuxMessage{
 				{Role: "system", Content: "You are helpful."},
 				{Role: "user", Content: "Hello"},
 			},
@@ -111,7 +111,7 @@ func TestBatchSubmitHandlesErrors(t *testing.T) {
 	requests := []BatchRequest{
 		{
 			CustomID: "req-1",
-			Messages: []FluxMessage{{Role: "user", Content: "Hello"}},
+			Messages: []MuxMessage{{Role: "user", Content: "Hello"}},
 			Options:  ChatOptions{Model: "claude-sonnet-4-6"},
 		},
 	}

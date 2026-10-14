@@ -6,15 +6,15 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GrayCodeAI/flux/catalog"
-	"github.com/GrayCodeAI/flux/catalog/registry"
-	"github.com/GrayCodeAI/flux/config"
-	"github.com/GrayCodeAI/flux/credentials"
-	llm "github.com/GrayCodeAI/flux/llm"
+	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/mux/catalog/registry"
+	"github.com/GrayCodeAI/mux/config"
+	"github.com/GrayCodeAI/mux/credentials"
+	llm "github.com/GrayCodeAI/mux/llm"
 )
 
 // ResolveCredential validates credential input and returns safe provider
-// choices. Flux does not retain or return the supplied secret.
+// choices. Mux does not retain or return the supplied secret.
 func (e *Engine) ResolveCredential(ctx context.Context, secret string) CredentialResolution {
 	resolved := config.ResolveCredential(nonNilContext(ctx), secret)
 	out := CredentialResolution{
@@ -67,7 +67,7 @@ func (e *Engine) CredentialProviders(context.Context) []CredentialProvider {
 }
 
 // RegisteredGatewayCount returns the first-class provider count from the
-// provider registry. Hosts derive provider counts from Flux instead of
+// provider registry. Hosts derive provider counts from Mux instead of
 // hard-coding them, so new providers require no host changes.
 func RegisteredGatewayCount() int {
 	return len(registry.CredentialRegistry())

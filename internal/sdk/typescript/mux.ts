@@ -44,13 +44,13 @@ class APIError extends Error {
   body: string;
 
   constructor(statusCode: number, body: string) {
-    super(`flux: ${statusCode} ${body}`);
+    super(`mux: ${statusCode} ${body}`);
     this.statusCode = statusCode;
     this.body = body;
   }
 }
 
-class FluxClient {
+class MuxClient {
   private baseURL: string;
   private headers: Record<string, string>;
 

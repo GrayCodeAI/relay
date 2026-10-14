@@ -14,7 +14,7 @@ func StorageStatus(ctx context.Context) (ok bool, detail string) {
 	if store == nil {
 		return false, "credential store not initialized"
 	}
-	_, err := store.Get(ctx, AccountForEnv("___FLUX_STORAGE_PROBE___"))
+	_, err := store.Get(ctx, AccountForEnv("___MUX_STORAGE_PROBE___"))
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		return false, err.Error()
 	}
@@ -30,9 +30,9 @@ func KeychainWriteAvailable(ctx context.Context) (ok bool, detail string) {
 	if !okStore || cs.Keychain == nil {
 		return false, PlatformSecretStoreName() + " unavailable"
 	}
-	if err := cs.Keychain.Set(ctx, "___rho_write_probe___", "probe"); err != nil {
+	if err := cs.Keychain.Set(ctx, "___decoder_write_probe___", "probe"); err != nil {
 		return false, err.Error()
 	}
-	_ = cs.Keychain.Delete(ctx, "___rho_write_probe___")
+	_ = cs.Keychain.Delete(ctx, "___decoder_write_probe___")
 	return true, PlatformSecretStoreName() + " writable"
 }

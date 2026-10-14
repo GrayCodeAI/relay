@@ -1,11 +1,11 @@
 package engine
 
-import "github.com/GrayCodeAI/flux/provider/core"
+import "github.com/GrayCodeAI/mux/provider/core"
 
 // toClientMessages returns the messages unchanged: the engine and the client
 // both speak the canonical contract message type, so no per-field conversion
 // is needed.
-func toClientMessages(in []Message) []core.FluxMessage {
+func toClientMessages(in []Message) []core.MuxMessage {
 	return in
 }
 
@@ -13,7 +13,7 @@ func toClientMessages(in []Message) []core.FluxMessage {
 // wire-format chat options. Provider-specific translation continues to live in
 // the adapters; this is the contract-level mapping.
 func toClientOptions(req GenerateRequest, route Route, stream bool) core.ChatOptions {
-	tools := append([]core.FluxTool(nil), req.Tools...)
+	tools := append([]core.MuxTool(nil), req.Tools...)
 	opts := core.ChatOptions{
 		Provider: route.Provider, Model: route.Model, Stream: stream,
 		System: req.SystemPrompt, Tools: tools, Temperature: req.Temperature,
@@ -116,7 +116,7 @@ func mergeRoute(actual *Route, planned Route) *Route {
 // engine and the client both speak the canonical contract response type. A
 // route the provider already reported (for example the deployment that served
 // the request after a failover) wins; the planned route only fills blanks.
-func fromClientResponse(resp *core.FluxResponse, route Route) *GenerateResponse {
+func fromClientResponse(resp *core.MuxResponse, route Route) *GenerateResponse {
 	if resp == nil {
 		return &GenerateResponse{Route: cloneRoute(&route)}
 	}
@@ -126,6 +126,6 @@ func fromClientResponse(resp *core.FluxResponse, route Route) *GenerateResponse 
 
 // fromClientUsage returns the usage unchanged: the engine and the client both
 // speak the canonical contract usage type.
-func fromClientUsage(usage *core.FluxUsage) *Usage {
+func fromClientUsage(usage *core.MuxUsage) *Usage {
 	return usage
 }

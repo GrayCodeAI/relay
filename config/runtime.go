@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/flux/credentials"
+	"github.com/GrayCodeAI/mux/credentials"
 )
 
 // OpenAICompatibleRuntimeMode identifies the runtime mode.

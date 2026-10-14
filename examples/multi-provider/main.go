@@ -12,19 +12,19 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GrayCodeAI/flux/provider"
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/provider"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 func main() {
-	primary := provider.Client(&core.FluxConfig{
+	primary := provider.Client(&core.MuxConfig{
 		Provider: "anthropic",
 	})
-	secondary := provider.Client(&core.FluxConfig{
+	secondary := provider.Client(&core.MuxConfig{
 		Provider: "openai",
 	})
 
-	messages := []core.FluxMessage{
+	messages := []core.MuxMessage{
 		{Role: "user", Content: "Explain what a fallback chain is in one sentence."},
 	}
 

@@ -16,7 +16,7 @@
 // schemas are passed through unchanged so the LLM can still
 // invoke the tool correctly.
 //
-// This is a low-level utility. Callers (typically the flux
+// This is a low-level utility. Callers (typically the mux
 // client) call ShrinkTools() on a []*types.Tool before passing
 // them to the provider. Original tools are not modified.
 package shrink
@@ -25,7 +25,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GrayCodeAI/flux/types"
+	"github.com/GrayCodeAI/mux/types"
 )
 
 // Result reports per-call savings.

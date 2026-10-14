@@ -12,14 +12,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/flux/provider/core"
+	"github.com/GrayCodeAI/mux/provider/core"
 )
 
 // OpenAI-compatible image generation and audio transcription clients.
 //
 // These are provider-agnostic backends for the two well-defined, broadly
 // supported public APIs (OpenAI Images: POST /v1/images/generations; OpenAI
-// Audio: POST /v1/audio/transcriptions). They give rho's pluggable
+// Audio: POST /v1/audio/transcriptions). They give decoder's pluggable
 // MediaEngine / Transcriber seams a concrete default backend while staying
 // testable against an httptest server. A future provider (xAI image-gen,
 // etc.) can replace the endpoint/credentials without touching callers.
@@ -83,16 +83,16 @@ func (c *ImageClient) Generate(ctx context.Context, prompt, model, size string, 
 	req.Header.Set("Authorization", "Bearer "+c.apiKey)
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, nil, fmt.Errorf("flux: image generate: %w", err)
+		return nil, nil, fmt.Errorf("mux: image generate: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		errBody, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return nil, nil, fmt.Errorf("flux: image API %d: %s", resp.StatusCode, strings.TrimSpace(string(errBody)))
+		return nil, nil, fmt.Errorf("mux: image API %d: %s", resp.StatusCode, strings.TrimSpace(string(errBody)))
 	}
 	var out ImageGenResponse
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return nil, nil, fmt.Errorf("flux: image decode: %w", err)
+		return nil, nil, fmt.Errorf("mux: image decode: %w", err)
 	}
 	imgs := make([][]byte, 0, len(out.Data))
 	urls := make([]string, 0, len(out.Data))
@@ -100,7 +100,7 @@ func (c *ImageClient) Generate(ctx context.Context, prompt, model, size string, 
 		if d.B64JSON != "" {
 			b, derr := base64.StdEncoding.DecodeString(d.B64JSON)
 			if derr != nil {
-				return nil, nil, fmt.Errorf("flux: image b64 decode: %w", derr)
+				return nil, nil, fmt.Errorf("mux: image b64 decode: %w", derr)
 			}
 			imgs = append(imgs, b)
 		}
@@ -181,16 +181,16 @@ func (c *AudioClient) Transcribe(ctx context.Context, r TranscriptionRequest) (s
 	req.Header.Set("Authorization", "Bearer "+c.apiKey)
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("flux: transcribe: %w", err)
+		return "", fmt.Errorf("mux: transcribe: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		errBody, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return "", fmt.Errorf("flux: audio API %d: %s", resp.StatusCode, strings.TrimSpace(string(errBody)))
+		return "", fmt.Errorf("mux: audio API %d: %s", resp.StatusCode, strings.TrimSpace(string(errBody)))
 	}
 	var tr Transcript
 	if err := json.NewDecoder(resp.Body).Decode(&tr); err != nil {
-		return "", fmt.Errorf("flux: transcript decode: %w", err)
+		return "", fmt.Errorf("mux: transcript decode: %w", err)
 	}
 	return tr.Text, nil
 }
