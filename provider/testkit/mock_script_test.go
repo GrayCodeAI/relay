@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/mux/llm"
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/llm"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 func TestMockProviderScriptedTurns(t *testing.T) {
@@ -16,7 +16,7 @@ func TestMockProviderScriptedTurns(t *testing.T) {
 		{Content: "done", FinishReason: "end_turn"},
 	}
 
-	resp1, err := mock.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "hello"}}, core.ChatOptions{})
+	resp1, err := mock.Chat(context.Background(), []core.RelayMessage{{Role: "user", Content: "hello"}}, core.ChatOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -24,7 +24,7 @@ func TestMockProviderScriptedTurns(t *testing.T) {
 		t.Fatalf("turn1: %+v", resp1)
 	}
 
-	resp2, err := mock.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "hello"}}, core.ChatOptions{})
+	resp2, err := mock.Chat(context.Background(), []core.RelayMessage{{Role: "user", Content: "hello"}}, core.ChatOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,14 +33,14 @@ func TestMockProviderScriptedTurns(t *testing.T) {
 	}
 
 	// Exhausted
-	_, err = mock.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "again"}}, core.ChatOptions{})
+	_, err = mock.Chat(context.Background(), []core.RelayMessage{{Role: "user", Content: "again"}}, core.ChatOptions{})
 	if err == nil {
 		t.Fatal("expected exhaustion error")
 	}
 	mock.Reset()
 	// loop mode replays
 	mock.Loop = true
-	r, err := mock.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "loop"}}, core.ChatOptions{})
+	r, err := mock.Chat(context.Background(), []core.RelayMessage{{Role: "user", Content: "loop"}}, core.ChatOptions{})
 	if err != nil || r.Content != "thinking" {
 		t.Fatalf("loop: %+v %v", r, err)
 	}
@@ -51,7 +51,7 @@ func TestMockProviderScriptedCancellation(t *testing.T) {
 	mock.Script = []MockTurn{{Content: "late", Delay: 200 * time.Millisecond}}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	_, err := mock.Chat(ctx, []core.MuxMessage{{Role: "user", Content: "x"}}, core.ChatOptions{})
+	_, err := mock.Chat(ctx, []core.RelayMessage{{Role: "user", Content: "x"}}, core.ChatOptions{})
 	if err == nil {
 		t.Fatal("expected cancellation error")
 	}
@@ -60,7 +60,7 @@ func TestMockProviderScriptedCancellation(t *testing.T) {
 func TestMockProviderScriptedStreamChat(t *testing.T) {
 	mock := NewMockProvider(MockModeEcho)
 	mock.Script = []MockTurn{{Content: "hello world", FinishReason: "end_turn"}}
-	sr, err := mock.StreamChat(context.Background(), []core.MuxMessage{{Role: "user", Content: "x"}}, core.ChatOptions{})
+	sr, err := mock.StreamChat(context.Background(), []core.RelayMessage{{Role: "user", Content: "x"}}, core.ChatOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}

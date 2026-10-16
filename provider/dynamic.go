@@ -5,28 +5,28 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/provider/adapters"
+	"github.com/GrayCodeAI/relay/provider/adapters"
 )
 
 // RegisterCustomProvider adds an OpenAI-compatible endpoint to this client
 // only. Re-registration replaces the endpoint and invalidates its cached
 // transport. Other clients are unaffected.
-func (c *MuxClient) RegisterCustomProvider(name, baseURL, envKey string) error {
+func (c *RelayClient) RegisterCustomProvider(name, baseURL, envKey string) error {
 	if c == nil {
-		return fmt.Errorf("mux: client is nil")
+		return fmt.Errorf("relay: client is nil")
 	}
 	name = strings.TrimSpace(name)
 	if name == "" || strings.ContainsAny(name, " \t\r\n") {
-		return fmt.Errorf("mux: custom provider name is required without whitespace")
+		return fmt.Errorf("relay: custom provider name is required without whitespace")
 	}
 	if _, exists := adapters.CoreProviders[name]; exists {
-		return fmt.Errorf("mux: custom provider %q collides with built-in provider", name)
+		return fmt.Errorf("relay: custom provider %q collides with built-in provider", name)
 	}
 	if _, exists := adapters.OpenAICompatibleProviders[name]; exists {
-		return fmt.Errorf("mux: custom provider %q collides with built-in provider", name)
+		return fmt.Errorf("relay: custom provider %q collides with built-in provider", name)
 	}
 	if !validCustomProviderURL(baseURL) {
-		return fmt.Errorf("mux: invalid custom provider base URL")
+		return fmt.Errorf("relay: invalid custom provider base URL")
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()

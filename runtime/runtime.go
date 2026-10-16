@@ -3,14 +3,14 @@
 // ChatProvider builds the transport for the current selection.
 //
 // runtime is engine-internal. Hosts such as Decoder must not import it; the host
-// contract is limited to github.com/GrayCodeAI/mux/engine, llm, graph and
+// contract is limited to github.com/GrayCodeAI/relay/engine, llm, graph and
 // tools (see docs/architecture/HOST-ENGINE-BOUNDARY.md), and engine calls this
-// package on the host's behalf. The package stays importable for Mux's own
+// package on the host's behalf. The package stays importable for Relay's own
 // packages and non-Decoder integrations, but its exported names are not covered by
 // engine.ContractVersion and may change in any release.
 //
 // Provider metadata (IDs, credential variables, protocols, regions) comes from
-// the catalog registry in github.com/GrayCodeAI/mux/catalog/registry; do not
+// the catalog registry in github.com/GrayCodeAI/relay/catalog/registry; do not
 // restate its size here, it is checked against the docs by
 // catalog/registry/docs_test.go.
 package runtime
@@ -23,22 +23,22 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/catalog/registry"
-	"github.com/GrayCodeAI/mux/config"
-	"github.com/GrayCodeAI/mux/credentials"
-	"github.com/GrayCodeAI/mux/provider/core"
-	"github.com/GrayCodeAI/mux/setup"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/catalog/registry"
+	"github.com/GrayCodeAI/relay/config"
+	"github.com/GrayCodeAI/relay/credentials"
+	"github.com/GrayCodeAI/relay/provider/core"
+	"github.com/GrayCodeAI/relay/setup"
 )
 
-// Runtime is a loaded mux control plane: catalog cache + routing + env-backed credentials.
+// Runtime is a loaded relay control plane: catalog cache + routing + env-backed credentials.
 type Runtime struct {
 	Catalog      *catalog.CompiledCatalog
 	Provider     *config.ProviderConfig
 	ProviderPath string
 }
 
-// Apply discovers the model catalog and writes ~/.mux/provider.json (routing only; secrets stay in env).
+// Apply discovers the model catalog and writes ~/.relay/provider.json (routing only; secrets stay in env).
 func Apply(ctx context.Context, creds catalog.Credentials) (*ApplyResult, error) {
 	result, err := setup.ApplyCredentials(ctx, creds)
 	if err != nil {
@@ -264,7 +264,7 @@ func configuredDeploymentIDsForProvider(compiled *catalog.CompiledCatalog, provi
 	return out
 }
 
-// DefaultPaths reports standard mux paths on disk.
+// DefaultPaths reports standard relay paths on disk.
 func DefaultPaths() (catalogPath, providerPath string) {
 	providerPath, _ = config.GetProviderConfigPath()
 	return catalog.DefaultCachePath(), providerPath

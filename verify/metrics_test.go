@@ -5,7 +5,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 func approxEqual(a, b, eps float64) bool {
@@ -105,18 +105,18 @@ func TestRun_F1ScorePopulated(t *testing.T) {
 	cases := []Case{
 		{
 			ID:       "tool-case",
-			Messages: []core.MuxMessage{{Role: "user", Content: "call it"}},
+			Messages: []core.RelayMessage{{Role: "user", Content: "call it"}},
 			Expect:   Expectation{ToolName: "my_tool"},
 		},
 		{
 			ID:       "no-tool-case",
-			Messages: []core.MuxMessage{{Role: "user", Content: "no call"}},
+			Messages: []core.RelayMessage{{Role: "user", Content: "no call"}},
 			Expect:   Expectation{NonEmptyContent: true},
 		},
 	}
 
 	// All-correct: tool case calls the right tool; no-tool case has content.
-	p := &fakeProvider{name: "fake", responses: map[string]*core.MuxResponse{
+	p := &fakeProvider{name: "fake", responses: map[string]*core.RelayResponse{
 		"call it": {ToolCalls: []core.ToolCall{{Name: "my_tool", Arguments: map[string]any{}}}},
 		"no call": {Content: "done"},
 	}}

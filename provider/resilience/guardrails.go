@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // ---------------------------------------------------------------------------
@@ -56,7 +56,7 @@ func (gp *GuardrailProvider) Inner() Provider {
 }
 
 // Chat sends a chat request and validates the response against guardrails.
-func (gp *GuardrailProvider) Chat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*MuxResponse, error) {
+func (gp *GuardrailProvider) Chat(ctx context.Context, messages []RelayMessage, opts ChatOptions) (*RelayResponse, error) {
 	resp, err := gp.inner.Chat(ctx, messages, opts)
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func (gp *GuardrailProvider) Chat(ctx context.Context, messages []MuxMessage, op
 // StreamChat sends a streaming request and validates content events.
 // Blocked violations cause the stream to be cancelled and an error event emitted.
 // Redactions are applied to individual content chunks.
-func (gp *GuardrailProvider) StreamChat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*StreamResult, error) {
+func (gp *GuardrailProvider) StreamChat(ctx context.Context, messages []RelayMessage, opts ChatOptions) (*StreamResult, error) {
 	result, err := gp.inner.StreamChat(ctx, messages, opts)
 	if err != nil {
 		return nil, err
@@ -80,7 +80,7 @@ func (gp *GuardrailProvider) StreamChat(ctx context.Context, messages []MuxMessa
 		return result, nil
 	}
 
-	return core.TransformStreamResult(ctx, result, func(streamCtx context.Context, evt MuxStreamEvent) (MuxStreamEvent, error) {
+	return core.TransformStreamResult(ctx, result, func(streamCtx context.Context, evt RelayStreamEvent) (RelayStreamEvent, error) {
 		if evt.Type != "content" {
 			return evt, nil
 		}

@@ -3,7 +3,7 @@ package capabilities
 import (
 	"testing"
 
-	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/relay/catalog"
 )
 
 var testCatalog *catalog.CompiledCatalog

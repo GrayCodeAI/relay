@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/catalog/discover"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/catalog/discover"
 )
 
 func TestDiscoverRun_RemoteFailureUsesCacheFallback(t *testing.T) {
@@ -24,7 +24,7 @@ func TestDiscoverRun_RemoteFailureUsesCacheFallback(t *testing.T) {
 	}))
 	defer failServer.Close()
 
-	t.Setenv("MUX_MODEL_CATALOG_URL", failServer.URL)
+	t.Setenv("RELAY_MODEL_CATALOG_URL", failServer.URL)
 
 	result, err := discover.Run(context.Background(), discover.Options{
 		LoadCatalogOptions: catalog.LoadCatalogOptions{

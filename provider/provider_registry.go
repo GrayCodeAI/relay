@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/GrayCodeAI/mux/config"
-	"github.com/GrayCodeAI/mux/provider/adapters"
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/config"
+	"github.com/GrayCodeAI/relay/provider/adapters"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // GetProviders lists all available providers.
-func (c *MuxClient) GetProviders() []string {
+func (c *RelayClient) GetProviders() []string {
 	seen := make(map[string]struct{}, len(adapters.CoreProviders)+len(adapters.OpenAICompatibleProviders))
 	for k := range adapters.CoreProviders {
 		seen[k] = struct{}{}
@@ -37,7 +37,7 @@ func (c *MuxClient) GetProviders() []string {
 }
 
 // GetProviderInfo returns config for a provider.
-func (c *MuxClient) GetProviderInfo(provider string) *adapters.ProviderRegistryConfig {
+func (c *RelayClient) GetProviderInfo(provider string) *adapters.ProviderRegistryConfig {
 	if c != nil {
 		c.mu.RLock()
 		defer c.mu.RUnlock()
@@ -45,7 +45,7 @@ func (c *MuxClient) GetProviderInfo(provider string) *adapters.ProviderRegistryC
 	return c.providerInfoLocked(provider)
 }
 
-func (c *MuxClient) providerInfoLocked(provider string) *adapters.ProviderRegistryConfig {
+func (c *RelayClient) providerInfoLocked(provider string) *adapters.ProviderRegistryConfig {
 	if p, ok := adapters.CoreProviders[provider]; ok {
 		return copyRegistryConfig(p)
 	}
@@ -71,18 +71,18 @@ func copyRegistryConfig(p adapters.ProviderRegistryConfig) *adapters.ProviderReg
 	return &p
 }
 
-func (c *MuxClient) getOrCreateProvider(providerName string) (core.Provider, error) {
+func (c *RelayClient) getOrCreateProvider(providerName string) (core.Provider, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if p, ok := c.providers[providerName]; ok {
 		return p, nil
 	}
 	if baseURL := c.baseURLs[providerName]; baseURL != "" && !validCustomProviderURL(baseURL) {
-		return nil, fmt.Errorf("mux: invalid base URL for %s", providerName)
+		return nil, fmt.Errorf("relay: invalid base URL for %s", providerName)
 	}
 	info := c.providerInfoLocked(providerName)
 	if info == nil {
-		return nil, fmt.Errorf("mux: unknown provider: %s", providerName)
+		return nil, fmt.Errorf("relay: unknown provider: %s", providerName)
 	}
 
 	apiKey := c.apiKeys[providerName]
@@ -101,7 +101,7 @@ func (c *MuxClient) getOrCreateProvider(providerName string) (core.Provider, err
 	_, builtInCompat := adapters.OpenAICompatibleProviders[providerName]
 	custom := registeredCustom || !builtInCore && !builtInCompat
 	if apiKey == "" && providerName != "ollama" && (!custom || info.EnvKey != "") {
-		return nil, fmt.Errorf("mux: no API key for %s; set %s or call SetAPIKey()", providerName, info.EnvKey)
+		return nil, fmt.Errorf("relay: no API key for %s; set %s or call SetAPIKey()", providerName, info.EnvKey)
 	}
 
 	var p core.Provider
@@ -129,7 +129,7 @@ func (c *MuxClient) getOrCreateProvider(providerName string) (core.Provider, err
 	case adapters.ProviderTypeVertex:
 		projectID := adapters.ResolveEnvSecret("VERTEX_PROJECT_ID")
 		if projectID == "" {
-			return nil, fmt.Errorf("mux: vertex requires VERTEX_PROJECT_ID")
+			return nil, fmt.Errorf("relay: vertex requires VERTEX_PROJECT_ID")
 		}
 		region := adapters.ResolveEnvSecret("VERTEX_REGION")
 		if region == "" {

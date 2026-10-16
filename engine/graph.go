@@ -1,12 +1,12 @@
 package engine
 
-import "github.com/GrayCodeAI/mux/operationsgraph"
+import "github.com/GrayCodeAI/relay/operationsgraph"
 
-// OperationsGraphInput is the host-facing input for Mux's portable
+// OperationsGraphInput is the host-facing input for Relay's portable
 // operations graph projection.
 type OperationsGraphInput = operationsgraph.Input
 
-// OperationsGraphExport is Mux's portable operations graph projection.
+// OperationsGraphExport is Relay's portable operations graph projection.
 type OperationsGraphExport = operationsgraph.Export
 
 // BuildOperationsGraph projects route and normalized usage telemetry without

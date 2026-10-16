@@ -26,5 +26,5 @@ type EmbeddingRequest struct {
 type EmbeddingResponse struct {
 	Embeddings [][]float32 `json:"embeddings"`
 	Model      string      `json:"model"`
-	Usage      *MuxUsage   `json:"usage,omitempty"`
+	Usage      *RelayUsage `json:"usage,omitempty"`
 }

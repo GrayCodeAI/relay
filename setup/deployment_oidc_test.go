@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/config"
-	"github.com/GrayCodeAI/mux/credentials"
+	"github.com/GrayCodeAI/relay/config"
+	"github.com/GrayCodeAI/relay/credentials"
 )
 
 // swapOIDCSeams overrides the injectable OIDC helpers for the duration of a
@@ -30,7 +30,7 @@ func swapOIDCSeams(t *testing.T,
 
 func TestProviderForDeploymentBedrockOIDCTakenWhenEnabled(t *testing.T) {
 	t.Setenv("GITHUB_ACTIONS", "true")
-	t.Setenv("MUX_OIDC", "1")
+	t.Setenv("RELAY_OIDC", "1")
 
 	called := false
 	swapOIDCSeams(t, func(_ context.Context, roleARN, region string) (credentials.AWSCredentials, error) {
@@ -63,9 +63,9 @@ func TestProviderForDeploymentBedrockOIDCTakenWhenEnabled(t *testing.T) {
 }
 
 func TestProviderForDeploymentBedrockOIDCSkippedWhenDisabled(t *testing.T) {
-	// In Actions but neither MUX_OIDC nor roleARN/audience set: OIDC must be skipped.
+	// In Actions but neither RELAY_OIDC nor roleARN/audience set: OIDC must be skipped.
 	t.Setenv("GITHUB_ACTIONS", "true")
-	t.Setenv("MUX_OIDC", "")
+	t.Setenv("RELAY_OIDC", "")
 
 	swapOIDCSeams(t, func(_ context.Context, _, _ string) (credentials.AWSCredentials, error) {
 		t.Fatal("OIDC bedrock helper must not be called when OIDC is not enabled")
@@ -86,9 +86,9 @@ func TestProviderForDeploymentBedrockOIDCSkippedWhenDisabled(t *testing.T) {
 }
 
 func TestProviderForDeploymentBedrockOIDCSkippedOutsideActions(t *testing.T) {
-	// MUX_OIDC=1 but not in GitHub Actions: OIDC must be skipped, fall back to stored.
+	// RELAY_OIDC=1 but not in GitHub Actions: OIDC must be skipped, fall back to stored.
 	t.Setenv("GITHUB_ACTIONS", "false")
-	t.Setenv("MUX_OIDC", "1")
+	t.Setenv("RELAY_OIDC", "1")
 
 	swapOIDCSeams(t, func(_ context.Context, _, _ string) (credentials.AWSCredentials, error) {
 		t.Fatal("OIDC bedrock helper must not be called outside GitHub Actions")
@@ -108,7 +108,7 @@ func TestProviderForDeploymentBedrockOIDCSkippedOutsideActions(t *testing.T) {
 func TestProviderForDeploymentBedrockOIDCFallsBackOnError(t *testing.T) {
 	// OIDC enabled and in Actions, but the exchange fails: must fall back to stored creds.
 	t.Setenv("GITHUB_ACTIONS", "true")
-	t.Setenv("MUX_OIDC", "1")
+	t.Setenv("RELAY_OIDC", "1")
 
 	swapOIDCSeams(t, func(_ context.Context, _, _ string) (credentials.AWSCredentials, error) {
 		return credentials.AWSCredentials{}, credentials.ErrNoOIDC
@@ -130,7 +130,7 @@ func TestProviderForDeploymentBedrockOIDCFallsBackOnError(t *testing.T) {
 
 func TestProviderForDeploymentVertexOIDCTakenWhenAudienceSet(t *testing.T) {
 	t.Setenv("GITHUB_ACTIONS", "true")
-	t.Setenv("MUX_OIDC", "")
+	t.Setenv("RELAY_OIDC", "")
 	t.Setenv("VERTEX_PROJECT_ID", "proj")
 	t.Setenv("VERTEX_REGION", "us-central1")
 
@@ -164,7 +164,7 @@ func TestProviderForDeploymentVertexOIDCTakenWhenAudienceSet(t *testing.T) {
 
 func TestProviderForDeploymentVertexOIDCSkippedWhenDisabled(t *testing.T) {
 	t.Setenv("GITHUB_ACTIONS", "true")
-	t.Setenv("MUX_OIDC", "")
+	t.Setenv("RELAY_OIDC", "")
 	t.Setenv("VERTEX_PROJECT_ID", "proj")
 	t.Setenv("VERTEX_REGION", "us-central1")
 

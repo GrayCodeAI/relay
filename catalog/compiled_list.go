@@ -5,11 +5,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/catalog/registry"
+	"github.com/GrayCodeAI/relay/catalog/registry"
 )
 
 // ModelEntriesForProvider lists models from a compiled v1 catalog for one provider.
-// New models appear here automatically when the mux catalog is updated — hosts must not hardcode IDs.
+// New models appear here automatically when the relay catalog is updated — hosts must not hardcode IDs.
 func ModelEntriesForProvider(compiled *CompiledCatalog, provider string) []ModelCatalogEntry {
 	if compiled == nil {
 		return nil

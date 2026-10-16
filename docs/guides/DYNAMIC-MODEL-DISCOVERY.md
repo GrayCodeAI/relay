@@ -1,14 +1,14 @@
 # Dynamic Model Discovery
 
-Status: implemented through the `mux/engine` contract v2.
+Status: implemented through the `relay/engine` contract v2.
 
-This guide describes the host-facing path used by Decoder. Decoder is the face; Mux
+This guide describes the host-facing path used by Decoder. Decoder is the face; Relay
 is the engine and source of truth for provider metadata, credentials, live
 model discovery, catalog compilation, selection, and provider transport.
 
 ## Ownership
 
-| Decoder owns | Mux owns |
+| Decoder owns | Relay owns |
 |---|---|
 | credential and model-picker UX | safe credential resolution and persistence |
 | conversation/session state | provider registry and deployment metadata |
@@ -17,8 +17,8 @@ model discovery, catalog compilation, selection, and provider transport.
 | product settings and lifecycle | model ownership, aliases, selection, and routing |
 | normalized request construction | provider adapters, streams, usage, and errors |
 
-Decoder calls its integration wrapper, which delegates to `mux/engine`. Decoder UI,
-command, and conversation packages do not call Mux's lower-level runtime or
+Decoder calls its integration wrapper, which delegates to `relay/engine`. Decoder UI,
+command, and conversation packages do not call Relay's lower-level runtime or
 client packages.
 
 ## End-to-end path
@@ -76,7 +76,7 @@ e, err := engine.New(engine.Options{
 ```
 
 - `StateDir` derives default catalog and provider paths; explicit paths win.
-- An empty `RemoteCatalogURL` selects Mux's compiled-in HTTPS seed and does
+- An empty `RemoteCatalogURL` selects Relay's compiled-in HTTPS seed and does
   not consult a process-environment override.
 - Custom gateways are normalized, validated, and snapshotted per Engine.
 - Custom gateways must be supplied through `Options.CustomGateways`; there is
@@ -89,7 +89,7 @@ custom gateways to coexist safely in one process.
 
 ## Catalog sources
 
-Mux keeps three complementary sources:
+Relay keeps three complementary sources:
 
 ```text
 published remote catalog
@@ -110,7 +110,7 @@ that do not require the host to reproduce provider logic.
 The stable model DTO intentionally distinguishes:
 
 - `ID`: provider-native/listed model identifier.
-- `CanonicalID`: Mux's canonical alias target where known.
+- `CanonicalID`: Relay's canonical alias target where known.
 - `Owner`: catalog model owner.
 - `ProviderID`: provider associated with the offering.
 - `GatewayID`: selected/listed gateway or deployment identity.
@@ -181,7 +181,7 @@ failed live response is not silently represented as successful live readiness.
 
 ## Selection and conversation handoff
 
-Decoder persists a choice through `Engine.SetSelection(provider, model)`. Mux
+Decoder persists a choice through `Engine.SetSelection(provider, model)`. Relay
 validates provider/model ownership, preserves custom model IDs, canonicalizes
 built-in aliases, and stores routing metadata at the injected provider path.
 
@@ -246,25 +246,25 @@ the safe credential/gateway reports without reading either file directly.
 | custom gateway URL contains embedded data | reject configuration |
 | stream caller exits | close the Engine stream (cancelling its context alone leaves the terminal event waiting for a reader) |
 
-Provider-specific friendly error formatting remains Mux-owned; Decoder decides
+Provider-specific friendly error formatting remains Relay-owned; Decoder decides
 where and how to display it.
 
 ## Release order for Decoder
 
-Mux is changed and released before Decoder advances its dependency:
+Relay is changed and released before Decoder advances its dependency:
 
 ```text
-standalone Mux change
-  --> Mux tests (two passes)
-  --> signed Mux commit
-  --> publish a resolvable Mux module release/commit
+standalone Relay change
+  --> Relay tests (two passes)
+  --> signed Relay commit
+  --> publish a resolvable Relay module release/commit
   --> update Decoder module dependency when needed
-  --> update Decoder's Mux module pin to the same published commit
+  --> update Decoder's Relay module pin to the same published commit
   --> Decoder integration + boundary + clean-clone verification (two passes)
   --> commit Decoder code and gitlink together
 ```
 
-The parent workspace must use a committed Mux checkout, never working-tree-
+The parent workspace must use a committed Relay checkout, never working-tree-
 only code, and Decoder's module pin must resolve to that same published commit.
 Both workspace builds and `GOWORK=off` builds must expose the same Engine
 contract.

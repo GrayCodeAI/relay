@@ -28,7 +28,7 @@ def stamp_json(path):
 
 for path in sorted((root / "npm").glob("*/package.json")):
     stamp_json(path)
-if project == "mux":
+if project == "relay":
     stamp_json(root / "internal/sdk/typescript/package.json")
     path = root / "internal/sdk/python/pyproject.toml"
     outputs[path] = re.sub(r'^version = ".*"$', 'version = "' + version + '"', path.read_text(), count=1, flags=re.M)

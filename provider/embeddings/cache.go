@@ -8,11 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // errEmptyEmbedding is returned internally when the embedder yields no vector.
-var errEmptyEmbedding = errors.New("mux: embedder returned no embeddings")
+var errEmptyEmbedding = errors.New("relay: embedder returned no embeddings")
 
 // SemanticCacheConfig controls the behavior of EmbeddingCachedProvider.
 type SemanticCacheConfig struct {
@@ -48,7 +48,7 @@ func DefaultSemanticCacheConfig() SemanticCacheConfig {
 type semanticEntry struct {
 	vector    []float32
 	model     string // embedding model that produced vector; gates cross-model reuse
-	response  *core.MuxResponse
+	response  *core.RelayResponse
 	createdAt time.Time
 
 	// Doubly-linked list pointers for LRU ordering.
@@ -120,7 +120,7 @@ func (sp *EmbeddingCachedProvider) Ping(ctx context.Context) error { return sp.i
 
 // Chat returns a semantically-cached response on a hit; otherwise calls the
 // inner provider and caches the result.
-func (sp *EmbeddingCachedProvider) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
+func (sp *EmbeddingCachedProvider) Chat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.RelayResponse, error) {
 	if !sp.enabled || sp.embedder == nil {
 		return sp.inner.Chat(ctx, messages, opts)
 	}
@@ -148,7 +148,7 @@ func (sp *EmbeddingCachedProvider) Chat(ctx context.Context, messages []core.Mux
 }
 
 // StreamChat delegates to the inner provider without caching.
-func (sp *EmbeddingCachedProvider) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (sp *EmbeddingCachedProvider) StreamChat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	return sp.inner.StreamChat(ctx, messages, opts)
 }
 
@@ -178,7 +178,7 @@ func (sp *EmbeddingCachedProvider) Stats() SemanticCacheStats {
 
 // embed builds an embedding for the request from the system prompt and message
 // contents.
-func (sp *EmbeddingCachedProvider) embed(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) ([]float32, error) {
+func (sp *EmbeddingCachedProvider) embed(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) ([]float32, error) {
 	var b strings.Builder
 	if opts.System != "" {
 		b.WriteString(opts.System)
@@ -205,7 +205,7 @@ func (sp *EmbeddingCachedProvider) embed(ctx context.Context, messages []core.Mu
 
 // lookup returns the response of the most-similar cached entry whose cosine
 // similarity meets the threshold and which has not expired.
-func (sp *EmbeddingCachedProvider) lookup(vec []float32) (*core.MuxResponse, bool) {
+func (sp *EmbeddingCachedProvider) lookup(vec []float32) (*core.RelayResponse, bool) {
 	sp.mu.Lock()
 	defer sp.mu.Unlock()
 
@@ -239,7 +239,7 @@ func (sp *EmbeddingCachedProvider) lookup(vec []float32) (*core.MuxResponse, boo
 }
 
 // store inserts a new entry, evicting expired/LRU entries as needed.
-func (sp *EmbeddingCachedProvider) store(vec []float32, resp *core.MuxResponse) {
+func (sp *EmbeddingCachedProvider) store(vec []float32, resp *core.RelayResponse) {
 	sp.mu.Lock()
 	defer sp.mu.Unlock()
 

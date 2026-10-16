@@ -6,15 +6,15 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // ErrBudgetExceeded is returned when a virtual key has exhausted its budget.
-var ErrBudgetExceeded = errors.New("mux: virtual key budget exceeded")
+var ErrBudgetExceeded = errors.New("relay: virtual key budget exceeded")
 
 // ErrUnknownVirtualKey is returned when a request references a virtual key that
 // the store does not recognize.
-var ErrUnknownVirtualKey = errors.New("mux: unknown virtual key")
+var ErrUnknownVirtualKey = errors.New("relay: unknown virtual key")
 
 // virtualKeyCtxKey is the context key under which a virtual key id is carried.
 type virtualKeyCtxKey struct{}
@@ -74,7 +74,7 @@ func (bp *BudgetProvider) Ping(ctx context.Context) error { return bp.inner.Ping
 
 // Chat enforces the budget for the request's virtual key, calls the inner
 // provider, then records actual spend.
-func (bp *BudgetProvider) Chat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*MuxResponse, error) {
+func (bp *BudgetProvider) Chat(ctx context.Context, messages []RelayMessage, opts ChatOptions) (*RelayResponse, error) {
 	vk := resolveVirtualKey(ctx, opts)
 	if vk == "" || bp.store == nil {
 		return bp.inner.Chat(ctx, messages, opts)
@@ -95,7 +95,7 @@ func (bp *BudgetProvider) Chat(ctx context.Context, messages []MuxMessage, opts 
 
 // StreamChat enforces budget up-front, then streams. Actual streamed usage is
 // recorded from the final usage event if present.
-func (bp *BudgetProvider) StreamChat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*StreamResult, error) {
+func (bp *BudgetProvider) StreamChat(ctx context.Context, messages []RelayMessage, opts ChatOptions) (*StreamResult, error) {
 	vk := resolveVirtualKey(ctx, opts)
 	if vk == "" || bp.store == nil {
 		return bp.inner.StreamChat(ctx, messages, opts)
@@ -111,8 +111,8 @@ func (bp *BudgetProvider) StreamChat(ctx context.Context, messages []MuxMessage,
 		return nil, err
 	}
 
-	var previousUsage *core.MuxUsage
-	return core.TransformStreamResult(ctx, result, func(streamCtx context.Context, evt MuxStreamEvent) (MuxStreamEvent, error) {
+	var previousUsage *core.RelayUsage
+	return core.TransformStreamResult(ctx, result, func(streamCtx context.Context, evt RelayStreamEvent) (RelayStreamEvent, error) {
 		if evt.Type == "continuation" {
 			previousUsage = nil
 			return evt, nil
@@ -129,7 +129,7 @@ func (bp *BudgetProvider) StreamChat(ctx context.Context, messages []MuxMessage,
 	}), nil
 }
 
-func (bp *BudgetProvider) recordUsage(ctx context.Context, vk, model string, resp *MuxResponse) {
+func (bp *BudgetProvider) recordUsage(ctx context.Context, vk, model string, resp *RelayResponse) {
 	if resp == nil || resp.Usage == nil {
 		return
 	}
@@ -147,7 +147,7 @@ func resolveVirtualKey(ctx context.Context, opts ChatOptions) string {
 
 // ActualCostUSD computes the realized USD cost of a completed call from token
 // usage using the same per-model pricing as the cost estimator.
-func ActualCostUSD(model string, usage *MuxUsage) float64 {
+func ActualCostUSD(model string, usage *RelayUsage) float64 {
 	if usage == nil {
 		return 0
 	}

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/catalog/registry"
+	"github.com/GrayCodeAI/relay/catalog/registry"
 )
 
 func TestSanitizeProviderConfigForDiskRemovesTypedAndDeploymentSecrets(t *testing.T) {

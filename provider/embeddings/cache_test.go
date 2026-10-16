@@ -6,8 +6,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/llm"
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/llm"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // echoMock is a minimal core.Provider that echoes the last user message and
@@ -18,7 +18,7 @@ type echoMock struct {
 	calls int
 }
 
-func (m *echoMock) Chat(_ context.Context, msgs []core.MuxMessage, _ core.ChatOptions) (*core.MuxResponse, error) {
+func (m *echoMock) Chat(_ context.Context, msgs []core.RelayMessage, _ core.ChatOptions) (*core.RelayResponse, error) {
 	m.mu.Lock()
 	m.calls++
 	m.mu.Unlock()
@@ -26,17 +26,17 @@ func (m *echoMock) Chat(_ context.Context, msgs []core.MuxMessage, _ core.ChatOp
 	if len(msgs) > 0 {
 		content = msgs[len(msgs)-1].Content
 	}
-	return &core.MuxResponse{Content: "echo: " + content, FinishReason: "stop"}, nil
+	return &core.RelayResponse{Content: "echo: " + content, FinishReason: "stop"}, nil
 }
 
-func (m *echoMock) StreamChat(ctx context.Context, msgs []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (m *echoMock) StreamChat(ctx context.Context, msgs []core.RelayMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	resp, err := m.Chat(ctx, msgs, opts)
 	if err != nil {
 		return nil, err
 	}
-	ch := make(chan core.MuxStreamEvent, 2)
-	ch <- core.MuxStreamEvent{Type: "content", Content: resp.Content}
-	ch <- core.MuxStreamEvent{Type: "done", StopReason: "stop"}
+	ch := make(chan core.RelayStreamEvent, 2)
+	ch <- core.RelayStreamEvent{Type: "content", Content: resp.Content}
+	ch <- core.RelayStreamEvent{Type: "done", StopReason: "stop"}
 	close(ch)
 	return llm.NewStreamResult(ch, "", func() {}), nil
 }
@@ -73,8 +73,8 @@ func (stubEmbedder) CreateEmbedding(_ context.Context, req EmbeddingRequest) (*E
 	return &EmbeddingResponse{Embeddings: [][]float32{vec}}, nil
 }
 
-func userMsg(s string) []core.MuxMessage {
-	return []core.MuxMessage{{Role: "user", Content: s}}
+func userMsg(s string) []core.RelayMessage {
+	return []core.RelayMessage{{Role: "user", Content: s}}
 }
 
 func TestEmbeddingCache_HitOnSimilarPrompt(t *testing.T) {

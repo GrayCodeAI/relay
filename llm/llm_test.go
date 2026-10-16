@@ -5,13 +5,13 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/llm"
+	"github.com/GrayCodeAI/relay/llm"
 )
 
-// TestLlmParity pins the wire schema of llm.MuxMessage (with a ContentPart)
+// TestLlmParity pins the wire schema of llm.RelayMessage (with a ContentPart)
 // to the exact JSON the eagle llm contract produces.
 func TestLlmParity(t *testing.T) {
-	msg := llm.MuxMessage{
+	msg := llm.RelayMessage{
 		Role:    "user",
 		Content: "hello",
 		ContentParts: []llm.ContentPart{

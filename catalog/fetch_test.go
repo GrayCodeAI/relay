@@ -3,7 +3,7 @@ package catalog
 import (
 	"testing"
 
-	"github.com/GrayCodeAI/mux/catalog/live"
+	"github.com/GrayCodeAI/relay/catalog/live"
 )
 
 func TestFetchOllamaModels_DelegatesLive(t *testing.T) {

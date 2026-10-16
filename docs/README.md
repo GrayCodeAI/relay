@@ -1,6 +1,6 @@
-# Mux Documentation
+# Relay Documentation
 
-Welcome to the Mux documentation. This directory contains detailed guides and reference material for the Universal LLM Provider Runtime.
+Welcome to the Relay documentation. This directory contains detailed guides and reference material for the Universal LLM Provider Runtime.
 
 ## Documentation Index
 
@@ -8,17 +8,17 @@ Welcome to the Mux documentation. This directory contains detailed guides and re
 
 - **[Architecture](ARCHITECTURE.md)** — System architecture, data flow, and design decisions
 - **[Host-Engine Boundary](architecture/HOST-ENGINE-BOUNDARY.md)** — Stable `engine/llm/graph/tools` contract
-- **[Mux Enterprise](design/MUX-ENTERPRISE.md)** — Enterprise surfaces
+- **[Relay Enterprise](design/RELAY-ENTERPRISE.md)** — Enterprise surfaces
 - **[Provider Setup Guide](guides/CREDENTIAL-SETUP-FLOW.md)** — How to configure credentials and providers
 - **[Dynamic Model Discovery](guides/DYNAMIC-MODEL-DISCOVERY.md)** — Architecture and implementation details for live model discovery
-- **[Decentralized Mux routing](architecture/DECENTRALIZED-MUX.md)** — Instance-local routing and signed peer manifests
+- **[Decentralized Relay routing](architecture/DECENTRALIZED-RELAY.md)** — Instance-local routing and signed peer manifests
 - **[Feature-oriented architecture](architecture/FEATURE-MONOREPO.md)** — Package layout and layering rules
-- **[OpenAPI](../api/openapi.yaml)** — Contract for the internal HTTP server in `internal/api` (health, prompt, nodes, aliases, analytics); `/v1/chat/completions`, `/rerank` and `/ready` are served but not yet in the spec. mux ships no binary that starts this server.
+- **[OpenAPI](../api/openapi.yaml)** — Contract for the internal HTTP server in `internal/api` (health, prompt, nodes, aliases, analytics); `/v1/chat/completions`, `/rerank` and `/ready` are served but not yet in the spec. relay ships no binary that starts this server.
 
 ### Quick Links
 
 - **[README](../README.md)** — Project overview and quick start
-- **[Contributing Guide](../CONTRIBUTING.md)** — How to contribute to Mux
+- **[Contributing Guide](../CONTRIBUTING.md)** — How to contribute to Relay
 - **[Security Policy](../SECURITY.md)** — Security reporting and best practices
 - **[Changelog](../CHANGELOG.md)** — Version history and release notes
 
@@ -38,10 +38,10 @@ docs/
 ├── ARCHITECTURE.md                    # System architecture
 ├── architecture/
 │   ├── HOST-ENGINE-BOUNDARY.md        # Host contract, frozen engine-internal types
-│   ├── DECENTRALIZED-MUX.md          # Instance-local routing, signed peer manifests
+│   ├── DECENTRALIZED-RELAY.md          # Instance-local routing, signed peer manifests
 │   └── FEATURE-MONOREPO.md            # Package layout and layering
 ├── design/
-│   └── MUX-ENTERPRISE.md             # Enterprise surfaces (design)
+│   └── RELAY-ENTERPRISE.md             # Enterprise surfaces (design)
 ├── guides/
 │   ├── CREDENTIAL-SETUP-FLOW.md
 │   └── DYNAMIC-MODEL-DISCOVERY.md
@@ -55,7 +55,7 @@ are no separate guides for them yet.
 
 ## For Developers
 
-If you're contributing to Mux:
+If you're contributing to Relay:
 
 1. Read [CONTRIBUTING.md](../CONTRIBUTING.md) for development setup
 2. Review [ARCHITECTURE.md](ARCHITECTURE.md) to understand the system
@@ -64,7 +64,7 @@ If you're contributing to Mux:
 
 ## For Users
 
-If you're using Mux in your application:
+If you're using Relay in your application:
 
 1. Start with the [Quick Start](../README.md#quick-start) in the main README
 2. Review the [Usage examples](../README.md#usage) for common patterns
@@ -74,10 +74,10 @@ If you're using Mux in your application:
 ## API Reference
 
 API documentation is available at:
-- **[pkg.go.dev](https://pkg.go.dev/github.com/GrayCodeAI/mux)** — Generated Go documentation
+- **[pkg.go.dev](https://pkg.go.dev/github.com/GrayCodeAI/relay)** — Generated Go documentation
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** — Core abstractions and interfaces
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/GrayCodeAI/mux/issues)
+- **Issues**: [GitHub Issues](https://github.com/GrayCodeAI/relay/issues)
 - **Security**: See [SECURITY.md](../SECURITY.md) for vulnerability reporting

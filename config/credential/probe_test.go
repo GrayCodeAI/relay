@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	muxcfg "github.com/GrayCodeAI/mux/config"
-	"github.com/GrayCodeAI/mux/config/credential"
+	relaycfg "github.com/GrayCodeAI/relay/config"
+	"github.com/GrayCodeAI/relay/config/credential"
 )
 
 func TestProbeGemini_UsesHeaderNotQuery(t *testing.T) {
@@ -49,13 +49,13 @@ func TestProbeCredential_XiaomiTokenPlan_ResolvesBaseFromProviderConfig(t *testi
 	defer srv.Close()
 
 	dir := t.TempDir()
-	t.Setenv("MUX_CONFIG_DIR", dir)
+	t.Setenv("RELAY_CONFIG_DIR", dir)
 	mockBase := strings.TrimRight(srv.URL, "/") + "/v1"
-	cfg := &muxcfg.ProviderConfig{
+	cfg := &relaycfg.ProviderConfig{
 		Version:                    "1",
 		XiaomiMimoTokenPlanBaseURL: mockBase,
 	}
-	if err := muxcfg.SaveProviderConfig(cfg, ""); err != nil {
+	if err := relaycfg.SaveProviderConfig(cfg, ""); err != nil {
 		t.Fatal(err)
 	}
 

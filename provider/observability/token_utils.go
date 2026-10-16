@@ -17,7 +17,7 @@ var (
 	tokenizerErr  error
 )
 
-// estimateTextTokens uses a lightweight character-based heuristic. Mux needs
+// estimateTextTokens uses a lightweight character-based heuristic. Relay needs
 // cheap local budgeting, not shared cross-repo token infrastructure.
 func estimateTextTokens(text string) int {
 	if count, ok := preciseTokenCount(text); ok {

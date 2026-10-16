@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/storage"
+	"github.com/GrayCodeAI/relay/storage"
 )
 
 type mockReranker struct {
@@ -217,17 +217,17 @@ func TestReadyNotReady(t *testing.T) {
 	t.Parallel()
 	// A server without a store/engine must report not-ready (503), while
 	// /health (liveness) keeps reporting ok.
-	s := &Server{mux: http.NewServeMux()}
+	s := &Server{relay: http.NewServeMux()}
 	s.routes()
 
 	readyRec := httptest.NewRecorder()
-	s.mux.ServeHTTP(readyRec, httptest.NewRequest(http.MethodGet, "/ready", nil))
+	s.relay.ServeHTTP(readyRec, httptest.NewRequest(http.MethodGet, "/ready", nil))
 	if readyRec.Code != http.StatusServiceUnavailable {
 		t.Fatalf("ready: expected 503 when deps missing, got %d", readyRec.Code)
 	}
 
 	healthRec := httptest.NewRecorder()
-	s.mux.ServeHTTP(healthRec, httptest.NewRequest(http.MethodGet, "/health", nil))
+	s.relay.ServeHTTP(healthRec, httptest.NewRequest(http.MethodGet, "/health", nil))
 	if healthRec.Code != http.StatusOK {
 		t.Fatalf("health: expected 200 (liveness), got %d", healthRec.Code)
 	}

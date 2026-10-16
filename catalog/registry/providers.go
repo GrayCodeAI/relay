@@ -1,6 +1,6 @@
 package registry
 
-import "github.com/GrayCodeAI/mux/catalog/opencodego"
+import "github.com/GrayCodeAI/relay/catalog/opencodego"
 
 func init() {
 	for _, spec := range providerSpecs() {

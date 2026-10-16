@@ -1,4 +1,4 @@
-package mux_test
+package relay_test
 
 import (
 	"os"
@@ -52,7 +52,7 @@ func TestAgentsMDPathsExist(t *testing.T) {
 
 func TestDocTreesListExistingPaths(t *testing.T) {
 	for _, tc := range []struct{ doc, root string }{
-		{"README.md", "mux/"},
+		{"README.md", "relay/"},
 		{"docs/README.md", "docs/"},
 	} {
 		data, err := os.ReadFile(filepath.FromSlash(tc.doc))
@@ -64,7 +64,7 @@ func TestDocTreesListExistingPaths(t *testing.T) {
 }
 
 // checkTree finds the fenced tree whose first line is root and verifies that
-// each entry exists. root "mux/" is the repository root.
+// each entry exists. root "relay/" is the repository root.
 func checkTree(t *testing.T, doc, root, text string) {
 	t.Helper()
 	lines := strings.Split(text, "\n")
@@ -79,7 +79,7 @@ func checkTree(t *testing.T, doc, root, text string) {
 		t.Fatalf("%s: no directory tree rooted at %q", doc, root)
 	}
 	base := strings.TrimSuffix(root, "/")
-	if root == "mux/" {
+	if root == "relay/" {
 		base = "."
 	}
 	stack := []string{base}

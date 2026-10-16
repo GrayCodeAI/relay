@@ -9,13 +9,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GrayCodeAI/mux/internal/buildversion"
+	"github.com/GrayCodeAI/relay/internal/buildversion"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/provider/adapters"
-	"github.com/GrayCodeAI/mux/provider/resilience"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/provider/adapters"
+	"github.com/GrayCodeAI/relay/provider/resilience"
 )
 
 // Version mirrors core.Version; the canonical value lives in provider/core so
@@ -30,9 +30,9 @@ func SetVersion(v string) {
 	core.SetVersion(v)
 }
 
-// MuxClient is the universal LLM provider.
+// RelayClient is the universal LLM provider.
 // It is safe for concurrent use.
-type MuxClient struct {
+type RelayClient struct {
 	mu              sync.RWMutex
 	defaultProvider string
 	apiKeys         map[string]string
@@ -42,9 +42,9 @@ type MuxClient struct {
 	coalescer       *resilience.Coalescer    // optional request coalescing
 }
 
-// Client creates an MuxClient.
-func Client(cfg *core.MuxConfig, opts ...core.ClientOption) *MuxClient {
-	c := &MuxClient{
+// Client creates an RelayClient.
+func Client(cfg *core.RelayConfig, opts ...core.ClientOption) *RelayClient {
+	c := &RelayClient{
 		defaultProvider: DetectProvider(),
 		apiKeys:         make(map[string]string),
 		baseURLs:        make(map[string]string),
@@ -64,19 +64,19 @@ func Client(cfg *core.MuxConfig, opts ...core.ClientOption) *MuxClient {
 	}
 	// Apply options (including coalescing)
 	for _, opt := range opts {
-		opt.ApplyMux(c)
+		opt.ApplyRelay(c)
 	}
 	return c
 }
 
 // SetCoalescingTTL enables request coalescing with the given reuse TTL.
-// Implements core.MuxConfigurable for WithCoalescing.
-func (c *MuxClient) SetCoalescingTTL(ttl time.Duration) {
+// Implements core.RelayConfigurable for WithCoalescing.
+func (c *RelayClient) SetCoalescingTTL(ttl time.Duration) {
 	c.coalescer = resilience.NewCoalescer(ttl)
 }
 
 // SetAPIKey sets an API key for a provider.
-func (c *MuxClient) SetAPIKey(provider, apiKey string) {
+func (c *RelayClient) SetAPIKey(provider, apiKey string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.apiKeys[provider] = apiKey
@@ -84,7 +84,7 @@ func (c *MuxClient) SetAPIKey(provider, apiKey string) {
 }
 
 // Ping checks connectivity to the specified (or default) provider.
-func (c *MuxClient) Ping(ctx context.Context, provider string) error {
+func (c *RelayClient) Ping(ctx context.Context, provider string) error {
 	if provider == "" {
 		provider = c.defaultProvider
 	}
@@ -105,10 +105,10 @@ type AnthropicClientConfig struct {
 	BaseURL        string            `json:"base_url,omitempty"`
 }
 
-// ParseCustomHeaders parses MUX_CUSTOM_HEADERS env var into a map.
+// ParseCustomHeaders parses RELAY_CUSTOM_HEADERS env var into a map.
 func ParseCustomHeaders() map[string]string {
 	result := make(map[string]string)
-	raw := os.Getenv("MUX_CUSTOM_HEADERS")
+	raw := os.Getenv("RELAY_CUSTOM_HEADERS")
 	if raw == "" {
 		return result
 	}
@@ -135,8 +135,8 @@ var (
 
 // NewImageMessage creates a user message with an image from a URL or data URI.
 // The url parameter accepts HTTP(S) URLs or data URIs (data:image/png;base64,...).
-func NewImageMessage(url string) core.MuxMessage {
-	return core.MuxMessage{
+func NewImageMessage(url string) core.RelayMessage {
+	return core.RelayMessage{
 		Role: "user",
 		ContentParts: []core.ContentPart{
 			{Type: "image_url", ImageURL: &core.ImageURLPart{URL: url}},
@@ -145,8 +145,8 @@ func NewImageMessage(url string) core.MuxMessage {
 }
 
 // NewImageMessageWithText creates a user message with text and an image from a URL or data URI.
-func NewImageMessageWithText(text, url string) core.MuxMessage {
-	return core.MuxMessage{
+func NewImageMessageWithText(text, url string) core.RelayMessage {
+	return core.RelayMessage{
 		Role: "user",
 		ContentParts: []core.ContentPart{
 			{Type: "text", Text: text},
@@ -157,8 +157,8 @@ func NewImageMessageWithText(text, url string) core.MuxMessage {
 
 // NewBase64ImageMessage creates a user message with a base64-encoded image.
 // mediaType should be a MIME type like "image/png" or "image/jpeg".
-func NewBase64ImageMessage(data, mediaType string) core.MuxMessage {
-	return core.MuxMessage{
+func NewBase64ImageMessage(data, mediaType string) core.RelayMessage {
+	return core.RelayMessage{
 		Role: "user",
 		ContentParts: []core.ContentPart{
 			{Type: "image_url", ImageURL: &core.ImageURLPart{
@@ -169,8 +169,8 @@ func NewBase64ImageMessage(data, mediaType string) core.MuxMessage {
 }
 
 // NewBase64ImageMessageWithText creates a user message with text and a base64-encoded image.
-func NewBase64ImageMessageWithText(text, data, mediaType string) core.MuxMessage {
-	return core.MuxMessage{
+func NewBase64ImageMessageWithText(text, data, mediaType string) core.RelayMessage {
+	return core.RelayMessage{
 		Role: "user",
 		ContentParts: []core.ContentPart{
 			{Type: "text", Text: text},
@@ -183,8 +183,8 @@ func NewBase64ImageMessageWithText(text, data, mediaType string) core.MuxMessage
 
 // NewAudioMessage creates a user message with base64-encoded audio.
 // format should be "wav" or "mp3".
-func NewAudioMessage(base64Data, format string) core.MuxMessage {
-	return core.MuxMessage{
+func NewAudioMessage(base64Data, format string) core.RelayMessage {
+	return core.RelayMessage{
 		Role: "user",
 		ContentParts: []core.ContentPart{
 			{Type: "input_audio", InputAudio: &core.InputAudioPart{
@@ -196,8 +196,8 @@ func NewAudioMessage(base64Data, format string) core.MuxMessage {
 }
 
 // NewAudioMessageWithText creates a user message with text and base64-encoded audio.
-func NewAudioMessageWithText(text, base64Data, format string) core.MuxMessage {
-	return core.MuxMessage{
+func NewAudioMessageWithText(text, base64Data, format string) core.RelayMessage {
+	return core.RelayMessage{
 		Role: "user",
 		ContentParts: []core.ContentPart{
 			{Type: "text", Text: text},

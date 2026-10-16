@@ -44,13 +44,13 @@ class APIError extends Error {
   body: string;
 
   constructor(statusCode: number, body: string) {
-    super(`mux: ${statusCode} ${body}`);
+    super(`relay: ${statusCode} ${body}`);
     this.statusCode = statusCode;
     this.body = body;
   }
 }
 
-class MuxClient {
+class RelayClient {
   private baseURL: string;
   private headers: Record<string, string>;
 

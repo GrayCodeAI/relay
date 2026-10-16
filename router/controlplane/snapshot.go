@@ -1,5 +1,5 @@
 // Package controlplane distributes versioned routing manifests while each
-// Mux instance resolves credentials and executes provider calls locally.
+// Relay instance resolves credentials and executes provider calls locally.
 package controlplane
 
 import (
@@ -12,9 +12,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/provider/core"
-	"github.com/GrayCodeAI/mux/router"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/provider/core"
+	"github.com/GrayCodeAI/relay/router"
 )
 
 // Deployment describes a route target without credentials. Resolver supplies
@@ -265,7 +265,7 @@ func (r *Replica) Ping(ctx context.Context) error {
 	return active.Ping(ctx)
 }
 
-func (r *Replica) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
+func (r *Replica) Chat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.RelayResponse, error) {
 	active, err := r.active()
 	if err != nil {
 		return nil, err
@@ -273,7 +273,7 @@ func (r *Replica) Chat(ctx context.Context, messages []core.MuxMessage, opts cor
 	return active.Chat(ctx, messages, opts)
 }
 
-func (r *Replica) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (r *Replica) StreamChat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	active, err := r.active()
 	if err != nil {
 		return nil, err

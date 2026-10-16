@@ -1,4 +1,4 @@
-# Security Policy — mux
+# Security Policy — relay
 
 ## Supported versions
 
@@ -14,7 +14,7 @@ for the eco-wide versioning scheme.
 
 **Do not open a public GitHub issue for security vulnerabilities.** Instead:
 
-1. Open a private [GitHub Security Advisory](https://github.com/GrayCodeAI/mux/security/advisories/new), **or**
+1. Open a private [GitHub Security Advisory](https://github.com/GrayCodeAI/relay/security/advisories/new), **or**
 2. Email `security@decoder.ai` with the details below.
 
 Include in your report:
@@ -62,10 +62,10 @@ This policy covers the code in this repository and the release artefacts
 published from it. It does not cover:
 
 - Third-party dependencies (report to upstream).
-- LLM provider services that mux integrates with (report to the
+- LLM provider services that relay integrates with (report to the
   provider).
 - Local filesystem misuse where an attacker already has shell access (out of
   threat model).
 
-For mux-specific threat-model notes, see the README and any docs in
+For relay-specific threat-model notes, see the README and any docs in
 this repo.

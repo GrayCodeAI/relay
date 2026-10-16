@@ -32,7 +32,7 @@
     <rect width="600" height="200" fill="url(#bg)"/>
 
     <!--
-      ICON: Abstract mux mark
+      ICON: Abstract relay mark
       Two interleaved flow arcs around a glowing bolt —
       provider traffic flowing in, one unified interface flowing out.
       Clean, geometric, scalable.
@@ -78,7 +78,7 @@
     <text x="196" y="96"
           font-family="'SF Mono','Fira Code','Cascadia Code','Courier New',monospace"
           font-size="72" font-weight="800"
-          fill="#4ECDC4" filter="url(#textGlow)" letter-spacing="-3">Mux</text>
+          fill="#4ECDC4" filter="url(#textGlow)" letter-spacing="-3">Relay</text>
 
     <text x="198" y="126"
           font-family="'SF Mono','Fira Code',monospace"

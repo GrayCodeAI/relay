@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // Relationship is a subject-predicate-object triple extracted from text. It is
@@ -46,9 +46,9 @@ type ExtractOptions struct {
 }
 
 // StructuredChatter is the narrow contract extraction needs from a provider
-// runtime. It keeps this feature independent of provider.MuxClient.
+// runtime. It keeps this feature independent of provider.RelayClient.
 type StructuredChatter interface {
-	ChatWithStructuredOutput(context.Context, []core.MuxMessage, core.ChatOptions, core.SchemaValidation) (*core.MuxResponse, error)
+	ChatWithStructuredOutput(context.Context, []core.RelayMessage, core.ChatOptions, core.SchemaValidation) (*core.RelayResponse, error)
 }
 
 // relationshipSchema is the JSON schema for a list of Relationship triples,
@@ -89,10 +89,10 @@ Rules:
 // prompts and JSON parsing.
 func ExtractRelationships(ctx context.Context, c StructuredChatter, text string, opts ExtractOptions) ([]Relationship, error) {
 	if c == nil {
-		return nil, fmt.Errorf("mux: extract: structured chatter must not be nil")
+		return nil, fmt.Errorf("relay: extract: structured chatter must not be nil")
 	}
 	if strings.TrimSpace(text) == "" {
-		return nil, fmt.Errorf("mux: extract: text must not be empty")
+		return nil, fmt.Errorf("relay: extract: text must not be empty")
 	}
 
 	instruction := opts.Instruction
@@ -108,7 +108,7 @@ func ExtractRelationships(ctx context.Context, c StructuredChatter, text string,
 		maxRetries = 2
 	}
 
-	messages := []core.MuxMessage{
+	messages := []core.RelayMessage{
 		{Role: "system", Content: instruction},
 		{Role: "user", Content: text},
 	}
@@ -119,14 +119,14 @@ func ExtractRelationships(ctx context.Context, c StructuredChatter, text string,
 		MaxRetries: maxRetries,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("mux: extract relationships: %w", err)
+		return nil, fmt.Errorf("relay: extract relationships: %w", err)
 	}
 
 	var parsed struct {
 		Relationships []Relationship `json:"relationships"`
 	}
 	if err := json.Unmarshal([]byte(resp.Content), &parsed); err != nil {
-		return nil, fmt.Errorf("mux: extract relationships: decode: %w", err)
+		return nil, fmt.Errorf("relay: extract relationships: decode: %w", err)
 	}
 
 	return filterRelationships(parsed.Relationships, opts.AllowedPredicates), nil

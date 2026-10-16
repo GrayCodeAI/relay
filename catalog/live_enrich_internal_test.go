@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/catalog/live"
+	"github.com/GrayCodeAI/relay/catalog/live"
 )
 
 func TestCanonicalModelIDForLiveEntry(t *testing.T) {
