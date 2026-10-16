@@ -33,7 +33,7 @@ func TestServerChatRoundTrip(t *testing.T) {
 	})
 
 	conn, err := googlegrpc.NewClient(
-		"passthrough:///mux-test",
+		"passthrough:///relay-test",
 		googlegrpc.WithContextDialer(func(context.Context, string) (net.Conn, error) { return lis.Dial() }),
 		googlegrpc.WithTransportCredentials(insecure.NewCredentials()),
 		googlegrpc.WithDefaultCallOptions(googlegrpc.CallContentSubtype("json")),
@@ -44,7 +44,7 @@ func TestServerChatRoundTrip(t *testing.T) {
 	t.Cleanup(func() { _ = conn.Close() })
 
 	var response ChatResponse
-	if err := conn.Invoke(context.Background(), "/mux.v1.ChatService/Chat", &ChatRequest{Message: "hello"}, &response); err != nil {
+	if err := conn.Invoke(context.Background(), "/relay.v1.ChatService/Chat", &ChatRequest{Message: "hello"}, &response); err != nil {
 		t.Fatal(err)
 	}
 	if response.Content != "echo: hello" || response.NodeID != "node-1" || response.FinishReason != "stop" {

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/catalog/live"
-	"github.com/GrayCodeAI/mux/credentials"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/catalog/live"
+	"github.com/GrayCodeAI/relay/credentials"
 )
 
 func TestPreflightDistinguishesLocalAndLiveReadiness(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 func classify(operation string, route Route, err error) error {
@@ -25,7 +25,7 @@ func classify(operation string, route Route, err error) error {
 		code = ErrorProviderUnavailable
 		retryable = true
 	default:
-		var providerErr *core.MuxError
+		var providerErr *core.RelayError
 		if errors.As(err, &providerErr) {
 			retryable = providerErr.IsRetriable()
 			switch {

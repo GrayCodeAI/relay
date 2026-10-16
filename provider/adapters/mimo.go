@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/catalog/xiaomi"
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/catalog/xiaomi"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // MiMoClient uses the OpenAI-compatible MiMo endpoint.
@@ -31,11 +31,11 @@ func NewMiMoClient(apiKey, openAIBase string, compat *OpenAICompatConfig, provid
 
 func (c *MiMoClient) Name() string { return c.openAI.Name() }
 
-func (c *MiMoClient) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
+func (c *MiMoClient) Chat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.RelayResponse, error) {
 	return c.openAI.Chat(ctx, messages, opts)
 }
 
-func (c *MiMoClient) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (c *MiMoClient) StreamChat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	return c.openAI.StreamChat(ctx, messages, opts)
 }
 

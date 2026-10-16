@@ -1,4 +1,4 @@
-package mux
+package relay
 
 import (
 	"bufio"
@@ -76,7 +76,7 @@ type APIError struct {
 }
 
 func (e *APIError) Error() string {
-	return fmt.Sprintf("mux: %s %s: %d %s", e.Method, e.Path, e.StatusCode, e.Body)
+	return fmt.Sprintf("relay: %s %s: %d %s", e.Method, e.Path, e.StatusCode, e.Body)
 }
 
 func (c *Client) Prompt(ctx context.Context, req PromptRequest) (*PromptResponse, error) {

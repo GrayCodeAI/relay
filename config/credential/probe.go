@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/catalog/registry"
-	"github.com/GrayCodeAI/mux/catalog/xiaomi"
-	"github.com/GrayCodeAI/mux/internal/probehttp"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/catalog/registry"
+	"github.com/GrayCodeAI/relay/catalog/xiaomi"
+	"github.com/GrayCodeAI/relay/internal/probehttp"
 )
 
 const credentialProbeTimeout = 8 * time.Second

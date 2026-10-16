@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/relay/catalog"
 )
 
 // MergePolicy controls catalog merge behavior when enriching from live APIs.

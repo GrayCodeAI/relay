@@ -11,9 +11,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/llm"
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/llm"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 type DeploymentChoice struct {
@@ -132,7 +132,7 @@ func (r *DeploymentRouter) Ping(ctx context.Context) error {
 	return fmt.Errorf("deployment router: no deployments configured")
 }
 
-func (r *DeploymentRouter) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
+func (r *DeploymentRouter) Chat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.RelayResponse, error) {
 	target, err := r.resolveTarget(opts.Model)
 	if err != nil {
 		return nil, err
@@ -188,13 +188,13 @@ func (r *DeploymentRouter) Chat(ctx context.Context, messages []core.MuxMessage,
 	return nil, fmt.Errorf("deployment router: all deployments failed for %q: %w", target.canonicalModelID, lastErr)
 }
 
-func (r *DeploymentRouter) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (r *DeploymentRouter) StreamChat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	target, err := r.resolveTarget(opts.Model)
 	if err != nil {
 		return nil, err
 	}
 	streamCtx, cancel := context.WithCancel(ctx)
-	out := make(chan core.MuxStreamEvent, 64)
+	out := make(chan core.RelayStreamEvent, 64)
 	go func() {
 		defer close(out)
 		var lastErr error
@@ -223,7 +223,7 @@ func (r *DeploymentRouter) StreamChat(ctx context.Context, messages []core.MuxMe
 				attemptsMade++
 				route := deploymentRoute(opts, target, choice.DeploymentID, attemptsMade)
 				lastRoute = route
-				if !sendRouterEvent(streamCtx, out, core.MuxStreamEvent{Type: "route_changed", Route: route}) {
+				if !sendRouterEvent(streamCtx, out, core.RelayStreamEvent{Type: "route_changed", Route: route}) {
 					return
 				}
 				fallback, err := r.streamWithDeployment(streamCtx, out, messages, opts, target, choice.DeploymentID, *route)
@@ -449,7 +449,7 @@ func (r *DeploymentRouter) getCircuitBreaker(deploymentID string) *CircuitBreake
 	return cb
 }
 
-func (r *DeploymentRouter) chatWithDeployment(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions, target deploymentTarget, deploymentID string) (*core.MuxResponse, error) {
+func (r *DeploymentRouter) chatWithDeployment(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions, target deploymentTarget, deploymentID string) (*core.RelayResponse, error) {
 	offering, adapter, err := r.resolveOffering(target, deploymentID)
 	if err != nil {
 		return nil, err
@@ -477,7 +477,7 @@ func deploymentRoute(opts core.ChatOptions, target deploymentTarget, deploymentI
 
 // attachResponseRoute fills the response route from the router's view without
 // overwriting anything the deployment already reported.
-func attachResponseRoute(resp *core.MuxResponse, route *llm.ResolvedRoute) {
+func attachResponseRoute(resp *core.RelayResponse, route *llm.ResolvedRoute) {
 	if resp == nil || route == nil {
 		return
 	}
@@ -504,7 +504,7 @@ func attachResponseRoute(resp *core.MuxResponse, route *llm.ResolvedRoute) {
 	resp.Route = &merged
 }
 
-func sendRouterEvent(ctx context.Context, out chan<- core.MuxStreamEvent, event core.MuxStreamEvent) bool {
+func sendRouterEvent(ctx context.Context, out chan<- core.RelayStreamEvent, event core.RelayStreamEvent) bool {
 	select {
 	case out <- event:
 		return true
@@ -546,8 +546,8 @@ func isRetryableStreamFailure(err error) bool {
 
 // routerErrorEvent builds the router's terminal error event. It is only used
 // while the caller's context is live, so it never reports a cancellation.
-func routerErrorEvent(err error, route *llm.ResolvedRoute) core.MuxStreamEvent {
-	event := core.MuxStreamEvent{Type: "error", Route: cloneResolvedRoute(route)}
+func routerErrorEvent(err error, route *llm.ResolvedRoute) core.RelayStreamEvent {
+	event := core.RelayStreamEvent{Type: "error", Route: cloneResolvedRoute(route)}
 	if err != nil {
 		event.Error = err.Error()
 	}
@@ -563,7 +563,7 @@ func routerErrorEvent(err error, route *llm.ResolvedRoute) core.MuxStreamEvent {
 // with a failure. Warning-marked "error" events are non-fatal diagnostics
 // (for example a reasoning-only response) that precede the real terminal,
 // matching provider/core and the engine.
-func isStreamFailureEvent(event core.MuxStreamEvent) bool {
+func isStreamFailureEvent(event core.RelayStreamEvent) bool {
 	return event.Type == "error" && event.Warning == "" || event.Type == "cancelled" || event.Type == "canceled"
 }
 
@@ -572,7 +572,7 @@ func isStreamFailureEvent(event core.MuxStreamEvent) bool {
 // comes from a context the deployment owns (for example an adapter-side
 // timeout), so it is an upstream failure the router may fail over from, not
 // the caller's cancellation.
-func providerFailureEvent(event core.MuxStreamEvent, deploymentID string) core.MuxStreamEvent {
+func providerFailureEvent(event core.RelayStreamEvent, deploymentID string) core.RelayStreamEvent {
 	cancelled := event.Type == "cancelled" || event.Type == "canceled"
 	event.Type = "error"
 	if event.Error == "" {
@@ -603,7 +603,7 @@ func cloneResolvedRoute(route *llm.ResolvedRoute) *llm.ResolvedRoute {
 	return &cloned
 }
 
-func (r *DeploymentRouter) streamWithDeployment(ctx context.Context, out chan<- core.MuxStreamEvent, messages []core.MuxMessage, opts core.ChatOptions, target deploymentTarget, deploymentID string, route llm.ResolvedRoute) (fallback bool, err error) {
+func (r *DeploymentRouter) streamWithDeployment(ctx context.Context, out chan<- core.RelayStreamEvent, messages []core.RelayMessage, opts core.ChatOptions, target deploymentTarget, deploymentID string, route llm.ResolvedRoute) (fallback bool, err error) {
 	offering, adapter, err := r.resolveOffering(target, deploymentID)
 	if err != nil {
 		return true, err
@@ -618,8 +618,8 @@ func (r *DeploymentRouter) streamWithDeployment(ctx context.Context, out chan<- 
 	}
 	defer stream.Close()
 	emitted := false
-	var buffered []core.MuxStreamEvent
-	annotate := func(event core.MuxStreamEvent) core.MuxStreamEvent {
+	var buffered []core.RelayStreamEvent
+	annotate := func(event core.RelayStreamEvent) core.RelayStreamEvent {
 		if event.Route == nil {
 			event.Route = cloneResolvedRoute(&route)
 		}
@@ -749,11 +749,11 @@ func optsForOffering(opts core.ChatOptions, offering catalog.ModelOffering) core
 	return copied
 }
 
-func filterTools(tools []core.MuxTool, offering catalog.ModelOffering) []core.MuxTool {
+func filterTools(tools []core.RelayTool, offering catalog.ModelOffering) []core.RelayTool {
 	if len(offering.Capabilities.ServerTools) == 0 {
 		return tools
 	}
-	filtered := make([]core.MuxTool, 0, len(tools))
+	filtered := make([]core.RelayTool, 0, len(tools))
 	for _, tool := range tools {
 		if offering.Capabilities.ServerTools[tool.Name] == catalog.CapabilityUnsupported ||
 			offering.Capabilities.ServerTools[tool.Name] == catalog.CapabilityUnknown {
@@ -764,7 +764,7 @@ func filterTools(tools []core.MuxTool, offering catalog.ModelOffering) []core.Mu
 	return filtered
 }
 
-func requestedServerTools(tools []core.MuxTool) []string {
+func requestedServerTools(tools []core.RelayTool) []string {
 	seen := map[string]bool{}
 	var out []string
 	for _, tool := range tools {
@@ -824,7 +824,7 @@ func selectDeploymentChoice(choices []DeploymentChoice, exclude string) Deployme
 	return alternatives[len(alternatives)-1]
 }
 
-func isOutputEvent(event core.MuxStreamEvent) bool {
+func isOutputEvent(event core.RelayStreamEvent) bool {
 	return event.Content != "" || event.Thinking != "" || event.ToolCall != nil || event.Type == "content" || event.Type == "thinking" || event.Type == "tool_call"
 }
 
@@ -982,7 +982,7 @@ func shouldRecordBreakerFailure(err error) bool {
 		}
 		// Internal or unknown kinds fall through to the message checks.
 	}
-	var providerErr *core.MuxError
+	var providerErr *core.RelayError
 	if errors.As(err, &providerErr) {
 		if providerErr.StatusCode == 0 {
 			return true

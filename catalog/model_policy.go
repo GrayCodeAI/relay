@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/catalog/registry"
+	"github.com/GrayCodeAI/relay/catalog/registry"
 )
 
 // ModelCostTier is a relative cost band for model selection.

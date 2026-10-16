@@ -24,18 +24,18 @@ type Configurable interface {
 	SetMimoAuth()
 }
 
-// MuxConfigurable is the setter surface the top-level MuxClient exposes
+// RelayConfigurable is the setter surface the top-level RelayClient exposes
 // for options that configure the universal client rather than an adapter.
-type MuxConfigurable interface {
+type RelayConfigurable interface {
 	SetCoalescingTTL(ttl time.Duration)
 }
 
 // ClientOption configures clients. Options built with the constructors below
-// apply to any Configurable adapter; options built with NewMuxOption apply
-// to the top-level MuxClient.
+// apply to any Configurable adapter; options built with NewRelayOption apply
+// to the top-level RelayClient.
 type ClientOption struct {
 	applyConfigurable func(Configurable)
-	applyMux          func(MuxConfigurable)
+	applyRelay        func(RelayConfigurable)
 }
 
 // NewOption builds a ClientOption from an adapter-level apply function.
@@ -43,23 +43,23 @@ func NewOption(fn func(Configurable)) ClientOption {
 	return ClientOption{applyConfigurable: fn}
 }
 
-// NewMuxOption builds a ClientOption from an MuxClient-level apply function.
-func NewMuxOption(fn func(MuxConfigurable)) ClientOption {
-	return ClientOption{applyMux: fn}
+// NewRelayOption builds a ClientOption from an RelayClient-level apply function.
+func NewRelayOption(fn func(RelayConfigurable)) ClientOption {
+	return ClientOption{applyRelay: fn}
 }
 
-// Apply runs the option against an adapter. No-op for MuxClient-level options.
+// Apply runs the option against an adapter. No-op for RelayClient-level options.
 func (o ClientOption) Apply(c Configurable) {
 	if o.applyConfigurable != nil {
 		o.applyConfigurable(c)
 	}
 }
 
-// ApplyMux runs the option against the top-level provider. No-op for
+// ApplyRelay runs the option against the top-level provider. No-op for
 // adapter-level options.
-func (o ClientOption) ApplyMux(e MuxConfigurable) {
-	if o.applyMux != nil {
-		o.applyMux(e)
+func (o ClientOption) ApplyRelay(e RelayConfigurable) {
+	if o.applyRelay != nil {
+		o.applyRelay(e)
 	}
 }
 

@@ -3,7 +3,7 @@ package api
 import (
 	"testing"
 
-	"github.com/GrayCodeAI/mux/internal/httputil"
+	"github.com/GrayCodeAI/relay/internal/httputil"
 )
 
 func TestConstantTimeEqual(t *testing.T) {

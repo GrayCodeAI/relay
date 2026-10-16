@@ -1,4 +1,4 @@
-// Package graph provides graph-based execution graph implementation for mux.
+// Package graph provides graph-based execution graph implementation for relay.
 package operationsgraph
 
 import (
@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	graphcontracts "github.com/GrayCodeAI/mux/graph"
+	graphcontracts "github.com/GrayCodeAI/relay/graph"
 )
 
 // OperationNode represents a node in the operations graph.
@@ -30,7 +30,7 @@ type OperationEdge struct {
 	Attrs     map[string]interface{} `json:"attrs,omitempty"`
 }
 
-// OperationsGraph represents a graph of operations for mux.
+// OperationsGraph represents a graph of operations for relay.
 type OperationsGraph struct {
 	mu    sync.RWMutex
 	ID    string                    `json:"id"`

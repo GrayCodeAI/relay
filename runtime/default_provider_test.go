@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/config"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/config"
 )
 
 func TestDefaultModelProviderFilter_FromProviderConfig(t *testing.T) {
@@ -50,6 +50,6 @@ func TestDefaultModelProviderFilter_LoadDoesNotPanic(t *testing.T) {
 
 func TestDefaultModelProviderFilter_WithEmptyDir(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("MUX_CONFIG_DIR", dir)
+	t.Setenv("RELAY_CONFIG_DIR", dir)
 	_ = DefaultModelProviderFilter(context.Background())
 }

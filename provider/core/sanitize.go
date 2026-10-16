@@ -4,7 +4,7 @@ package core
 // (assistant messages with tool calls that lack matching tool_result blocks)
 // and injects synthetic error results to prevent 400 errors from providers.
 // This is critical for session resume and compaction scenarios.
-func SanitizeMessages(messages []MuxMessage) []MuxMessage {
+func SanitizeMessages(messages []RelayMessage) []RelayMessage {
 	if len(messages) == 0 {
 		return messages
 	}
@@ -22,7 +22,7 @@ func SanitizeMessages(messages []MuxMessage) []MuxMessage {
 	}
 
 	// Find orphaned tool_use IDs and inject synthetic results
-	var result []MuxMessage
+	var result []RelayMessage
 	for _, msg := range messages {
 		result = append(result, msg)
 
@@ -30,7 +30,7 @@ func SanitizeMessages(messages []MuxMessage) []MuxMessage {
 			for _, tc := range msg.ToolUse {
 				if tc.ID != "" && !resultIDs[tc.ID] {
 					// Inject synthetic error result
-					result = append(result, MuxMessage{
+					result = append(result, RelayMessage{
 						Role: "user",
 						ToolResults: []ToolResult{{
 							ToolUseID: tc.ID,

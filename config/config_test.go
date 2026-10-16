@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/credentials"
+	"github.com/GrayCodeAI/relay/credentials"
 )
 
 func TestResolveProviderRequest(t *testing.T) {

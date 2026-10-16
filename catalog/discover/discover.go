@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	muxcfg "github.com/GrayCodeAI/mux/config"
+	"github.com/GrayCodeAI/relay/catalog"
+	relaycfg "github.com/GrayCodeAI/relay/config"
 )
 
 func appendSourceSuffix(source, suffix string) string {
@@ -102,7 +102,7 @@ func run(ctx context.Context, opts Options) (*catalog.RefreshResult, error) {
 
 	env := opts.Credentials.Env()
 	if len(env) == 0 && !opts.DisableCredentialFallback {
-		env = muxcfg.DiscoveryCredentials(ctx).Env()
+		env = relaycfg.DiscoveryCredentials(ctx).Env()
 	}
 	if len(env) > 0 {
 		v1Catalog, enrichment := catalog.FetchLiveProviderCatalog(env)

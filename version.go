@@ -1,20 +1,20 @@
-// Package mux provides LLM provider clients and configuration.
+// Package relay provides LLM provider clients and configuration.
 //
 // The Version variable is sourced from the VERSION file at the repo root
 // and propagated to sub-packages at init time.
-package mux
+package relay
 
 import (
 	_ "embed"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/provider"
+	"github.com/GrayCodeAI/relay/provider"
 )
 
 //go:embed VERSION
 var versionFile string
 
-// Version of the mux library. Single source of truth: VERSION file.
+// Version of the relay library. Single source of truth: VERSION file.
 var Version = strings.TrimSpace(versionFile)
 
 func init() {

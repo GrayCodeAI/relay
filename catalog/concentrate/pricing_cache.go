@@ -41,16 +41,16 @@ var (
 )
 
 // cacheDir returns the directory for storing the pricing cache.
-// Uses $XDG_CACHE_HOME/mux/ or ~/.cache/mux/ as fallback.
+// Uses $XDG_CACHE_HOME/relay/ or ~/.cache/relay/ as fallback.
 func cacheDir() string {
 	if d := os.Getenv("XDG_CACHE_HOME"); d != "" {
-		return filepath.Join(d, "mux")
+		return filepath.Join(d, "relay")
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return filepath.Join(os.TempDir(), "mux-cache")
+		return filepath.Join(os.TempDir(), "relay-cache")
 	}
-	return filepath.Join(home, ".cache", "mux")
+	return filepath.Join(home, ".cache", "relay")
 }
 
 // getCache returns the shared pricing cache instance.

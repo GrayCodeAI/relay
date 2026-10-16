@@ -1,7 +1,7 @@
-# Mux OSS landscape roadmap: code architecture audit
+# Relay OSS landscape roadmap: code architecture audit
 
 **Audit date:** 2026-09-24
-**Checkout:** `github.com/GrayCodeAI/mux` at `f9037a8` on `chore/oss-competitive-roadmap`
+**Checkout:** `github.com/GrayCodeAI/relay` at `f9037a8` on `chore/oss-competitive-roadmap`
 **Scope:** local source, tests, CI, build tags, SDKs, examples, and architecture documentation. No competitor benchmark was performed.
 **Evidence labels:** **Confirmed defect** means the behavior follows directly from current source; **Design opportunity** means the code is intentional or plausible but leaves a contract/operational gap; **Uncertainty** means the source establishes a risk but product intent needs confirmation.
 
@@ -9,7 +9,7 @@
 
 ### Takeaway
 
-Mux has a strong host-neutral foundation: canonical DTOs, a narrow engine facade, feature-oriented provider packages, validated deployment routing, atomic live snapshots, signed control-plane manifests, and a broad test/CI baseline. The largest risks are not missing packages; they are **contract features that are declared ahead of their implementations** and **middleware that changes stream/usage behavior after the provider boundary**.
+Relay has a strong host-neutral foundation: canonical DTOs, a narrow engine facade, feature-oriented provider packages, validated deployment routing, atomic live snapshots, signed control-plane manifests, and a broad test/CI baseline. The largest risks are not missing packages; they are **contract features that are declared ahead of their implementations** and **middleware that changes stream/usage behavior after the provider boundary**.
 
 The highest-value work is to close the canonical request/stream contract first: restore `ThinkingEnabled`, define one usage event policy, preserve provider blocks and route attempts, and make every stream decorator preserve cancellation. Then harden migration, budget, cache, and proxy semantics. The existing green test suite does not exercise these cross-layer cases.
 
@@ -53,9 +53,9 @@ The result is host/provider behavior divergence: a host can request reasoning en
 
 **Classification:** Confirmed defect, P1.
 
-`llm.MuxStreamEvent` carries `ProviderBlock` and `Route` (`llm/types.go:265-287`), and the stable event vocabulary includes `provider_block` (`engine/types.go:65-84`). However, `engine.normalizeEvent` copies content, thinking, request ID, usage, stop reason, and TTFT, then maps only selected event types; it never copies `event.ProviderBlock` or `event.Route` (`engine/stream.go:124-165`). The initial synthetic `route_selected` event is present (`engine/stream.go:82-86`), but provider event route metadata is lost.
+`llm.RelayStreamEvent` carries `ProviderBlock` and `Route` (`llm/types.go:265-287`), and the stable event vocabulary includes `provider_block` (`engine/types.go:65-84`). However, `engine.normalizeEvent` copies content, thinking, request ID, usage, stop reason, and TTFT, then maps only selected event types; it never copies `event.ProviderBlock` or `event.Route` (`engine/stream.go:124-165`). The initial synthetic `route_selected` event is present (`engine/stream.go:82-86`), but provider event route metadata is lost.
 
-`StreamErrorInfo` is declared (`llm/types.go:90-98`) but is not a field on `MuxStreamEvent`; parser errors are emitted as only `Type:"error", Error:string` (`provider/core/stream.go:283-285`, `:485-488`). `MuxResponse.Warnings` is also declared (`llm/types.go:248-263`) but no provider adapter populates it.
+`StreamErrorInfo` is declared (`llm/types.go:90-98`) but is not a field on `RelayStreamEvent`; parser errors are emitted as only `Type:"error", Error:string` (`provider/core/stream.go:283-285`, `:485-488`). `RelayResponse.Warnings` is also declared (`llm/types.go:248-263`) but no provider adapter populates it.
 
 **Remediation:** either remove the unimplemented fields from the stable contract or make them mandatory end-to-end: parse and preserve provider blocks, attach route/attempt metadata to terminal events, and add a structured error field or a documented error-classification path. Add black-box tests that feed a provider block through adapter → core → engine.
 
@@ -160,7 +160,7 @@ The existing migration tests cover empty files and successful/key-existing cases
 
 **Classification:** Confirmed compatibility defect, P1/P2.
 
-The endpoint claims that existing OpenAI clients can talk to Mux unchanged (`internal/api/openai_proxy.go:16-20`). Its request message type contains only `Role` and string `Content` (`:22-26`), and `splitOpenAIMessages` flattens the entire conversation into one prompt string (`:300-331`). Tool-call messages, tool results, multimodal content, tool choice, response format, `stop`, sampling controls, and several other accepted fields are either ignored or unavailable (`internal/api/openai_proxy.go:28-44`; `handleOpenAIChatCompletions` explicitly documents lenient partial decoding at `:109-140`).
+The endpoint claims that existing OpenAI clients can talk to Relay unchanged (`internal/api/openai_proxy.go:16-20`). Its request message type contains only `Role` and string `Content` (`:22-26`), and `splitOpenAIMessages` flattens the entire conversation into one prompt string (`:300-331`). Tool-call messages, tool results, multimodal content, tool choice, response format, `stop`, sampling controls, and several other accepted fields are either ignored or unavailable (`internal/api/openai_proxy.go:28-44`; `handleOpenAIChatCompletions` explicitly documents lenient partial decoding at `:109-140`).
 
 This is acceptable only if the endpoint is clearly documented as a lossy single-turn compatibility facade. It is not a faithful OpenAI conversation adapter.
 
@@ -301,4 +301,4 @@ All commands below passed on the audited checkout:
 
 ### Audit boundary
 
-This report is a local architectural audit, not a competitor benchmark, security certification, provider conformance certification, or production readiness sign-off. External landscape research is kept in the companion files under `research_notes/Mux OSS landscape roadmap/`; this document records only repository architecture, implementation behavior, and test evidence.
+This report is a local architectural audit, not a competitor benchmark, security certification, provider conformance certification, or production readiness sign-off. External landscape research is kept in the companion files under `research_notes/Relay OSS landscape roadmap/`; this document records only repository architecture, implementation behavior, and test evidence.

@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/config"
-	"github.com/GrayCodeAI/mux/router"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/config"
+	"github.com/GrayCodeAI/relay/router"
 )
 
-// StatusReport summarizes deployment routing readiness (mux provider status).
+// StatusReport summarizes deployment routing readiness (relay provider status).
 type StatusReport struct {
 	DeploymentRouting  bool
 	ProviderConfig     string
@@ -111,7 +111,7 @@ func FormatStatus(report StatusReport) string {
 	if report.DeploymentRouting {
 		b.WriteString("enabled\n")
 	} else {
-		b.WriteString("disabled (single-route Mux transport)\n")
+		b.WriteString("disabled (single-route Relay transport)\n")
 	}
 	fmt.Fprintf(&b, "Provider config: %s", report.ProviderConfig)
 	if report.ConfigVersion > 0 {

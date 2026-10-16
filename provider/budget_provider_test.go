@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/provider/observability"
+	"github.com/GrayCodeAI/relay/provider/observability"
 )
 
 func TestMemoryBudgetStore_EnforcesLimit(t *testing.T) {
@@ -105,7 +105,7 @@ func TestBudgetProvider_NoKeyPassesThrough(t *testing.T) {
 
 func TestActualCostUSD(t *testing.T) {
 	t.Parallel()
-	usage := &MuxUsage{PromptTokens: 1000, CompletionTokens: 1000}
+	usage := &RelayUsage{PromptTokens: 1000, CompletionTokens: 1000}
 	cost := observability.ActualCostUSD("gpt-4o", usage)
 	// 1000*2.5/1e6 + 1000*10/1e6 = 0.0025 + 0.01 = 0.0125
 	if cost < 0.0124 || cost > 0.0126 {
@@ -119,17 +119,17 @@ type doneUsageStreamProvider struct {
 
 func (*doneUsageStreamProvider) Name() string               { return "done-usage" }
 func (*doneUsageStreamProvider) Ping(context.Context) error { return nil }
-func (*doneUsageStreamProvider) Chat(context.Context, []MuxMessage, ChatOptions) (*MuxResponse, error) {
+func (*doneUsageStreamProvider) Chat(context.Context, []RelayMessage, ChatOptions) (*RelayResponse, error) {
 	return nil, nil
 }
 
-func (p *doneUsageStreamProvider) StreamChat(context.Context, []MuxMessage, ChatOptions) (*StreamResult, error) {
-	events := make(chan MuxStreamEvent, 2)
-	usage := &MuxUsage{PromptTokens: 3, CompletionTokens: 5, TotalTokens: 8}
+func (p *doneUsageStreamProvider) StreamChat(context.Context, []RelayMessage, ChatOptions) (*StreamResult, error) {
+	events := make(chan RelayStreamEvent, 2)
+	usage := &RelayUsage{PromptTokens: 3, CompletionTokens: 5, TotalTokens: 8}
 	if p.includeUsageEvent {
-		events <- MuxStreamEvent{Type: "usage", Usage: usage}
+		events <- RelayStreamEvent{Type: "usage", Usage: usage}
 	}
-	events <- MuxStreamEvent{Type: "done", Usage: usage}
+	events <- RelayStreamEvent{Type: "done", Usage: usage}
 	close(events)
 	return NewStreamResult(events, func() {}), nil
 }
@@ -143,7 +143,7 @@ func TestBudgetProvider_DeduplicatesStreamUsage(t *testing.T) {
 			provider := observability.NewBudgetProvider(&doneUsageStreamProvider{includeUsageEvent: includeUsageEvent}, store)
 			result, err := provider.StreamChat(
 				context.Background(),
-				[]MuxMessage{{Role: "user", Content: "hello"}},
+				[]RelayMessage{{Role: "user", Content: "hello"}},
 				ChatOptions{Model: "gpt-4o", MaxTokens: 100, VirtualKeyID: "stream"},
 			)
 			if err != nil {
@@ -165,17 +165,17 @@ type continuationUsageStreamProvider struct{}
 
 func (*continuationUsageStreamProvider) Name() string               { return "continuation-usage" }
 func (*continuationUsageStreamProvider) Ping(context.Context) error { return nil }
-func (*continuationUsageStreamProvider) Chat(context.Context, []MuxMessage, ChatOptions) (*MuxResponse, error) {
+func (*continuationUsageStreamProvider) Chat(context.Context, []RelayMessage, ChatOptions) (*RelayResponse, error) {
 	return nil, nil
 }
 
-func (*continuationUsageStreamProvider) StreamChat(context.Context, []MuxMessage, ChatOptions) (*StreamResult, error) {
-	events := make(chan MuxStreamEvent, 4)
-	usage := &MuxUsage{PromptTokens: 3, CompletionTokens: 5, TotalTokens: 8}
-	events <- MuxStreamEvent{Type: "usage", Usage: usage}
-	events <- MuxStreamEvent{Type: "continuation"}
-	events <- MuxStreamEvent{Type: "usage", Usage: usage}
-	events <- MuxStreamEvent{Type: "done", Usage: usage}
+func (*continuationUsageStreamProvider) StreamChat(context.Context, []RelayMessage, ChatOptions) (*StreamResult, error) {
+	events := make(chan RelayStreamEvent, 4)
+	usage := &RelayUsage{PromptTokens: 3, CompletionTokens: 5, TotalTokens: 8}
+	events <- RelayStreamEvent{Type: "usage", Usage: usage}
+	events <- RelayStreamEvent{Type: "continuation"}
+	events <- RelayStreamEvent{Type: "usage", Usage: usage}
+	events <- RelayStreamEvent{Type: "done", Usage: usage}
 	close(events)
 	return NewStreamResult(events, func() {}), nil
 }
@@ -187,7 +187,7 @@ func TestBudgetProvider_ResetsUsageAtContinuation(t *testing.T) {
 	provider := observability.NewBudgetProvider(&continuationUsageStreamProvider{}, store)
 	result, err := provider.StreamChat(
 		context.Background(),
-		[]MuxMessage{{Role: "user", Content: "hello"}},
+		[]RelayMessage{{Role: "user", Content: "hello"}},
 		ChatOptions{Model: "gpt-4o", MaxTokens: 100, VirtualKeyID: "stream"},
 	)
 	if err != nil {

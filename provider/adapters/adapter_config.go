@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // Functional-option setter surface for the two protocol adapters (see

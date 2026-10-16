@@ -5,12 +5,12 @@ package core
 //
 // Messages with ToolUse or ToolResult are never merged, since those have
 // special provider semantics and must remain separate.
-func MergeConsecutiveRoles(messages []MuxMessage) []MuxMessage {
+func MergeConsecutiveRoles(messages []RelayMessage) []RelayMessage {
 	if len(messages) == 0 {
 		return messages
 	}
 
-	var result []MuxMessage
+	var result []RelayMessage
 	for _, msg := range messages {
 		if len(result) == 0 {
 			result = append(result, msg)
@@ -45,6 +45,6 @@ func MergeConsecutiveRoles(messages []MuxMessage) []MuxMessage {
 }
 
 // hasToolData returns true if the message contains tool use or tool result data.
-func hasToolData(msg MuxMessage) bool {
+func hasToolData(msg RelayMessage) bool {
 	return len(msg.ToolUse) > 0 || len(msg.ToolResults) > 0
 }

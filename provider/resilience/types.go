@@ -3,8 +3,8 @@ package resilience
 import (
 	"context"
 
-	"github.com/GrayCodeAI/mux/llm"
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/llm"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // Resilience decorators operate on the provider-neutral core contract. These
@@ -12,10 +12,10 @@ import (
 // request/response model.
 type (
 	Provider           = core.Provider
-	MuxMessage         = core.MuxMessage
-	MuxResponse        = core.MuxResponse
-	MuxStreamEvent     = core.MuxStreamEvent
-	MuxUsage           = core.MuxUsage
+	RelayMessage       = core.RelayMessage
+	RelayResponse      = core.RelayResponse
+	RelayStreamEvent   = core.RelayStreamEvent
+	RelayUsage         = core.RelayUsage
 	StreamResult       = core.StreamResult
 	ChatOptions        = core.ChatOptions
 	Guardrails         = core.Guardrails
@@ -40,6 +40,6 @@ const (
 
 func NewGuardrails(rules ...GuardrailRule) *Guardrails { return core.NewGuardrails(rules...) }
 
-func NewStreamResult(events <-chan MuxStreamEvent, requestID string, cancel context.CancelFunc) *StreamResult {
+func NewStreamResult(events <-chan RelayStreamEvent, requestID string, cancel context.CancelFunc) *StreamResult {
 	return llm.NewStreamResult(events, requestID, cancel)
 }

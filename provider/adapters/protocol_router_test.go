@@ -6,25 +6,25 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/llm"
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/llm"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 func TestNewStreamWithReasoningFallbackChatFirst(t *testing.T) {
 	t.Parallel()
-	primaryEvents := make(chan core.MuxStreamEvent, 4)
-	primaryEvents <- core.MuxStreamEvent{Type: "thinking", Thinking: "internal reasoning"}
-	primaryEvents <- core.MuxStreamEvent{Type: "done", StopReason: "end_turn"}
+	primaryEvents := make(chan core.RelayStreamEvent, 4)
+	primaryEvents <- core.RelayStreamEvent{Type: "thinking", Thinking: "internal reasoning"}
+	primaryEvents <- core.RelayStreamEvent{Type: "done", StopReason: "end_turn"}
 	close(primaryEvents)
 	primary := llm.NewStreamResult(primaryEvents, "", func() {})
 
 	var chatCalled, streamCalled bool
 	fallback := protocolStreamFallback{
-		chat: func(context.Context, []core.MuxMessage, core.ChatOptions) (*core.MuxResponse, error) {
+		chat: func(context.Context, []core.RelayMessage, core.ChatOptions) (*core.RelayResponse, error) {
 			chatCalled = true
-			return &core.MuxResponse{Content: "Hello from chat fallback!", FinishReason: "stop"}, nil
+			return &core.RelayResponse{Content: "Hello from chat fallback!", FinishReason: "stop"}, nil
 		},
-		stream: func(context.Context, []core.MuxMessage, core.ChatOptions) (*core.StreamResult, error) {
+		stream: func(context.Context, []core.RelayMessage, core.ChatOptions) (*core.StreamResult, error) {
 			streamCalled = true
 			return nil, fmt.Errorf("stream fallback should not run")
 		},
@@ -53,24 +53,24 @@ func TestNewStreamWithReasoningFallbackChatFirst(t *testing.T) {
 
 func TestNewStreamWithReasoningFallbackStreamWhenChatEmpty(t *testing.T) {
 	t.Parallel()
-	primaryEvents := make(chan core.MuxStreamEvent, 4)
-	primaryEvents <- core.MuxStreamEvent{Type: "thinking", Thinking: "internal reasoning"}
-	primaryEvents <- core.MuxStreamEvent{Type: "done", StopReason: "end_turn"}
+	primaryEvents := make(chan core.RelayStreamEvent, 4)
+	primaryEvents <- core.RelayStreamEvent{Type: "thinking", Thinking: "internal reasoning"}
+	primaryEvents <- core.RelayStreamEvent{Type: "done", StopReason: "end_turn"}
 	close(primaryEvents)
 	primary := llm.NewStreamResult(primaryEvents, "", func() {})
 
-	fallbackEvents := make(chan core.MuxStreamEvent, 4)
-	fallbackEvents <- core.MuxStreamEvent{Type: "content", Content: "stream answer"}
-	fallbackEvents <- core.MuxStreamEvent{Type: "done", StopReason: "stop"}
+	fallbackEvents := make(chan core.RelayStreamEvent, 4)
+	fallbackEvents <- core.RelayStreamEvent{Type: "content", Content: "stream answer"}
+	fallbackEvents <- core.RelayStreamEvent{Type: "done", StopReason: "stop"}
 	close(fallbackEvents)
 
 	var chatCalled, streamCalled bool
 	fallback := protocolStreamFallback{
-		chat: func(context.Context, []core.MuxMessage, core.ChatOptions) (*core.MuxResponse, error) {
+		chat: func(context.Context, []core.RelayMessage, core.ChatOptions) (*core.RelayResponse, error) {
 			chatCalled = true
-			return &core.MuxResponse{Thinking: "still thinking"}, nil
+			return &core.RelayResponse{Thinking: "still thinking"}, nil
 		},
-		stream: func(context.Context, []core.MuxMessage, core.ChatOptions) (*core.StreamResult, error) {
+		stream: func(context.Context, []core.RelayMessage, core.ChatOptions) (*core.StreamResult, error) {
 			streamCalled = true
 			return llm.NewStreamResult(fallbackEvents, "", func() {}), nil
 		},
@@ -107,9 +107,9 @@ func TestProtocolRouterChatFallbackOnError(t *testing.T) {
 	})}
 
 	router := ProtocolRouter{OpenAI: openAI, Anthropic: anthropic}
-	response, err := router.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
+	response, err := router.Chat(context.Background(), []core.RelayMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
 		Model: "test", MaxTokens: 16,
-	}, ChatProtocolCompletions, func(err error, _ *core.MuxResponse) bool {
+	}, ChatProtocolCompletions, func(err error, _ *core.RelayResponse) bool {
 		return err != nil
 	})
 	if err != nil {
@@ -127,7 +127,7 @@ func TestProtocolRouterNoFallbackWhenNil(t *testing.T) {
 		return jsonResponse(http.StatusBadGateway, map[string]string{"error": "down"}), nil
 	})}
 	router := ProtocolRouter{OpenAI: openAI}
-	_, err := router.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
+	_, err := router.Chat(context.Background(), []core.RelayMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{
 		Model: "test", MaxTokens: 16,
 	}, ChatProtocolCompletions, nil)
 	if err == nil {

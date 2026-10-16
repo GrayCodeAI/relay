@@ -3,7 +3,7 @@ package router
 import (
 	"testing"
 
-	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/relay/catalog"
 )
 
 func TestResolveRoutingModelOverride(t *testing.T) {

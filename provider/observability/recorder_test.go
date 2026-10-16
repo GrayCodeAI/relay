@@ -40,7 +40,7 @@ func TestRecorderRecordMode(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	msgs := []MuxMessage{{Role: "user", Content: "hello"}}
+	msgs := []RelayMessage{{Role: "user", Content: "hello"}}
 	opts := ChatOptions{Model: "test-model"}
 
 	resp, err := rec.Chat(ctx, msgs, opts)
@@ -97,7 +97,7 @@ func TestRecorderReplayMode(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	msgs := []MuxMessage{{Role: "user", Content: "hello"}}
+	msgs := []RelayMessage{{Role: "user", Content: "hello"}}
 	opts := ChatOptions{Model: "test-model"}
 
 	_, err = rec.Chat(ctx, msgs, opts)
@@ -149,7 +149,7 @@ func TestRecorderAutoMode_RecordsWhenNoFile(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	msgs := []MuxMessage{{Role: "user", Content: "test"}}
+	msgs := []RelayMessage{{Role: "user", Content: "test"}}
 	opts := ChatOptions{Model: "m"}
 
 	resp, err := rec.Chat(ctx, msgs, opts)
@@ -183,7 +183,7 @@ func TestRecorderAutoMode_ReplaysWhenFileExists(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	ctx := context.Background()
-	msgs := []MuxMessage{{Role: "user", Content: "hi"}}
+	msgs := []RelayMessage{{Role: "user", Content: "hi"}}
 	opts := ChatOptions{Model: "m"}
 
 	_, err = rec.Chat(ctx, msgs, opts)
@@ -235,13 +235,13 @@ func TestRecorderHashBasedLookup(t *testing.T) {
 
 	// Record two different interactions
 	mock.Response = "response A"
-	_, err = rec.Chat(ctx, []MuxMessage{{Role: "user", Content: "question A"}}, opts)
+	_, err = rec.Chat(ctx, []RelayMessage{{Role: "user", Content: "question A"}}, opts)
 	if err != nil {
 		t.Fatalf("Chat() A error: %v", err)
 	}
 
 	mock.Response = "response B"
-	_, err = rec.Chat(ctx, []MuxMessage{{Role: "user", Content: "question B"}}, opts)
+	_, err = rec.Chat(ctx, []RelayMessage{{Role: "user", Content: "question B"}}, opts)
 	if err != nil {
 		t.Fatalf("Chat() B error: %v", err)
 	}
@@ -258,7 +258,7 @@ func TestRecorderHashBasedLookup(t *testing.T) {
 	}
 
 	// Request B first (out of order compared to recording)
-	resp, err := rec2.Chat(ctx, []MuxMessage{{Role: "user", Content: "question B"}}, opts)
+	resp, err := rec2.Chat(ctx, []RelayMessage{{Role: "user", Content: "question B"}}, opts)
 	if err != nil {
 		t.Fatalf("Chat() B replay error: %v", err)
 	}
@@ -267,7 +267,7 @@ func TestRecorderHashBasedLookup(t *testing.T) {
 	}
 
 	// Request A second
-	resp, err = rec2.Chat(ctx, []MuxMessage{{Role: "user", Content: "question A"}}, opts)
+	resp, err = rec2.Chat(ctx, []RelayMessage{{Role: "user", Content: "question A"}}, opts)
 	if err != nil {
 		t.Fatalf("Chat() A replay error: %v", err)
 	}
@@ -290,7 +290,7 @@ func TestRecorderStreamRecord(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	msgs := []MuxMessage{{Role: "user", Content: "stream me"}}
+	msgs := []RelayMessage{{Role: "user", Content: "stream me"}}
 	opts := ChatOptions{Model: "m"}
 
 	result, err := rec.StreamChat(ctx, msgs, opts)
@@ -342,7 +342,7 @@ func TestRecorderStreamReplay(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	msgs := []MuxMessage{{Role: "user", Content: "stream"}}
+	msgs := []RelayMessage{{Role: "user", Content: "stream"}}
 	opts := ChatOptions{Model: "m"}
 
 	result, err := rec.StreamChat(ctx, msgs, opts)
@@ -418,7 +418,7 @@ func TestRecorderRedactor(t *testing.T) {
 	})
 
 	ctx := context.Background()
-	msgs := []MuxMessage{{Role: "user", Content: "show secret"}}
+	msgs := []RelayMessage{{Role: "user", Content: "show secret"}}
 	opts := ChatOptions{Model: "m"}
 
 	_, err = rec.Chat(ctx, msgs, opts)
@@ -446,14 +446,14 @@ type lingeringStreamProvider struct {
 	release chan struct{}
 }
 
-func (p *lingeringStreamProvider) Chat(context.Context, []MuxMessage, ChatOptions) (*MuxResponse, error) {
-	return &MuxResponse{Content: "unused"}, nil
+func (p *lingeringStreamProvider) Chat(context.Context, []RelayMessage, ChatOptions) (*RelayResponse, error) {
+	return &RelayResponse{Content: "unused"}, nil
 }
 
-func (p *lingeringStreamProvider) StreamChat(context.Context, []MuxMessage, ChatOptions) (*StreamResult, error) {
-	ch := make(chan MuxStreamEvent, 2)
-	ch <- MuxStreamEvent{Type: "content", Content: "lingering content"}
-	ch <- MuxStreamEvent{Type: "done", StopReason: "stop"}
+func (p *lingeringStreamProvider) StreamChat(context.Context, []RelayMessage, ChatOptions) (*StreamResult, error) {
+	ch := make(chan RelayStreamEvent, 2)
+	ch <- RelayStreamEvent{Type: "content", Content: "lingering content"}
+	ch <- RelayStreamEvent{Type: "done", StopReason: "stop"}
 	go func() {
 		<-p.release
 		close(ch)
@@ -474,7 +474,7 @@ func TestRecorderStreamSavesInteractionBeforeTerminal(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result, err := rec.StreamChat(context.Background(), []MuxMessage{{Role: "user", Content: "stream me"}}, ChatOptions{Model: "m"})
+	result, err := rec.StreamChat(context.Background(), []RelayMessage{{Role: "user", Content: "stream me"}}, ChatOptions{Model: "m"})
 	if err != nil {
 		t.Fatal(err)
 	}

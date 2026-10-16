@@ -3,7 +3,7 @@ package config
 import (
 	"context"
 
-	"github.com/GrayCodeAI/mux/config/credential"
+	"github.com/GrayCodeAI/relay/config/credential"
 )
 
 func init() {

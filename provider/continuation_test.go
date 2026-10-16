@@ -13,7 +13,7 @@ func TestContinuation_StopsWhenNotMaxTokens(t *testing.T) {
 	mock.Response = "complete answer"
 
 	ctx := context.Background()
-	msgs := []MuxMessage{{Role: "user", Content: "hello"}}
+	msgs := []RelayMessage{{Role: "user", Content: "hello"}}
 	opts := ChatOptions{Model: "test"}
 	cfg := ContinuationConfig{MaxContinuations: 3, MaxTotalTokens: 32000}
 
@@ -38,13 +38,13 @@ func TestContinuation_ContinuesOnMaxTokens(t *testing.T) {
 	// Use a mock that returns max_tokens for the first call, then end_turn for the second
 	mock := &sequentialMock{
 		responses: []mockResponse{
-			{content: "part 1 ", finishReason: "max_tokens", usage: &MuxUsage{PromptTokens: 10, CompletionTokens: 50, TotalTokens: 60}},
-			{content: "part 2", finishReason: "end_turn", usage: &MuxUsage{PromptTokens: 20, CompletionTokens: 30, TotalTokens: 50}},
+			{content: "part 1 ", finishReason: "max_tokens", usage: &RelayUsage{PromptTokens: 10, CompletionTokens: 50, TotalTokens: 60}},
+			{content: "part 2", finishReason: "end_turn", usage: &RelayUsage{PromptTokens: 20, CompletionTokens: 30, TotalTokens: 50}},
 		},
 	}
 
 	ctx := context.Background()
-	msgs := []MuxMessage{{Role: "user", Content: "write something long"}}
+	msgs := []RelayMessage{{Role: "user", Content: "write something long"}}
 	opts := ChatOptions{Model: "test"}
 	cfg := ContinuationConfig{MaxContinuations: 5, MaxTotalTokens: 32000}
 
@@ -75,15 +75,15 @@ func TestContinuation_RespectsMaxRetries(t *testing.T) {
 	// All responses return max_tokens — should stop after MaxContinuations
 	mock := &sequentialMock{
 		responses: []mockResponse{
-			{content: "a", finishReason: "max_tokens", usage: &MuxUsage{CompletionTokens: 10}},
-			{content: "b", finishReason: "max_tokens", usage: &MuxUsage{CompletionTokens: 10}},
-			{content: "c", finishReason: "max_tokens", usage: &MuxUsage{CompletionTokens: 10}},
-			{content: "d", finishReason: "max_tokens", usage: &MuxUsage{CompletionTokens: 10}},
+			{content: "a", finishReason: "max_tokens", usage: &RelayUsage{CompletionTokens: 10}},
+			{content: "b", finishReason: "max_tokens", usage: &RelayUsage{CompletionTokens: 10}},
+			{content: "c", finishReason: "max_tokens", usage: &RelayUsage{CompletionTokens: 10}},
+			{content: "d", finishReason: "max_tokens", usage: &RelayUsage{CompletionTokens: 10}},
 		},
 	}
 
 	ctx := context.Background()
-	msgs := []MuxMessage{{Role: "user", Content: "go"}}
+	msgs := []RelayMessage{{Role: "user", Content: "go"}}
 	opts := ChatOptions{Model: "test"}
 	cfg := ContinuationConfig{MaxContinuations: 2, MaxTotalTokens: 0}
 
@@ -107,13 +107,13 @@ func TestContinuation_RespectsMaxTotalTokens(t *testing.T) {
 	t.Parallel()
 	mock := &sequentialMock{
 		responses: []mockResponse{
-			{content: "big chunk", finishReason: "max_tokens", usage: &MuxUsage{CompletionTokens: 5000}},
-			{content: " more", finishReason: "max_tokens", usage: &MuxUsage{CompletionTokens: 5000}},
+			{content: "big chunk", finishReason: "max_tokens", usage: &RelayUsage{CompletionTokens: 5000}},
+			{content: " more", finishReason: "max_tokens", usage: &RelayUsage{CompletionTokens: 5000}},
 		},
 	}
 
 	ctx := context.Background()
-	msgs := []MuxMessage{{Role: "user", Content: "go"}}
+	msgs := []RelayMessage{{Role: "user", Content: "go"}}
 	opts := ChatOptions{Model: "test"}
 	cfg := ContinuationConfig{MaxContinuations: 10, MaxTotalTokens: 5000}
 
@@ -135,7 +135,7 @@ func TestContinuation_StopsOnToolCalls(t *testing.T) {
 	mock := NewMockProvider(MockModeToolUse)
 
 	ctx := context.Background()
-	msgs := []MuxMessage{{Role: "user", Content: "use a tool"}}
+	msgs := []RelayMessage{{Role: "user", Content: "use a tool"}}
 	opts := ChatOptions{Model: "test"}
 	cfg := ContinuationConfig{MaxContinuations: 5, MaxTotalTokens: 32000}
 
@@ -161,7 +161,7 @@ func TestContinuation_StreamNoContinuationNeeded(t *testing.T) {
 	mock.Response = "complete"
 
 	ctx := context.Background()
-	msgs := []MuxMessage{{Role: "user", Content: "hi"}}
+	msgs := []RelayMessage{{Role: "user", Content: "hi"}}
 	opts := ChatOptions{Model: "test"}
 	cfg := ContinuationConfig{MaxContinuations: 3, MaxTotalTokens: 32000}
 
@@ -198,13 +198,13 @@ func TestContinuation_StreamContinuesOnMaxTokens(t *testing.T) {
 	// Use the sequential mock which responds max_tokens then end_turn
 	mock := &sequentialMock{
 		responses: []mockResponse{
-			{content: "first", finishReason: "max_tokens", usage: &MuxUsage{CompletionTokens: 100}},
-			{content: " second", finishReason: "end_turn", usage: &MuxUsage{CompletionTokens: 50}},
+			{content: "first", finishReason: "max_tokens", usage: &RelayUsage{CompletionTokens: 100}},
+			{content: " second", finishReason: "end_turn", usage: &RelayUsage{CompletionTokens: 50}},
 		},
 	}
 
 	ctx := context.Background()
-	msgs := []MuxMessage{{Role: "user", Content: "go"}}
+	msgs := []RelayMessage{{Role: "user", Content: "go"}}
 	opts := ChatOptions{Model: "test"}
 	cfg := ContinuationConfig{MaxContinuations: 5, MaxTotalTokens: 32000}
 
@@ -247,14 +247,14 @@ type fatalStreamProvider struct {
 
 func (*fatalStreamProvider) Name() string               { return "fatal-stream" }
 func (*fatalStreamProvider) Ping(context.Context) error { return nil }
-func (*fatalStreamProvider) Chat(context.Context, []MuxMessage, ChatOptions) (*MuxResponse, error) {
+func (*fatalStreamProvider) Chat(context.Context, []RelayMessage, ChatOptions) (*RelayResponse, error) {
 	return nil, nil
 }
 
-func (p *fatalStreamProvider) StreamChat(context.Context, []MuxMessage, ChatOptions) (*StreamResult, error) {
-	events := make(chan MuxStreamEvent, 2)
-	events <- MuxStreamEvent{Type: "error", Error: "connection reset"}
-	events <- MuxStreamEvent{Type: "done", StopReason: "stop"}
+func (p *fatalStreamProvider) StreamChat(context.Context, []RelayMessage, ChatOptions) (*StreamResult, error) {
+	events := make(chan RelayStreamEvent, 2)
+	events <- RelayStreamEvent{Type: "error", Error: "connection reset"}
+	events <- RelayStreamEvent{Type: "done", StopReason: "stop"}
 	close(events)
 	return NewStreamResult(events, func() { p.closes.Add(1) }), nil
 }
@@ -264,7 +264,7 @@ func TestContinuation_StreamFatalErrorClosesSourceWithoutDone(t *testing.T) {
 	provider := &fatalStreamProvider{}
 	result, err := StreamChatWithContinuation(
 		context.Background(), provider,
-		[]MuxMessage{{Role: "user", Content: "hello"}},
+		[]RelayMessage{{Role: "user", Content: "hello"}},
 		ChatOptions{Model: "test"},
 		ContinuationConfig{MaxContinuations: 2, MaxTotalTokens: 100},
 	)
@@ -273,7 +273,7 @@ func TestContinuation_StreamFatalErrorClosesSourceWithoutDone(t *testing.T) {
 	}
 	defer result.Close()
 
-	var events []MuxStreamEvent
+	var events []RelayStreamEvent
 	for event := range result.Events {
 		events = append(events, event)
 	}
@@ -291,7 +291,7 @@ func TestContinuation_StreamFatalErrorClosesSourceWithoutDone(t *testing.T) {
 type mockResponse struct {
 	content      string
 	finishReason string
-	usage        *MuxUsage
+	usage        *RelayUsage
 	toolCalls    []ToolCall
 }
 
@@ -305,14 +305,14 @@ func (s *sequentialMock) Name() string { return "sequential-mock" }
 
 func (s *sequentialMock) Ping(_ context.Context) error { return nil }
 
-func (s *sequentialMock) Chat(_ context.Context, _ []MuxMessage, _ ChatOptions) (*MuxResponse, error) {
+func (s *sequentialMock) Chat(_ context.Context, _ []RelayMessage, _ ChatOptions) (*RelayResponse, error) {
 	idx := s.callCount
 	s.callCount++
 	if idx >= len(s.responses) {
 		idx = len(s.responses) - 1
 	}
 	r := s.responses[idx]
-	return &MuxResponse{
+	return &RelayResponse{
 		Content:      r.content,
 		FinishReason: r.finishReason,
 		Usage:        r.usage,
@@ -320,20 +320,20 @@ func (s *sequentialMock) Chat(_ context.Context, _ []MuxMessage, _ ChatOptions) 
 	}, nil
 }
 
-func (s *sequentialMock) StreamChat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*StreamResult, error) {
+func (s *sequentialMock) StreamChat(ctx context.Context, messages []RelayMessage, opts ChatOptions) (*StreamResult, error) {
 	resp, err := s.Chat(ctx, messages, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	streamCtx, cancel := context.WithCancel(ctx)
-	ch := make(chan MuxStreamEvent, 64)
+	ch := make(chan RelayStreamEvent, 64)
 
 	go func() {
 		defer close(ch)
 		if resp.Content != "" {
 			select {
-			case ch <- MuxStreamEvent{Type: "content", Content: resp.Content}:
+			case ch <- RelayStreamEvent{Type: "content", Content: resp.Content}:
 			case <-streamCtx.Done():
 				return
 			}
@@ -341,20 +341,20 @@ func (s *sequentialMock) StreamChat(ctx context.Context, messages []MuxMessage, 
 		for i := range resp.ToolCalls {
 			tc := resp.ToolCalls[i]
 			select {
-			case ch <- MuxStreamEvent{Type: "tool_call", ToolCall: &tc}:
+			case ch <- RelayStreamEvent{Type: "tool_call", ToolCall: &tc}:
 			case <-streamCtx.Done():
 				return
 			}
 		}
 		if resp.Usage != nil {
 			select {
-			case ch <- MuxStreamEvent{Type: "usage", Usage: resp.Usage}:
+			case ch <- RelayStreamEvent{Type: "usage", Usage: resp.Usage}:
 			case <-streamCtx.Done():
 				return
 			}
 		}
 		select {
-		case ch <- MuxStreamEvent{Type: "done", StopReason: resp.FinishReason}:
+		case ch <- RelayStreamEvent{Type: "done", StopReason: resp.FinishReason}:
 		case <-streamCtx.Done():
 		}
 	}()
@@ -371,7 +371,7 @@ func TestContinuation_RespectsCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	msgs := []MuxMessage{{Role: "user", Content: "hello"}}
+	msgs := []RelayMessage{{Role: "user", Content: "hello"}}
 	opts := ChatOptions{Model: "test"}
 	cfg := ContinuationConfig{MaxContinuations: 3, MaxTotalTokens: 32000}
 

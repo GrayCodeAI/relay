@@ -1,7 +1,7 @@
 package engine
 
 import (
-	"github.com/GrayCodeAI/mux/llm"
+	"github.com/GrayCodeAI/relay/llm"
 )
 
 // Intent expresses a host's semantic preference without naming a provider.
@@ -26,18 +26,18 @@ type ToolCall = llm.ToolCall
 type ToolResult = llm.ToolResult
 
 // Message is the stable conversation DTO at the host boundary.
-type Message = llm.MuxMessage
+type Message = llm.RelayMessage
 
-// Tool is a model-visible tool definition. Mux emits requests for these
+// Tool is a model-visible tool definition. Relay emits requests for these
 // tools; the host remains responsible for permission checks and execution.
-type Tool = llm.MuxTool
+type Tool = llm.RelayTool
 
 // ToolChoice controls whether and how the model may request tools.
 type ToolChoice = llm.ToolChoiceOption
 
 // GenerationOptions contains model-generation controls that have equivalent
 // semantics across one or more provider adapters. Provider-specific wire
-// formats remain internal to Mux.
+// formats remain internal to Relay.
 type GenerationOptions = llm.GenerationOptions
 
 // Limits bounds a generation request.
@@ -50,14 +50,14 @@ type Metadata = llm.Metadata
 // GenerateRequest is the provider-neutral request accepted by Engine.
 type GenerateRequest = llm.GenerateRequest
 
-// Route is the concrete model/deployment decision made by Mux.
+// Route is the concrete model/deployment decision made by Relay.
 type Route = llm.ResolvedRoute
 
 // Usage is normalized token accounting.
-type Usage = llm.MuxUsage
+type Usage = llm.RelayUsage
 
 // GenerateResponse is a normalized blocking response.
-type GenerateResponse = llm.MuxResponse
+type GenerateResponse = llm.RelayResponse
 
 // Event type names. These are the stable stream vocabulary shared by the
 // engine and its hosts; new types are additive and hosts must safely ignore
@@ -82,7 +82,7 @@ const (
 
 // Event is a normalized model stream event. New optional fields and event
 // types are additive; hosts must safely ignore unknown event types.
-type Event = llm.MuxStreamEvent
+type Event = llm.RelayStreamEvent
 
 // Model is a host-facing catalog row.
 type Model = llm.Model

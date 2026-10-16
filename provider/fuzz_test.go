@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	providercache "github.com/GrayCodeAI/mux/provider/cache"
+	providercache "github.com/GrayCodeAI/relay/provider/cache"
 )
 
 func FuzzSanitizeMessages(f *testing.F) {
@@ -13,12 +13,12 @@ func FuzzSanitizeMessages(f *testing.F) {
 	f.Add("assistant", "", "", "", "")
 
 	f.Fuzz(func(t *testing.T, role1, content1, role2, content2, toolID string) {
-		messages := []MuxMessage{
+		messages := []RelayMessage{
 			{Role: role1, Content: content1},
 			{Role: role2, Content: content2},
 		}
 		if toolID != "" {
-			messages = append(messages, MuxMessage{
+			messages = append(messages, RelayMessage{
 				Role: "assistant",
 				ToolUse: []ToolCall{
 					{ID: toolID, Name: "test", Arguments: map[string]interface{}{"k": "v"}},
@@ -39,7 +39,7 @@ func FuzzMergeConsecutiveRoles(f *testing.F) {
 	f.Add("user", "a", "assistant", "b")
 
 	f.Fuzz(func(t *testing.T, role1, content1, role2, content2 string) {
-		messages := []MuxMessage{
+		messages := []RelayMessage{
 			{Role: role1, Content: content1},
 			{Role: role2, Content: content2},
 		}
@@ -61,7 +61,7 @@ func FuzzBuildCacheKey(f *testing.F) {
 	f.Add("a", "b", "c")
 
 	f.Fuzz(func(t *testing.T, system, user, model string) {
-		messages := []MuxMessage{
+		messages := []RelayMessage{
 			{Role: "system", Content: system},
 			{Role: "user", Content: user},
 		}
@@ -80,7 +80,7 @@ func FuzzBuildCacheKey(f *testing.F) {
 }
 
 // FuzzGuardrailsCheck fuzzes the guardrail matcher/redactor — the most
-// security-relevant parser in mux, since it scans untrusted LLM output for
+// security-relevant parser in relay, since it scans untrusted LLM output for
 // PII, secret leaks, prompt injection, and harmful content. It asserts that
 // Check never panics on arbitrary input, is idempotent (same input yields the
 // same violations), and that ApplyRedactions is stable when applied twice.

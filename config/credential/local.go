@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/catalog/registry"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/catalog/registry"
 )
 
 // CommitLocalCredential validates and probes a no-key provider (e.g. Ollama base URL).

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 func TestNewConcentrateResponsesClient(t *testing.T) {
@@ -87,10 +87,10 @@ func TestConcentrateResponsesClient_ChatUsesResponsesContract(t *testing.T) {
 	client.httpClient = &http.Client{Transport: transport}
 	resp, err := client.Chat(
 		context.Background(),
-		[]core.MuxMessage{{Role: "user", Content: "Hi"}},
+		[]core.RelayMessage{{Role: "user", Content: "Hi"}},
 		core.ChatOptions{
 			Model: "gpt-5",
-			Tools: []core.MuxTool{{
+			Tools: []core.RelayTool{{
 				Name: "read_file", Description: "Read a file",
 				Parameters: map[string]interface{}{"type": "object"},
 			}},
@@ -113,7 +113,7 @@ func TestConcentrateResponsesClient_ChatUsesResponsesContract(t *testing.T) {
 func TestConcentrateResponsesClient_BuildRequestPreservesToolTurn(t *testing.T) {
 	t.Parallel()
 	client := NewConcentrateResponsesClient("cn-key", "https://api.concentrate.ai/v1")
-	req, err := client.buildRequest([]core.MuxMessage{
+	req, err := client.buildRequest([]core.RelayMessage{
 		{Role: "user", Content: "Read main.go"},
 		{Role: "assistant", ToolUse: []core.ToolCall{{
 			ID: "call_1", Name: "read_file", Arguments: map[string]interface{}{"path": "main.go"},
@@ -123,7 +123,7 @@ func TestConcentrateResponsesClient_BuildRequestPreservesToolTurn(t *testing.T) 
 		}}},
 	}, core.ChatOptions{
 		Model: "gpt-5",
-		Tools: []core.MuxTool{{
+		Tools: []core.RelayTool{{
 			Name: "read_file", Parameters: map[string]interface{}{"type": "object"},
 		}},
 		ToolChoice: &core.ToolChoiceOption{Type: "tool", Name: "read_file", DisableParallelToolUse: true},
@@ -246,7 +246,7 @@ func TestConcentrateResponsesClient_StreamTextUsageAndDone(t *testing.T) {
 	}
 	defer result.Close()
 
-	var got []core.MuxStreamEvent
+	var got []core.RelayStreamEvent
 	timeout := time.After(2 * time.Second)
 	for {
 		select {
@@ -296,7 +296,7 @@ func TestConcentrateResponsesClient_StreamToolCall(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer result.Close()
-	var got []core.MuxStreamEvent
+	var got []core.RelayStreamEvent
 	for event := range result.Events {
 		got = append(got, event)
 	}
@@ -360,7 +360,7 @@ func TestConcentrateResponsesClient_ChatRetriesOn500ThenSucceeds(t *testing.T) {
 	client.httpClient = &http.Client{Transport: transport}
 	client.SetRetry(core.NewRetryConfig(2, time.Millisecond, 2*time.Millisecond, 500))
 
-	resp, err := client.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "gpt-5"})
+	resp, err := client.Chat(context.Background(), []core.RelayMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "gpt-5"})
 	if err != nil {
 		t.Fatalf("Chat: %v", err)
 	}
@@ -372,7 +372,7 @@ func TestConcentrateResponsesClient_ChatRetriesOn500ThenSucceeds(t *testing.T) {
 	}
 }
 
-func TestConcentrateResponsesClient_ChatErrorIsStructuredMuxError(t *testing.T) {
+func TestConcentrateResponsesClient_ChatErrorIsStructuredRelayError(t *testing.T) {
 	t.Parallel()
 	transport := roundTripFunc(func(*http.Request) (*http.Response, error) {
 		resp := jsonResponse(http.StatusUnauthorized, map[string]any{
@@ -385,35 +385,35 @@ func TestConcentrateResponsesClient_ChatErrorIsStructuredMuxError(t *testing.T) 
 	client.httpClient = &http.Client{Transport: transport}
 	client.SetRetry(core.RetryConfig{}) // no retries: classify the terminal error
 
-	_, err := client.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "gpt-5"})
+	_, err := client.Chat(context.Background(), []core.RelayMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "gpt-5"})
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	var muxErr *core.MuxError
-	if !errors.As(err, &muxErr) {
-		t.Fatalf("error is %T, want *core.MuxError (%v)", err, err)
+	var relayErr *core.RelayError
+	if !errors.As(err, &relayErr) {
+		t.Fatalf("error is %T, want *core.RelayError (%v)", err, err)
 	}
-	if muxErr.Provider != "concentrate" || muxErr.Op != "chat" {
-		t.Fatalf("provider/op = %s/%s", muxErr.Provider, muxErr.Op)
+	if relayErr.Provider != "concentrate" || relayErr.Op != "chat" {
+		t.Fatalf("provider/op = %s/%s", relayErr.Provider, relayErr.Op)
 	}
-	if muxErr.StatusCode != http.StatusUnauthorized {
-		t.Fatalf("status = %d, want 401", muxErr.StatusCode)
+	if relayErr.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want 401", relayErr.StatusCode)
 	}
-	if !muxErr.IsAuthError() {
+	if !relayErr.IsAuthError() {
 		t.Error("IsAuthError() = false, want true")
 	}
-	if muxErr.IsRetriable() {
+	if relayErr.IsRetriable() {
 		t.Error("IsRetriable() = true for 401, want false")
 	}
-	if muxErr.RequestID != "req_abc" {
-		t.Errorf("request id = %q, want req_abc", muxErr.RequestID)
+	if relayErr.RequestID != "req_abc" {
+		t.Errorf("request id = %q, want req_abc", relayErr.RequestID)
 	}
-	if !strings.Contains(muxErr.Message, "bad key") {
-		t.Errorf("message = %q, want it to carry the provider detail", muxErr.Message)
+	if !strings.Contains(relayErr.Message, "bad key") {
+		t.Errorf("message = %q, want it to carry the provider detail", relayErr.Message)
 	}
 }
 
-func TestConcentrateResponsesClient_StreamErrorIsStructuredMuxError(t *testing.T) {
+func TestConcentrateResponsesClient_StreamErrorIsStructuredRelayError(t *testing.T) {
 	t.Parallel()
 	transport := roundTripFunc(func(*http.Request) (*http.Response, error) {
 		resp := jsonResponse(http.StatusTooManyRequests, map[string]any{
@@ -430,19 +430,19 @@ func TestConcentrateResponsesClient_StreamErrorIsStructuredMuxError(t *testing.T
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	var muxErr *core.MuxError
-	if !errors.As(err, &muxErr) {
-		t.Fatalf("error is %T, want *core.MuxError (%v)", err, err)
+	var relayErr *core.RelayError
+	if !errors.As(err, &relayErr) {
+		t.Fatalf("error is %T, want *core.RelayError (%v)", err, err)
 	}
-	if muxErr.Op != "stream" {
-		t.Fatalf("op = %s, want stream", muxErr.Op)
+	if relayErr.Op != "stream" {
+		t.Fatalf("op = %s, want stream", relayErr.Op)
 	}
-	if muxErr.StatusCode != http.StatusTooManyRequests || !muxErr.IsRateLimited() || !muxErr.IsRetriable() {
+	if relayErr.StatusCode != http.StatusTooManyRequests || !relayErr.IsRateLimited() || !relayErr.IsRetriable() {
 		t.Fatalf("status = %d (rate-limited=%v, retriable=%v), want 429/true/true",
-			muxErr.StatusCode, muxErr.IsRateLimited(), muxErr.IsRetriable())
+			relayErr.StatusCode, relayErr.IsRateLimited(), relayErr.IsRetriable())
 	}
-	if muxErr.RequestID != "req_429" {
-		t.Errorf("request id = %q, want req_429", muxErr.RequestID)
+	if relayErr.RequestID != "req_429" {
+		t.Errorf("request id = %q, want req_429", relayErr.RequestID)
 	}
 }
 

@@ -1,4 +1,4 @@
-// Package engine is the stable, host-facing Mux API.
+// Package engine is the stable, host-facing Relay API.
 //
 // Hosts should prefer this package over assembling provider, catalog, config,
 // credentials, runtime, and setup packages directly. The lower-level packages
@@ -12,9 +12,9 @@
 //
 // Engine is intentionally stateless with respect to product conversations:
 // the host owns conversation history, tools, permissions, and checkpoints;
-// Mux owns credential, catalog, selection, routing, and model transport.
+// Relay owns credential, catalog, selection, routing, and model transport.
 //
 // Host-facing DTOs and the Provider port live in
-// github.com/GrayCodeAI/mux/llm; this package re-exports them
+// github.com/GrayCodeAI/relay/llm; this package re-exports them
 // as type aliases and *Engine implements llm.Provider (see contract_assert.go).
 package engine

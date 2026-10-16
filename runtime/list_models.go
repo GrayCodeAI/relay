@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/catalog/live"
-	"github.com/GrayCodeAI/mux/catalog/registry"
-	muxcfg "github.com/GrayCodeAI/mux/config"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/catalog/live"
+	"github.com/GrayCodeAI/relay/catalog/registry"
+	relaycfg "github.com/GrayCodeAI/relay/config"
 )
 
 // ListModelSource selects cache vs live model listing.
@@ -93,10 +93,10 @@ func listModelsLive(ctx context.Context, spec registry.ProviderSpec) ([]ModelEnt
 	if spec.LiveFetcherKey == "" {
 		return listModelsFromCache(ctx, spec.ProviderID, "cache")
 	}
-	env := muxcfg.DiscoveryEnvMap(ctx)
+	env := relaycfg.DiscoveryEnvMap(ctx)
 	if spec.ProviderID == "ollama" && strings.TrimSpace(env["OLLAMA_BASE_URL"]) == "" {
 		env = copyEnvMap(env)
-		env["OLLAMA_BASE_URL"] = muxcfg.OllamaDefaultBaseURL
+		env["OLLAMA_BASE_URL"] = relaycfg.OllamaDefaultBaseURL
 	}
 	entries, err := live.Fetch(spec.LiveFetcherKey, env)
 	if err != nil {
@@ -168,7 +168,7 @@ func FormatSetupError(providerID string, err error) error {
 		return nil
 	}
 	if strings.TrimSpace(providerID) == "ollama" {
-		return muxcfg.FormatOllamaConnectError(err)
+		return relaycfg.FormatOllamaConnectError(err)
 	}
 	return err
 }
@@ -177,8 +177,8 @@ func FormatSetupError(providerID string, err error) error {
 func ListProviderSetupOptions(ctx context.Context) []ProviderSetupOption {
 	_ = ctx
 	var out []ProviderSetupOption
-	st := muxcfg.DiscoveryEnvMap(ctx)
-	hasAny := muxcfg.HasAnyConfiguredDeployment(ctx)
+	st := relaycfg.DiscoveryEnvMap(ctx)
+	hasAny := relaycfg.HasAnyConfiguredDeployment(ctx)
 	if hasAny {
 		out = append(out, ProviderSetupOption{Action: "model", Label: "Pick model"})
 	}

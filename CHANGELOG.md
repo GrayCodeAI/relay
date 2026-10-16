@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to mux are documented here.
+All notable changes to relay are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) · Versioning: [SemVer](https://semver.org/)
 
 ---
@@ -13,7 +13,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) · Versioning: 
 
 ### Changed
 
-- The module, public API names, SDKs, configuration prefixes and telemetry now use Mux; Go 1.27.2 is required.
+- The module, public API names, SDKs, configuration prefixes and telemetry now use Relay; Go 1.27.2 is required.
 
 ### Added
 - Versioned instance-local deployment routing and signed peer-manifest
@@ -22,7 +22,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) · Versioning: 
 - Strict explicit-state replica constructor in `runtime`; no process-global
   credential lookup is required for the replicated route.
 - Client-owned OpenAI-compatible provider registration through
-  `MuxClient.RegisterCustomProvider`.
+  `RelayClient.RegisterCustomProvider`.
 - Streams end with exactly one terminal event. When the caller's context is
   cancelled or its deadline passes, `provider/core` stream wrappers emit a
   terminal `cancelled` event and the engine emits `engine.EventCancelled`
@@ -103,20 +103,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) · Versioning: 
 
 ## [0.0.1] — 2026-09-15
 
-Reset to v0.0.1 for the rename to `mux`.
+Reset to v0.0.1 for the rename to `relay`.
 
 ### Changed
-- **Renamed the project to mux.** Module path is now
-  `github.com/GrayCodeAI/mux`. All packages, docs, SDK stubs, CI workflows,
+- **Renamed the project to relay.** Module path is now
+  `github.com/GrayCodeAI/relay`. All packages, docs, SDK stubs, CI workflows,
   and issue templates reference the new name; no Go API surface changed.
-- **Logo redesigned** for the mux identity — abstract flow arcs around a
+- **Logo redesigned** for the relay identity — abstract flow arcs around a
   glowing bolt; the previous nest artwork is gone.
-- **Makefile drops linker LDFLAGS.** mux is a library; the version is
+- **Makefile drops linker LDFLAGS.** relay is a library; the version is
   embedded from the VERSION file, not injected into a main package.
 
 Versions v0.3.0–v0.6.0 were published under the previous module paths. They
 remain on the Go module proxy under those old paths; new consumption starts at
-v0.0.1 of `github.com/GrayCodeAI/mux`.
+v0.0.1 of `github.com/GrayCodeAI/relay`.
 
 ### Changed — Shared MiMo auth-retry helper (2026-08-16)
 - **Deduplicated `doRequestWithMimoAuthRetry`** between the OpenAI and
@@ -138,7 +138,7 @@ v0.0.1 of `github.com/GrayCodeAI/mux`.
   by the terminal `done` — but the engine mapped *every* error event to
   `provider_unavailable`, stopped forwarding, and set `Err()` even though
   content had been delivered. Diagnostic events are now marked non-fatal via
-  the existing `MuxStreamEvent.Warning` field (additive); the engine
+  the existing `RelayStreamEvent.Warning` field (additive); the engine
   forwards them as `warning` events and still delivers the final
   `done`/usage event with `Err()` unset. Genuinely fatal stream errors keep
   the previous behavior. The deprecated client continuation helper and the
@@ -154,7 +154,7 @@ v0.0.1 of `github.com/GrayCodeAI/mux`.
   stream paths) on 429/500/502/503/529 with backoff and `Retry-After`
   support; `SetRetry` previously discarded the config with a comment claiming
   the HTTP client handled retries (it never does).
-- **Concentrate errors are structured `*core.MuxError`s** built by
+- **Concentrate errors are structured `*core.RelayError`s** built by
   `core.ParseProviderError`/`core.FormatAPIError` (8KB bounded read,
   provider/op/status/request-ID preserved), so `IsRetriable()`/`IsAuthError()`
   and the engine's error classification work; the captured `X-Request-Id` is
@@ -169,7 +169,7 @@ v0.0.1 of `github.com/GrayCodeAI/mux`.
   Actions and exchanges it for AWS Bedrock (STS `AssumeRoleWithWebIdentity`) or
   GCP Vertex (Workload Identity Federation) credentials, no stored secrets.
 - **OpenAI-compatible proxy** — `POST /v1/chat/completions` endpoint so existing
-  OpenAI SDK clients can talk to mux unchanged.
+  OpenAI SDK clients can talk to relay unchanged.
 - **Named load-balancing strategies** — `simple-shuffle`, `least-busy`,
   `latency-based`, `cost-based`, and `usage-based` alongside the default
   weighted router.
@@ -185,7 +185,7 @@ v0.0.1 of `github.com/GrayCodeAI/mux`.
   build tag, ready to wire when generated stubs are available.
 
 ### Changed
-- **Version re-baselined to `0.1.0`** in `mux.go` (`const Version`) and
+- **Version re-baselined to `0.1.0`** in `relay.go` (`const Version`) and
   `provider/provider.go` (`var Version`, used in the `User-Agent` header).
 
 ### Added — Round 2 ecosystem improvements (2026-06-01)
@@ -201,7 +201,7 @@ v0.0.1 of `github.com/GrayCodeAI/mux`.
   5. Whitespace collapse
   Reports aggregate `BytesSaved` and `PercentOff` across all tools
   in the slice. Safe to call concurrently.
-  Aligns mux with the rest of the graycode-eco ecosystem.
+  Aligns relay with the rest of the graycode-eco ecosystem.
 
 ### Added
 - Output guardrails framework (PII, secrets, injection, harmful content)
@@ -230,16 +230,16 @@ v0.0.1 of `github.com/GrayCodeAI/mux`.
   issues.
 
 ### Fixed (2026-05-16)
-- Flaky test `TestOpenAIStreamChat_MultipleToolCalls` order assertion ([f5e7f3b](https://github.com/GrayCodeAI/mux/commit/f5e7f3b21d092886971b092027a8184c6fd8a385))
-- gofumpt formatting ([7de54e3](https://github.com/GrayCodeAI/mux/commit/7de54e352170e456bbfe9bfee9b79e244210db72))
-- gofumpt formatting + `go mod tidy` ([8bd58dc](https://github.com/GrayCodeAI/mux/commit/8bd58dcea346eb9df8d13d9020d936df2ceba1b5))
-- Remaining errcheck issues ([a0a746a](https://github.com/GrayCodeAI/mux/commit/a0a746aa95cd9acdf5d29ef836985e13ab864ba1))
-- Resolve all lint errors (bodyclose, errcheck, gocritic, noctx, unlambda) ([566980f](https://github.com/GrayCodeAI/mux/commit/566980f39bdd7ebba072ce4c17bc19bc0f3cf2a0))
-- Syntax errors in test files ([51809bc](https://github.com/GrayCodeAI/mux/commit/51809bcb181a27eb344a1493501f59c593b3065b))
-- Upgrade Go from 1.26.1 to 1.26.3 to patch stdlib vulnerabilities ([f4a6594](https://github.com/GrayCodeAI/mux/commit/f4a65944a6f777947071c9b870a6f2c4f74891be))
+- Flaky test `TestOpenAIStreamChat_MultipleToolCalls` order assertion ([f5e7f3b](https://github.com/GrayCodeAI/relay/commit/f5e7f3b21d092886971b092027a8184c6fd8a385))
+- gofumpt formatting ([7de54e3](https://github.com/GrayCodeAI/relay/commit/7de54e352170e456bbfe9bfee9b79e244210db72))
+- gofumpt formatting + `go mod tidy` ([8bd58dc](https://github.com/GrayCodeAI/relay/commit/8bd58dcea346eb9df8d13d9020d936df2ceba1b5))
+- Remaining errcheck issues ([a0a746a](https://github.com/GrayCodeAI/relay/commit/a0a746aa95cd9acdf5d29ef836985e13ab864ba1))
+- Resolve all lint errors (bodyclose, errcheck, gocritic, noctx, unlambda) ([566980f](https://github.com/GrayCodeAI/relay/commit/566980f39bdd7ebba072ce4c17bc19bc0f3cf2a0))
+- Syntax errors in test files ([51809bc](https://github.com/GrayCodeAI/relay/commit/51809bcb181a27eb344a1493501f59c593b3065b))
+- Upgrade Go from 1.26.1 to 1.26.3 to patch stdlib vulnerabilities ([f4a6594](https://github.com/GrayCodeAI/relay/commit/f4a65944a6f777947071c9b870a6f2c4f74891be))
 
 ### Tests (2026-05-16)
-- Fix flaky `TestBackoffDelay` by accounting for jitter ([5fa573f](https://github.com/GrayCodeAI/mux/commit/5fa573fe3ec8074a84bf81d10ea59837bf40b7bc))
+- Fix flaky `TestBackoffDelay` by accounting for jitter ([5fa573f](https://github.com/GrayCodeAI/relay/commit/5fa573fe3ec8074a84bf81d10ea59837bf40b7bc))
 
 ## [0.1.0] — 2026-05-12
 
@@ -252,7 +252,7 @@ v0.0.1 of `github.com/GrayCodeAI/mux`.
 - `AnthropicClient` — Anthropic Messages API with full content block support
 - `OpenAIClient` — OpenAI and all OpenAI-compatible providers
 - `MockProvider` — testing without API keys (echo / fixed / tool_use / error / max_tokens modes)
-- `MuxClient` — thread-safe universal client with cached provider instances
+- `RelayClient` — thread-safe universal client with cached provider instances
 
 **Streaming**
 - SSE parser for Anthropic and OpenAI formats
@@ -297,8 +297,8 @@ v0.0.1 of `github.com/GrayCodeAI/mux`.
 - Embedding support
 
 **Quality**
-- `User-Agent: mux/0.1.0` on all HTTP requests
+- `User-Agent: relay/0.1.0` on all HTTP requests
 - Request ID captured from response headers
 - 4 KB error body cap — prevents OOM on large error responses
-- `"mux: "` prefix on all errors with `%w` wrapping
+- `"relay: "` prefix on all errors with `%w` wrapping
 - Zero external dependencies · Go 1.26

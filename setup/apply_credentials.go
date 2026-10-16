@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/config"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/config"
 )
 
-// ApplyCredentialsResult is the full mux response after API keys are applied:
+// ApplyCredentialsResult is the full relay response after API keys are applied:
 // refreshed catalog, adapters.json (deployments + routing), and paths.
 type ApplyCredentialsResult struct {
 	Catalog            *catalog.RefreshResult

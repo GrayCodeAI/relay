@@ -5,9 +5,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/catalog/xiaomi"
-	"github.com/GrayCodeAI/mux/credentials"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/catalog/xiaomi"
+	"github.com/GrayCodeAI/relay/credentials"
 )
 
 // DiscoveryCredentials loads API keys from the OS secret store (not process env or .env files),

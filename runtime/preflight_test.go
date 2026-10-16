@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/credentials"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/credentials"
 )
 
 // failingStore is a mock credential store that always returns errors.
@@ -61,8 +61,8 @@ func TestPreflightStatusConstants(t *testing.T) {
 func setupPreflightEnv(t *testing.T, providerJSON string) {
 	t.Helper()
 	dir := t.TempDir()
-	t.Setenv("MUX_CONFIG_DIR", dir)
-	t.Setenv("MUX_MODEL_CATALOG_PATH", filepath.Join(dir, "missing.json"))
+	t.Setenv("RELAY_CONFIG_DIR", dir)
+	t.Setenv("RELAY_MODEL_CATALOG_PATH", filepath.Join(dir, "missing.json"))
 	if err := os.WriteFile(filepath.Join(dir, "provider.json"), []byte(providerJSON), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -362,7 +362,7 @@ func TestFormatPreflightReport(t *testing.T) {
 
 func TestPreflight_WithCatalogCache(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("MUX_CONFIG_DIR", dir)
+	t.Setenv("RELAY_CONFIG_DIR", dir)
 
 	// Write a valid catalog cache
 	cachePath := filepath.Join(dir, "model_catalog.json")
@@ -370,7 +370,7 @@ func TestPreflight_WithCatalogCache(t *testing.T) {
 	if err := catalog.WriteCatalogCache(cachePath, &c); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("MUX_MODEL_CATALOG_PATH", cachePath)
+	t.Setenv("RELAY_MODEL_CATALOG_PATH", cachePath)
 
 	if err := os.WriteFile(filepath.Join(dir, "provider.json"), []byte("{}\n"), 0o600); err != nil {
 		t.Fatal(err)

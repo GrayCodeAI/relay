@@ -1,6 +1,6 @@
 # internal/grpc — optional gRPC server
 
-The transport is enabled with the `grpc` build tag. It uses Mux's small
+The transport is enabled with the `grpc` build tag. It uses Relay's small
 Go request/response structs with the registered `json` gRPC content subtype,
 which avoids generated protobuf code while retaining gRPC framing,
 interceptors, deadlines, status propagation, and HTTP/2 transport.
@@ -8,10 +8,10 @@ interceptors, deadlines, status propagation, and HTTP/2 transport.
 - `grpc.go` defines the transport-independent `ChatService` contract and
   `EngineChatService`, which serves a unary Chat as one
   `conversation.Engine` prompt.
-- `server_grpc.go` registers and serves `mux.v1.ChatService/Chat`.
+- `server_grpc.go` registers and serves `relay.v1.ChatService/Chat`.
 - Clients must select `grpc.CallContentSubtype("json")`.
 - There are no `.proto` files or generated stubs.
-- The package is internal: hosts cannot import it, and nothing in Mux starts
+- The package is internal: hosts cannot import it, and nothing in Relay starts
   the server.
 
 ## Running

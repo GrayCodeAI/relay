@@ -11,22 +11,22 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/provider/core"
-	"github.com/GrayCodeAI/mux/storage"
+	"github.com/GrayCodeAI/relay/provider/core"
+	"github.com/GrayCodeAI/relay/storage"
 )
 
 type mockProv struct{}
 
 func (m *mockProv) Name() string                 { return "mock" }
 func (m *mockProv) Ping(_ context.Context) error { return nil }
-func (m *mockProv) Chat(_ context.Context, _ []core.MuxMessage, _ core.ChatOptions) (*core.MuxResponse, error) {
-	return &core.MuxResponse{Content: "hi", FinishReason: "end_turn", Usage: &core.MuxUsage{CompletionTokens: 2}}, nil
+func (m *mockProv) Chat(_ context.Context, _ []core.RelayMessage, _ core.ChatOptions) (*core.RelayResponse, error) {
+	return &core.RelayResponse{Content: "hi", FinishReason: "end_turn", Usage: &core.RelayUsage{CompletionTokens: 2}}, nil
 }
 
-func (m *mockProv) StreamChat(_ context.Context, _ []core.MuxMessage, _ core.ChatOptions) (*core.StreamResult, error) {
-	ch := make(chan core.MuxStreamEvent, 2)
-	ch <- core.MuxStreamEvent{Type: "content", Content: "hi"}
-	ch <- core.MuxStreamEvent{Type: "done", StopReason: "end_turn", Usage: &core.MuxUsage{CompletionTokens: 2}}
+func (m *mockProv) StreamChat(_ context.Context, _ []core.RelayMessage, _ core.ChatOptions) (*core.StreamResult, error) {
+	ch := make(chan core.RelayStreamEvent, 2)
+	ch <- core.RelayStreamEvent{Type: "content", Content: "hi"}
+	ch <- core.RelayStreamEvent{Type: "done", StopReason: "end_turn", Usage: &core.RelayUsage{CompletionTokens: 2}}
 	close(ch)
 	return &core.StreamResult{Events: ch}, nil
 }

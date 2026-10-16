@@ -1,3 +1,3 @@
-module github.com/GrayCodeAI/mux/sdk/go
+module github.com/GrayCodeAI/relay/sdk/go
 
 go 1.27.2

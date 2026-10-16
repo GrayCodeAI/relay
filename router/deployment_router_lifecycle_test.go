@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/mux/llm"
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/llm"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // scriptedStreamProvider streams a fixed script through
@@ -17,13 +17,13 @@ import (
 // hold set, the stream stays open after the script until its context ends.
 type scriptedStreamProvider struct {
 	name    string
-	events  []core.MuxStreamEvent
+	events  []core.RelayStreamEvent
 	openErr error
 	hold    bool
 	calls   atomic.Int32
 }
 
-func (p *scriptedStreamProvider) Chat(ctx context.Context, _ []core.MuxMessage, _ core.ChatOptions) (*core.MuxResponse, error) {
+func (p *scriptedStreamProvider) Chat(ctx context.Context, _ []core.RelayMessage, _ core.ChatOptions) (*core.RelayResponse, error) {
 	p.calls.Add(1)
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -31,15 +31,15 @@ func (p *scriptedStreamProvider) Chat(ctx context.Context, _ []core.MuxMessage, 
 	if p.openErr != nil {
 		return nil, p.openErr
 	}
-	return &core.MuxResponse{Content: "from " + p.name}, nil
+	return &core.RelayResponse{Content: "from " + p.name}, nil
 }
 
-func (p *scriptedStreamProvider) StreamChat(ctx context.Context, _ []core.MuxMessage, _ core.ChatOptions) (*core.StreamResult, error) {
+func (p *scriptedStreamProvider) StreamChat(ctx context.Context, _ []core.RelayMessage, _ core.ChatOptions) (*core.StreamResult, error) {
 	p.calls.Add(1)
 	if p.openErr != nil {
 		return nil, p.openErr
 	}
-	ch := make(chan core.MuxStreamEvent)
+	ch := make(chan core.RelayStreamEvent)
 	go func() {
 		defer close(ch)
 		for _, event := range p.events {
@@ -59,8 +59,8 @@ func (p *scriptedStreamProvider) StreamChat(ctx context.Context, _ []core.MuxMes
 func (p *scriptedStreamProvider) Ping(context.Context) error { return nil }
 func (p *scriptedStreamProvider) Name() string               { return p.name }
 
-func healthyScript(name string) []core.MuxStreamEvent {
-	return []core.MuxStreamEvent{
+func healthyScript(name string) []core.RelayStreamEvent {
+	return []core.RelayStreamEvent{
 		{Type: "content", Content: "from " + name},
 		{Type: "done", StopReason: "end_turn"},
 	}
@@ -87,7 +87,7 @@ func newTwoStageRouter(t *testing.T, primary, fallback core.Provider) *Deploymen
 
 func startRouterStream(t *testing.T, ctx context.Context, r *DeploymentRouter) *core.StreamResult {
 	t.Helper()
-	stream, err := r.StreamChat(ctx, []core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "anthropic/claude-sonnet-4-6"})
+	stream, err := r.StreamChat(ctx, []core.RelayMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "anthropic/claude-sonnet-4-6"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -96,9 +96,9 @@ func startRouterStream(t *testing.T, ctx context.Context, r *DeploymentRouter) *
 }
 
 // drainStream reads until the channel closes, failing the test if it stalls.
-func drainStream(t *testing.T, stream *core.StreamResult) []core.MuxStreamEvent {
+func drainStream(t *testing.T, stream *core.StreamResult) []core.RelayStreamEvent {
 	t.Helper()
-	var events []core.MuxStreamEvent
+	var events []core.RelayStreamEvent
 	deadline := time.After(5 * time.Second)
 	for {
 		select {
@@ -113,7 +113,7 @@ func drainStream(t *testing.T, stream *core.StreamResult) []core.MuxStreamEvent 
 	}
 }
 
-func eventTypes(events []core.MuxStreamEvent) []string {
+func eventTypes(events []core.RelayStreamEvent) []string {
 	types := make([]string, len(events))
 	for i, event := range events {
 		types[i] = event.Type
@@ -128,7 +128,7 @@ func breakerFailures(r *DeploymentRouter, deploymentID string) int {
 	return cb.failureCount
 }
 
-func assertFailedOver(t *testing.T, events []core.MuxStreamEvent, fallback *scriptedStreamProvider) {
+func assertFailedOver(t *testing.T, events []core.RelayStreamEvent, fallback *scriptedStreamProvider) {
 	t.Helper()
 	for _, event := range events {
 		if event.Type == "error" || event.Type == "cancelled" {
@@ -145,7 +145,7 @@ func assertFailedOver(t *testing.T, events []core.MuxStreamEvent, fallback *scri
 
 func TestDeploymentRouterUpstreamTimeoutFailsOver(t *testing.T) {
 	t.Parallel()
-	primary := &scriptedStreamProvider{name: "direct", events: []core.MuxStreamEvent{
+	primary := &scriptedStreamProvider{name: "direct", events: []core.RelayStreamEvent{
 		{Type: "error", Error: "context deadline exceeded (Client.Timeout exceeded while reading body)"},
 	}}
 	fallback := &scriptedStreamProvider{name: "vertex", events: healthyScript("vertex")}
@@ -162,7 +162,7 @@ func TestDeploymentRouterUpstreamCancelledEventFailsOver(t *testing.T) {
 	t.Parallel()
 	// A "cancelled" event while the caller's context is live comes from a
 	// context the deployment owns, such as an adapter-side timeout.
-	primary := &scriptedStreamProvider{name: "direct", events: []core.MuxStreamEvent{
+	primary := &scriptedStreamProvider{name: "direct", events: []core.RelayStreamEvent{
 		{Type: "cancelled", Error: "context canceled"},
 	}}
 	fallback := &scriptedStreamProvider{name: "vertex", events: healthyScript("vertex")}
@@ -186,7 +186,7 @@ func TestDeploymentRouterStreamOpenTimeoutFailsOver(t *testing.T) {
 
 func TestDeploymentRouterCallerCancelEmitsSingleTerminal(t *testing.T) {
 	t.Parallel()
-	primary := &scriptedStreamProvider{name: "direct", hold: true, events: []core.MuxStreamEvent{
+	primary := &scriptedStreamProvider{name: "direct", hold: true, events: []core.RelayStreamEvent{
 		{Type: "content", Content: "partial"},
 	}}
 	fallback := &scriptedStreamProvider{name: "vertex", events: healthyScript("vertex")}
@@ -225,7 +225,7 @@ func TestDeploymentRouterChatCallerDeadlineStopsFailover(t *testing.T) {
 
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
 	defer cancel()
-	_, err := r.Chat(ctx, []core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "anthropic/claude-sonnet-4-6"})
+	_, err := r.Chat(ctx, []core.RelayMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "anthropic/claude-sonnet-4-6"})
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("error = %v, want the caller's deadline", err)
 	}
@@ -241,10 +241,10 @@ func TestDeploymentRouterForwardsEventsAfterOutputUntilDone(t *testing.T) {
 	t.Parallel()
 	// Anthropic reports output usage in message_delta, after the text and
 	// before message_stop; signed thinking blocks also follow output.
-	primary := &scriptedStreamProvider{name: "direct", events: []core.MuxStreamEvent{
-		{Type: "usage", Usage: &core.MuxUsage{PromptTokens: 10}},
+	primary := &scriptedStreamProvider{name: "direct", events: []core.RelayStreamEvent{
+		{Type: "usage", Usage: &core.RelayUsage{PromptTokens: 10}},
 		{Type: "content", Content: "a"},
-		{Type: "usage", Usage: &core.MuxUsage{CompletionTokens: 3}},
+		{Type: "usage", Usage: &core.RelayUsage{CompletionTokens: 3}},
 		{Type: "provider_block", ProviderBlock: &llm.ProviderBlock{Provider: "anthropic", Type: "thinking"}},
 		{Type: "content", Content: "b"},
 		{Type: "done", StopReason: "end_turn"},
@@ -264,24 +264,24 @@ func TestDeploymentRouterForwardsEventsAfterOutputUntilDone(t *testing.T) {
 
 func TestDeploymentRouterWarningDiagnosticsAreNotFatal(t *testing.T) {
 	t.Parallel()
-	diagnostic := core.MuxStreamEvent{Type: "error", Error: "reasoning-only response", Warning: "reasoning-only response"}
+	diagnostic := core.RelayStreamEvent{Type: "error", Error: "reasoning-only response", Warning: "reasoning-only response"}
 	tests := []struct {
 		name   string
-		script []core.MuxStreamEvent
+		script []core.RelayStreamEvent
 		want   []string
 	}{
 		{
 			name: "after output",
-			script: []core.MuxStreamEvent{
+			script: []core.RelayStreamEvent{
 				{Type: "content", Content: "a"},
 				diagnostic,
-				{Type: "done", Usage: &core.MuxUsage{CompletionTokens: 1}},
+				{Type: "done", Usage: &core.RelayUsage{CompletionTokens: 1}},
 			},
 			want: []string{"route_changed", "content", "error", "done"},
 		},
 		{
 			name:   "before output",
-			script: []core.MuxStreamEvent{diagnostic, {Type: "content", Content: "a"}, {Type: "done"}},
+			script: []core.RelayStreamEvent{diagnostic, {Type: "content", Content: "a"}, {Type: "done"}},
 			want:   []string{"route_changed", "error", "content", "done"},
 		},
 	}
@@ -312,24 +312,24 @@ func TestDeploymentRouterErrorEventsCarryErrorInfo(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name     string
-		primary  []core.MuxStreamEvent
-		fallback []core.MuxStreamEvent
+		primary  []core.RelayStreamEvent
+		fallback []core.RelayStreamEvent
 		wantKind string
 	}{
 		{
 			name:     "error after output keeps the adapter's kind",
-			primary:  []core.MuxStreamEvent{{Type: "content", Content: "a"}, {Type: "error", Error: "429 Too Many Requests: rate limit exceeded"}},
+			primary:  []core.RelayStreamEvent{{Type: "content", Content: "a"}, {Type: "error", Error: "429 Too Many Requests: rate limit exceeded"}},
 			wantKind: llm.ErrKindRateLimited,
 		},
 		{
 			name:     "non-transient error before output",
-			primary:  []core.MuxStreamEvent{{Type: "error", Error: "invalid_api_key: unauthorized"}},
+			primary:  []core.RelayStreamEvent{{Type: "error", Error: "invalid_api_key: unauthorized"}},
 			wantKind: llm.ErrKindAuth,
 		},
 		{
 			name:     "every deployment failed",
-			primary:  []core.MuxStreamEvent{{Type: "error", Error: "503 service unavailable"}},
-			fallback: []core.MuxStreamEvent{{Type: "error", Error: "503 service unavailable"}},
+			primary:  []core.RelayStreamEvent{{Type: "error", Error: "503 service unavailable"}},
+			fallback: []core.RelayStreamEvent{{Type: "error", Error: "503 service unavailable"}},
 			wantKind: llm.ErrKindUnavailable,
 		},
 	}
@@ -341,7 +341,7 @@ func TestDeploymentRouterErrorEventsCarryErrorInfo(t *testing.T) {
 			r := newTwoStageRouter(t, primary, fallback)
 
 			events := drainStream(t, startRouterStream(t, context.Background(), r))
-			var terminals []core.MuxStreamEvent
+			var terminals []core.RelayStreamEvent
 			for _, event := range events {
 				if event.Type == "error" || event.Type == "cancelled" || event.Type == "done" {
 					terminals = append(terminals, event)

@@ -69,7 +69,7 @@ func TestNormalizeImageSource_LocalFile(t *testing.T) {
 func TestNormalizeImageSource_NonImageExtensionTreatedAsRawBase64(t *testing.T) {
 	t.Parallel()
 	// A token without a recognized image extension is treated as raw base64
-	// data, not a file path (preserving mux's long-standing default).
+	// data, not a file path (preserving relay's long-standing default).
 	mt, data, isB64, err := NormalizeImageSource("QUJDtoken")
 	if err != nil {
 		t.Fatalf("err: %v", err)

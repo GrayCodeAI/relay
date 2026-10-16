@@ -3,7 +3,7 @@ package engine
 import (
 	"context"
 
-	providermedia "github.com/GrayCodeAI/mux/provider/media"
+	providermedia "github.com/GrayCodeAI/relay/provider/media"
 )
 
 // MediaOptions carries the credentials and endpoint for a media backend call.

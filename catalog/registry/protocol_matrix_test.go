@@ -3,7 +3,7 @@ package registry_test
 import (
 	"testing"
 
-	"github.com/GrayCodeAI/mux/catalog/registry"
+	"github.com/GrayCodeAI/relay/catalog/registry"
 )
 
 // Official protocol surfaces (validated against provider docs, Jul 2026):
