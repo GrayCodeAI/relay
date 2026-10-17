@@ -2,4 +2,4 @@
 package buildversion
 
 // Version is the canonical project version for lower provider layers.
-const Version = "0.0.1"
+const Version = "0.0.2"
