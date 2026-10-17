@@ -1,5 +1,5 @@
 # Binaries
-/mux
+/relay
 bin/
 *.exe
 *.test

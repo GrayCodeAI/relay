@@ -26,32 +26,32 @@ import (
 // frozenInternalSymbols. A new leak, or a removed one, fails until the list
 // and docs/architecture/HOST-ENGINE-BOUNDARY.md are updated deliberately.
 
-const muxModule = "github.com/GrayCodeAI/mux"
+const relayModule = "github.com/GrayCodeAI/relay"
 
-// muxRoot is the module root relative to the engine package directory.
-const muxRoot = ".."
+// relayRoot is the module root relative to the engine package directory.
+const relayRoot = ".."
 
 var hostContractPackages = []string{
-	muxModule + "/engine",
-	muxModule + "/graph",
-	muxModule + "/llm",
-	muxModule + "/tools",
+	relayModule + "/engine",
+	relayModule + "/graph",
+	relayModule + "/llm",
+	relayModule + "/tools",
 }
 
 // frozenInternalSymbols is the complete set of engine-internal symbols
 // reachable from the host contract. Keep it sorted and in sync with the
 // "Frozen engine-internal types" section of HOST-ENGINE-BOUNDARY.md.
 var frozenInternalSymbols = []string{
-	muxModule + "/credentials.DefaultStore",
-	muxModule + "/credentials.MapStore",
-	muxModule + "/credentials.SetDefaultStore",
-	muxModule + "/credentials.Store",
-	muxModule + "/operationsgraph.Export",
-	muxModule + "/operationsgraph.Input",
-	muxModule + "/provider/cache.CacheConfig",
-	muxModule + "/provider/resilience.AdaptiveRateLimitConfig",
-	muxModule + "/provider/resilience.HeaderExtractor",
-	muxModule + "/provider/resilience.RateLimitHeaders",
+	relayModule + "/credentials.DefaultStore",
+	relayModule + "/credentials.MapStore",
+	relayModule + "/credentials.SetDefaultStore",
+	relayModule + "/credentials.Store",
+	relayModule + "/operationsgraph.Export",
+	relayModule + "/operationsgraph.Input",
+	relayModule + "/provider/cache.CacheConfig",
+	relayModule + "/provider/resilience.AdaptiveRateLimitConfig",
+	relayModule + "/provider/resilience.HeaderExtractor",
+	relayModule + "/provider/resilience.RateLimitHeaders",
 }
 
 type surfaceDecl struct {
@@ -97,8 +97,8 @@ func isHostContract(path string) bool {
 	return false
 }
 
-func isMuxPackage(path string) bool {
-	return path == muxModule || strings.HasPrefix(path, muxModule+"/")
+func isRelayPackage(path string) bool {
+	return path == relayModule || strings.HasPrefix(path, relayModule+"/")
 }
 
 // isStdlib mirrors the go command's rule: standard-library import paths have
@@ -110,7 +110,7 @@ func isStdlib(path string) bool {
 
 var majorVersionElem = regexp.MustCompile(`^v[0-9]+$`)
 
-// assumedPackageName guesses the name of a non-Mux package imported without
+// assumedPackageName guesses the name of a non-Relay package imported without
 // an explicit name, the same way goimports does. A wrong guess cannot hide a
 // leak: an unresolved qualifier in a type expression fails the test.
 func assumedPackageName(path string) string {
@@ -131,7 +131,7 @@ func (s *surfaceScanner) load(path string) *surfacePkg {
 	if pkg, ok := s.pkgs[path]; ok {
 		return pkg
 	}
-	dir := filepath.Join(muxRoot, filepath.FromSlash(strings.TrimPrefix(path, muxModule)))
+	dir := filepath.Join(relayRoot, filepath.FromSlash(strings.TrimPrefix(path, relayModule)))
 	bp, err := build.ImportDir(dir, 0)
 	if err != nil {
 		s.t.Fatalf("load %s: %v", path, err)
@@ -206,7 +206,7 @@ func (s *surfaceScanner) importsOf(pkg *surfacePkg, file *ast.File) map[string]s
 		switch {
 		case imp.Name != nil:
 			name = imp.Name.Name
-		case isMuxPackage(path):
+		case isRelayPackage(path):
 			name = s.load(path).name
 		default:
 			name = assumedPackageName(path)
@@ -233,7 +233,7 @@ func (s *surfaceScanner) reference(path, name, from string) {
 	}
 	key := path + "." + name
 	s.internal[key] = append(s.internal[key], from)
-	if isMuxPackage(path) {
+	if isRelayPackage(path) {
 		s.visit(s.load(path), name, key)
 	}
 }
@@ -416,13 +416,13 @@ func TestHostContractExposesOnlyFrozenInternalSymbols(t *testing.T) {
 }
 
 func TestFrozenInternalSymbolsAreDocumented(t *testing.T) {
-	data, err := os.ReadFile(filepath.Join(muxRoot, "docs", "architecture", "HOST-ENGINE-BOUNDARY.md"))
+	data, err := os.ReadFile(filepath.Join(relayRoot, "docs", "architecture", "HOST-ENGINE-BOUNDARY.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	doc := string(data)
 	for _, sym := range frozenInternalSymbols {
-		short := "`" + strings.TrimPrefix(sym, muxModule+"/") + "`"
+		short := "`" + strings.TrimPrefix(sym, relayModule+"/") + "`"
 		if !strings.Contains(doc, short) {
 			t.Errorf("HOST-ENGINE-BOUNDARY.md does not list frozen symbol %s", short)
 		}

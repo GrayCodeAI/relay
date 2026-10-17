@@ -3,7 +3,7 @@ package adapters
 import (
 	"testing"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 func TestAnthropicBaseFromOpenAIV1(t *testing.T) {
@@ -21,7 +21,7 @@ func TestAnthropicBaseFromOpenAIV1(t *testing.T) {
 
 func TestStreamResultFromChat(t *testing.T) {
 	t.Parallel()
-	result := streamResultFromChat(&core.MuxResponse{
+	result := streamResultFromChat(&core.RelayResponse{
 		Content:      "Hi there!",
 		FinishReason: "stop",
 	})
@@ -38,11 +38,11 @@ func TestStreamResultFromChat(t *testing.T) {
 
 func TestStreamResultFromChat_FullResponse(t *testing.T) {
 	t.Parallel()
-	resp := &core.MuxResponse{
+	resp := &core.RelayResponse{
 		Thinking:     "Let me think...",
 		Content:      "Hello there!",
 		ToolCalls:    []core.ToolCall{{Name: "get_weather", Arguments: map[string]interface{}{"city": "NYC"}}},
-		Usage:        &core.MuxUsage{TotalTokens: 42},
+		Usage:        &core.RelayUsage{TotalTokens: 42},
 		FinishReason: "",
 	}
 	result := streamResultFromChat(resp)

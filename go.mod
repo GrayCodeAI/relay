@@ -1,9 +1,9 @@
-module github.com/GrayCodeAI/mux
+module github.com/GrayCodeAI/relay
 
 go 1.27.2
 
 // The existing v0.0.1 tag declares a different module path.
-// Consumers of github.com/GrayCodeAI/mux must use a post-rename revision.
+// Consumers of github.com/GrayCodeAI/relay must use a post-rename revision.
 retract v0.0.1
 
 require (

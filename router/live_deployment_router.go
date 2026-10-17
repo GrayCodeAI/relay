@@ -6,7 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // LiveDeploymentRouter routes each new call through one immutable, validated
@@ -80,7 +80,7 @@ func (l *LiveDeploymentRouter) Ping(ctx context.Context) error {
 	return r.Ping(ctx)
 }
 
-func (l *LiveDeploymentRouter) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
+func (l *LiveDeploymentRouter) Chat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.RelayResponse, error) {
 	r, err := l.active()
 	if err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ func (l *LiveDeploymentRouter) Chat(ctx context.Context, messages []core.MuxMess
 	return r.Chat(ctx, messages, opts)
 }
 
-func (l *LiveDeploymentRouter) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (l *LiveDeploymentRouter) StreamChat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	r, err := l.active()
 	if err != nil {
 		return nil, err

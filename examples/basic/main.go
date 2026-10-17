@@ -1,4 +1,4 @@
-// Example: basic chat with mux.
+// Example: basic chat with relay.
 //
 // Run:
 //
@@ -10,16 +10,16 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GrayCodeAI/mux/provider"
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 func main() {
-	c := provider.Client(&core.MuxConfig{
+	c := provider.Client(&core.RelayConfig{
 		Provider: provider.DetectProvider(),
 	})
 
-	messages := []core.MuxMessage{
+	messages := []core.RelayMessage{
 		{Role: "user", Content: "What is 2 + 2?"},
 	}
 

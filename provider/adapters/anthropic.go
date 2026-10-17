@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/llm"
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/llm"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // maxAnthropicRequestSize is the maximum request body size for the Messages API (32 MB).
@@ -255,7 +255,7 @@ type anthropicResponse struct {
 }
 
 // ParseAnthropicResponse converts a parsed Anthropic Messages API
-// response into an core.MuxResponse. Shared by Anthropic, Bedrock, and
+// response into an core.RelayResponse. Shared by Anthropic, Bedrock, and
 // Vertex clients (all three receive the same wire format).
 //
 // Content blocks are extracted per type:
@@ -266,7 +266,7 @@ type anthropicResponse struct {
 //
 // requestID is required. orgID is the Anthropic-Organization-Id
 // response header (Anthropic-specific; Bedrock and Vertex pass "").
-func ParseAnthropicResponse(ar anthropicResponse, requestID, orgID string) *core.MuxResponse {
+func ParseAnthropicResponse(ar anthropicResponse, requestID, orgID string) *core.RelayResponse {
 	var content, thinkingContent string
 	var toolCalls []core.ToolCall
 	for _, block := range ar.Content {
@@ -286,10 +286,10 @@ func ParseAnthropicResponse(ar anthropicResponse, requestID, orgID string) *core
 			toolCalls = append(toolCalls, core.ToolCall{ID: block.ID, Name: block.Name, Arguments: args})
 		}
 	}
-	return &core.MuxResponse{
+	return &core.RelayResponse{
 		Content: content, Thinking: thinkingContent, FinishReason: ar.StopReason, ToolCalls: toolCalls,
 		RequestID: requestID, OrganizationID: orgID,
-		Usage: &core.MuxUsage{
+		Usage: &core.RelayUsage{
 			PromptTokens:        ar.Usage.InputTokens,
 			CompletionTokens:    ar.Usage.OutputTokens,
 			TotalTokens:         ar.Usage.InputTokens + ar.Usage.OutputTokens,
@@ -300,11 +300,11 @@ func ParseAnthropicResponse(ar anthropicResponse, requestID, orgID string) *core
 	}
 }
 
-func BuildAnthropicMessages(messages []core.MuxMessage) ([]map[string]interface{}, string) {
+func BuildAnthropicMessages(messages []core.RelayMessage) ([]map[string]interface{}, string) {
 	return buildAnthropicMessages(messages)
 }
 
-func buildAnthropicMessages(messages []core.MuxMessage) ([]map[string]interface{}, string) {
+func buildAnthropicMessages(messages []core.RelayMessage) ([]map[string]interface{}, string) {
 	var system string
 	msgs := make([]map[string]interface{}, 0, len(messages))
 	for _, m := range messages {
@@ -466,27 +466,27 @@ func audioFormatToMediaType(format string) string {
 // every field — System, Temperature, TopP, TopK, StopSequences,
 // EnableCaching, tools, thinking, metadata, serviceTier,
 // outputConfig — was previously re-applied in both methods.
-func (c *AnthropicClient) buildAnthropicRequest(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions, stream bool) (*http.Request, []byte, error) {
+func (c *AnthropicClient) buildAnthropicRequest(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions, stream bool) (*http.Request, []byte, error) {
 	if opts.ResponseFormat != nil {
 		switch opts.ResponseFormat.Type {
 		case "json_schema":
 			if opts.ResponseFormat.Schema == "" {
-				return nil, nil, fmt.Errorf("mux: anthropic json_schema response format requires a schema")
+				return nil, nil, fmt.Errorf("relay: anthropic json_schema response format requires a schema")
 			}
 			var schema map[string]interface{}
 			if err := json.Unmarshal([]byte(opts.ResponseFormat.Schema), &schema); err != nil {
-				return nil, nil, fmt.Errorf("mux: invalid anthropic response schema: %w", err)
+				return nil, nil, fmt.Errorf("relay: invalid anthropic response schema: %w", err)
 			}
 			opts.OutputSchema = opts.ResponseFormat.Schema
 		case "json_object":
-			return nil, nil, fmt.Errorf("mux: anthropic does not support json_object without a schema; use json_schema")
+			return nil, nil, fmt.Errorf("relay: anthropic does not support json_object without a schema; use json_schema")
 		default:
-			return nil, nil, fmt.Errorf("mux: unsupported anthropic response format %q", opts.ResponseFormat.Type)
+			return nil, nil, fmt.Errorf("relay: unsupported anthropic response format %q", opts.ResponseFormat.Type)
 		}
 	}
 	messages = core.SanitizeMessages(messages)
 	if opts.Model == "" {
-		return nil, nil, fmt.Errorf("mux: model is required for anthropic")
+		return nil, nil, fmt.Errorf("relay: model is required for anthropic")
 	}
 	maxTokens := opts.MaxTokens
 	if maxTokens == 0 {
@@ -498,7 +498,7 @@ func (c *AnthropicClient) buildAnthropicRequest(ctx context.Context, messages []
 	if opts.EnableCaching {
 		allMessages := messages
 		if opts.System != "" {
-			allMessages = append([]core.MuxMessage{{Role: "system", Content: opts.System}}, allMessages...)
+			allMessages = append([]core.RelayMessage{{Role: "system", Content: opts.System}}, allMessages...)
 		}
 		tools := ConvertToAnthropicTools(opts.Tools)
 		cachedReq := buildAnthropicCachedRequest(allMessages, opts.Model, maxTokens, opts.Temperature, stream, tools,
@@ -506,7 +506,7 @@ func (c *AnthropicClient) buildAnthropicRequest(ctx context.Context, messages []
 		var err error
 		body, err = json.Marshal(cachedReq)
 		if err != nil {
-			return nil, nil, fmt.Errorf("mux: marshal anthropic cached request: %w", err)
+			return nil, nil, fmt.Errorf("relay: marshal anthropic cached request: %w", err)
 		}
 	} else {
 		msgs, system := buildAnthropicMessages(messages)
@@ -537,18 +537,18 @@ func (c *AnthropicClient) buildAnthropicRequest(ctx context.Context, messages []
 		var err error
 		body, err = json.Marshal(reqBody)
 		if err != nil {
-			return nil, nil, fmt.Errorf("mux: marshal anthropic request: %w", err)
+			return nil, nil, fmt.Errorf("relay: marshal anthropic request: %w", err)
 		}
 	}
 
 	// Check request size (32 MB limit for Messages API)
 	if len(body) > maxAnthropicRequestSize {
-		return nil, nil, fmt.Errorf("mux: request size %d bytes exceeds Anthropic limit of %d bytes", len(body), maxAnthropicRequestSize)
+		return nil, nil, fmt.Errorf("relay: request size %d bytes exceeds Anthropic limit of %d bytes", len(body), maxAnthropicRequestSize)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/v1/messages", bytes.NewReader(body))
 	if err != nil {
-		return nil, nil, fmt.Errorf("mux: failed to create request: %w", err)
+		return nil, nil, fmt.Errorf("relay: failed to create request: %w", err)
 	}
 	c.setHeaders(req)
 	if stream {
@@ -562,7 +562,7 @@ func (c *AnthropicClient) buildAnthropicRequest(ctx context.Context, messages []
 // Anthropic structured output is sent through output_config.format. A
 // schema-less json_object request is rejected instead of being silently
 // ignored because Anthropic requires a JSON schema.
-func (c *AnthropicClient) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
+func (c *AnthropicClient) Chat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.RelayResponse, error) {
 	req, body, err := c.buildAnthropicRequest(ctx, messages, opts, false)
 	if err != nil {
 		return nil, err
@@ -571,7 +571,7 @@ func (c *AnthropicClient) Chat(ctx context.Context, messages []core.MuxMessage, 
 
 	resp, err := c.doRequestWithMimoAuthRetry(ctx, req, body)
 	if err != nil {
-		return nil, fmt.Errorf("mux: anthropic request failed: %w", err)
+		return nil, fmt.Errorf("relay: anthropic request failed: %w", err)
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -589,20 +589,20 @@ func (c *AnthropicClient) Chat(ctx context.Context, messages []core.MuxMessage, 
 
 	var ar anthropicResponse
 	if err := json.NewDecoder(resp.Body).Decode(&ar); err != nil {
-		return nil, fmt.Errorf("mux: failed to decode anthropic response: %w", err)
+		return nil, fmt.Errorf("relay: failed to decode anthropic response: %w", err)
 	}
 
-	muxResp := ParseAnthropicResponse(ar, requestID, orgID)
+	relayResp := ParseAnthropicResponse(ar, requestID, orgID)
 
-	if err := core.ApplyGuardrails(ctx, muxResp, c.guardrails); err != nil {
+	if err := core.ApplyGuardrails(ctx, relayResp, c.guardrails); err != nil {
 		return nil, err
 	}
 
-	return muxResp, nil
+	return relayResp, nil
 }
 
 // StreamChat sends a streaming message to Anthropic.
-func (c *AnthropicClient) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (c *AnthropicClient) StreamChat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	streamCtx, cancel := context.WithCancel(ctx)
 	req, body, err := c.buildAnthropicRequest(streamCtx, messages, opts, true)
 	if err != nil {
@@ -613,7 +613,7 @@ func (c *AnthropicClient) StreamChat(ctx context.Context, messages []core.MuxMes
 	resp, err := c.doRequestWithMimoAuthRetry(streamCtx, req, body)
 	if err != nil {
 		cancel()
-		return nil, fmt.Errorf("mux: anthropic stream request failed: %w", err)
+		return nil, fmt.Errorf("relay: anthropic stream request failed: %w", err)
 	}
 
 	requestID := resp.Header.Get("Request-Id")
@@ -646,22 +646,22 @@ func (c *AnthropicClient) doRequestWithMimoAuthRetry(ctx context.Context, req *h
 func (c *AnthropicClient) Ping(ctx context.Context) error {
 	req, err := http.NewRequestWithContext(ctx, "GET", c.baseURL+"/v1/models", nil)
 	if err != nil {
-		return fmt.Errorf("mux: anthropic ping failed: %w", err)
+		return fmt.Errorf("relay: anthropic ping failed: %w", err)
 	}
 	c.setHeaders(req)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("mux: anthropic ping failed: %w", err)
+		return fmt.Errorf("relay: anthropic ping failed: %w", err)
 	}
 	_ = resp.Body.Close()
 	if resp.StatusCode == 401 {
-		return fmt.Errorf("mux: anthropic: invalid API key")
+		return fmt.Errorf("relay: anthropic: invalid API key")
 	}
 	return nil
 }
 
-func ConvertToAnthropicTools(tools []core.MuxTool) []anthropicTool {
+func ConvertToAnthropicTools(tools []core.RelayTool) []anthropicTool {
 	if len(tools) == 0 {
 		return nil
 	}
@@ -680,10 +680,10 @@ type TokenCountResult struct {
 // CountTokens counts the number of tokens in a message without generating a response.
 // Uses the same request format as Chat but hits the /v1/messages/count_tokens endpoint.
 // The request body includes model, messages, system, and tools (but not max_tokens or stream).
-func (c *AnthropicClient) CountTokens(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*TokenCountResult, error) {
+func (c *AnthropicClient) CountTokens(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*TokenCountResult, error) {
 	messages = core.SanitizeMessages(messages)
 	if opts.Model == "" {
-		return nil, fmt.Errorf("mux: model is required for anthropic count_tokens")
+		return nil, fmt.Errorf("relay: model is required for anthropic count_tokens")
 	}
 
 	msgs, system := buildAnthropicMessages(messages)
@@ -709,24 +709,24 @@ func (c *AnthropicClient) CountTokens(ctx context.Context, messages []core.MuxMe
 
 	body, err := json.Marshal(reqBody)
 	if err != nil {
-		return nil, fmt.Errorf("mux: failed to marshal count_tokens request: %w", err)
+		return nil, fmt.Errorf("relay: failed to marshal count_tokens request: %w", err)
 	}
 
 	// Check request size (32 MB limit for Messages API)
 	if len(body) > maxAnthropicRequestSize {
-		return nil, fmt.Errorf("mux: request size %d bytes exceeds Anthropic limit of %d bytes", len(body), maxAnthropicRequestSize)
+		return nil, fmt.Errorf("relay: request size %d bytes exceeds Anthropic limit of %d bytes", len(body), maxAnthropicRequestSize)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/v1/messages/count_tokens", bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("mux: failed to create count_tokens request: %w", err)
+		return nil, fmt.Errorf("relay: failed to create count_tokens request: %w", err)
 	}
 	c.setHeaders(req)
 	req.GetBody = func() (io.ReadCloser, error) { return io.NopCloser(bytes.NewReader(body)), nil }
 
 	resp, err := c.doRequestWithMimoAuthRetry(ctx, req, body)
 	if err != nil {
-		return nil, fmt.Errorf("mux: anthropic count_tokens failed: %w", err)
+		return nil, fmt.Errorf("relay: anthropic count_tokens failed: %w", err)
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -741,13 +741,13 @@ func (c *AnthropicClient) CountTokens(ctx context.Context, messages []core.MuxMe
 
 	var result TokenCountResult
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("mux: failed to decode count_tokens response: %w", err)
+		return nil, fmt.Errorf("relay: failed to decode count_tokens response: %w", err)
 	}
 	return &result, nil
 }
 
 // BuildAnthropicRequest constructs a complete Anthropic Messages request.
-func (c *AnthropicClient) BuildAnthropicRequest(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions, stream bool) (*http.Request, []byte, error) {
+func (c *AnthropicClient) BuildAnthropicRequest(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions, stream bool) (*http.Request, []byte, error) {
 	return c.buildAnthropicRequest(ctx, messages, opts, stream)
 }
 

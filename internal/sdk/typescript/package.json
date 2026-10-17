@@ -1,8 +1,8 @@
 {
-  "name": "mux-sdk",
+  "name": "relay-sdk",
   "version": "0.0.1",
-  "description": "Mux conversation DAG HTTP API client",
-  "main": "mux.ts",
-  "types": "mux.ts",
+  "description": "Relay conversation DAG HTTP API client",
+  "main": "relay.ts",
+  "types": "relay.ts",
   "license": "MIT"
 }

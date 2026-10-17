@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/mux/catalog/registry"
+	"github.com/GrayCodeAI/relay/catalog/registry"
 )
 
 // ConfigureProviderOpts is the complete engine input for provider setup.

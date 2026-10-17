@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 func BenchmarkMockProviderScriptedChat(b *testing.B) {
@@ -13,7 +13,7 @@ func BenchmarkMockProviderScriptedChat(b *testing.B) {
 		{Content: "partial response", FinishReason: "tool_use", ToolCalls: []core.ToolCall{{ID: "tc1", Name: "search", Arguments: map[string]any{"q": "x"}}}},
 		{Content: "done", FinishReason: "end_turn"},
 	}
-	msgs := []core.MuxMessage{{Role: "user", Content: "run"}}
+	msgs := []core.RelayMessage{{Role: "user", Content: "run"}}
 	opts := core.ChatOptions{Model: "test"}
 
 	b.ResetTimer()

@@ -1,4 +1,4 @@
-package mux
+package relay
 
 import (
 	"encoding/json"
@@ -336,13 +336,13 @@ func TestExportPrometheus(t *testing.T) {
 
 	// Check that it contains expected metric names.
 	expectedMetrics := []string{
-		"mux_requests_total",
-		"mux_input_tokens_total",
-		"mux_output_tokens_total",
-		"mux_request_duration_ms",
-		"mux_error_rate",
-		"mux_cost_usd_total",
-		"mux_cache_hit_rate",
+		"relay_requests_total",
+		"relay_input_tokens_total",
+		"relay_output_tokens_total",
+		"relay_request_duration_ms",
+		"relay_error_rate",
+		"relay_cost_usd_total",
+		"relay_cache_hit_rate",
 	}
 	for _, m := range expectedMetrics {
 		if !strings.Contains(prom, m) {

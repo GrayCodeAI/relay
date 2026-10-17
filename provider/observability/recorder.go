@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // RecorderMode controls whether the recorder records new interactions or replays existing ones.
@@ -99,7 +99,7 @@ func (r *RecorderProvider) Ping(ctx context.Context) error {
 }
 
 // Chat either records a new interaction or replays a stored one.
-func (r *RecorderProvider) Chat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*MuxResponse, error) {
+func (r *RecorderProvider) Chat(ctx context.Context, messages []RelayMessage, opts ChatOptions) (*RelayResponse, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -146,7 +146,7 @@ func (r *RecorderProvider) Chat(ctx context.Context, messages []MuxMessage, opts
 // In record mode, the real stream is drained and the accumulated response is saved,
 // then a synthetic stream is created to return to the caller.
 // In replay mode, a synthetic stream is created from the stored response.
-func (r *RecorderProvider) StreamChat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*StreamResult, error) {
+func (r *RecorderProvider) StreamChat(ctx context.Context, messages []RelayMessage, opts ChatOptions) (*StreamResult, error) {
 	hash, replayResult, err := r.checkReplay(messages, opts)
 	if err != nil {
 		return nil, err
@@ -181,7 +181,7 @@ func (r *RecorderProvider) StreamChat(ctx context.Context, messages []MuxMessage
 
 // checkReplay checks if we're in replay mode and returns the replay result.
 // Returns (hash, nil, nil) if not in replay mode.
-func (r *RecorderProvider) checkReplay(messages []MuxMessage, opts ChatOptions) (string, *StreamResult, error) {
+func (r *RecorderProvider) checkReplay(messages []RelayMessage, opts ChatOptions) (string, *StreamResult, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -211,7 +211,7 @@ func (r *RecorderProvider) SetRedactor(fn func(string) string) {
 }
 
 // replay finds a matching interaction by hash, falling back to position-based lookup.
-func (r *RecorderProvider) replay(hash string) (*MuxResponse, error) {
+func (r *RecorderProvider) replay(hash string) (*RelayResponse, error) {
 	// First try to find by hash
 	for _, interaction := range r.cassette.Interactions {
 		if interaction.Request.Hash == hash {
@@ -228,12 +228,12 @@ func (r *RecorderProvider) replay(hash string) (*MuxResponse, error) {
 	return r.interactionToResponse(interaction.Response)
 }
 
-// interactionToResponse converts a RecordedResponse to an MuxResponse.
-func (r *RecorderProvider) interactionToResponse(resp RecordedResponse) (*MuxResponse, error) {
+// interactionToResponse converts a RecordedResponse to an RelayResponse.
+func (r *RecorderProvider) interactionToResponse(resp RecordedResponse) (*RelayResponse, error) {
 	if resp.Error != "" {
 		return nil, fmt.Errorf("recorder: replayed error: %s", resp.Error)
 	}
-	return &MuxResponse{
+	return &RelayResponse{
 		Content:      resp.Content,
 		ToolCalls:    resp.ToolCalls,
 		Usage:        resp.Usage,
@@ -242,15 +242,15 @@ func (r *RecorderProvider) interactionToResponse(resp RecordedResponse) (*MuxRes
 }
 
 // syntheticStream creates a StreamResult that emits stored content as events.
-func (r *RecorderProvider) syntheticStream(ctx context.Context, resp *MuxResponse) *StreamResult {
+func (r *RecorderProvider) syntheticStream(ctx context.Context, resp *RelayResponse) *StreamResult {
 	streamCtx, cancel := context.WithCancel(ctx)
-	ch := make(chan MuxStreamEvent, 10)
+	ch := make(chan RelayStreamEvent, 10)
 
 	go func() {
 		defer close(ch)
 		if resp.Content != "" {
 			select {
-			case ch <- MuxStreamEvent{Type: "content", Content: resp.Content}:
+			case ch <- RelayStreamEvent{Type: "content", Content: resp.Content}:
 			case <-streamCtx.Done():
 				return
 			}
@@ -258,20 +258,20 @@ func (r *RecorderProvider) syntheticStream(ctx context.Context, resp *MuxRespons
 		for i := range resp.ToolCalls {
 			tc := resp.ToolCalls[i]
 			select {
-			case ch <- MuxStreamEvent{Type: "tool_call", ToolCall: &tc}:
+			case ch <- RelayStreamEvent{Type: "tool_call", ToolCall: &tc}:
 			case <-streamCtx.Done():
 				return
 			}
 		}
 		if resp.Usage != nil {
 			select {
-			case ch <- MuxStreamEvent{Type: "usage", Usage: resp.Usage}:
+			case ch <- RelayStreamEvent{Type: "usage", Usage: resp.Usage}:
 			case <-streamCtx.Done():
 				return
 			}
 		}
 		select {
-		case ch <- MuxStreamEvent{Type: "done", StopReason: resp.FinishReason}:
+		case ch <- RelayStreamEvent{Type: "done", StopReason: resp.FinishReason}:
 		case <-streamCtx.Done():
 		}
 	}()
@@ -285,9 +285,9 @@ func (r *RecorderProvider) syntheticStream(ctx context.Context, resp *MuxRespons
 // The interaction is saved before the terminal event is forwarded: the
 // caller's stream is coordinated and ends at that terminal, so a caller that
 // saves the cassette right after draining must already see the interaction.
-func (r *RecorderProvider) recordStream(ctx context.Context, result *StreamResult, messages []MuxMessage, opts ChatOptions, hash string) *StreamResult {
+func (r *RecorderProvider) recordStream(ctx context.Context, result *StreamResult, messages []RelayMessage, opts ChatOptions, hash string) *StreamResult {
 	streamCtx, cancel := context.WithCancel(ctx)
-	ch := make(chan MuxStreamEvent, 64)
+	ch := make(chan RelayStreamEvent, 64)
 
 	go func() {
 		defer close(ch)
@@ -295,7 +295,7 @@ func (r *RecorderProvider) recordStream(ctx context.Context, result *StreamResul
 
 		var content string
 		var toolCalls []ToolCall
-		var usage *MuxUsage
+		var usage *RelayUsage
 		var finishReason string
 		var saveOnce sync.Once
 		save := func() {
@@ -356,7 +356,7 @@ func (r *RecorderProvider) recordStream(ctx context.Context, result *StreamResul
 
 // isTerminalRecordedEvent reports whether evt ends a stream: done, a
 // cancellation, or an error that is not a warning-marked diagnostic.
-func isTerminalRecordedEvent(evt MuxStreamEvent) bool {
+func isTerminalRecordedEvent(evt RelayStreamEvent) bool {
 	switch evt.Type {
 	case "done", "cancelled", "canceled":
 		return true

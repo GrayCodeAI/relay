@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/mux/llm"
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/llm"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // ConcentrateResponsesClient uses the Concentrate Responses API (the production-ready
@@ -163,7 +163,7 @@ type responsesIncompleteDetail struct {
 }
 
 // Chat implements core.Provider using the Responses API.
-func (c *ConcentrateResponsesClient) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
+func (c *ConcentrateResponsesClient) Chat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.RelayResponse, error) {
 	req, err := c.buildRequest(messages, opts, false)
 	if err != nil {
 		return nil, err
@@ -181,7 +181,7 @@ func (c *ConcentrateResponsesClient) Chat(ctx context.Context, messages []core.M
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+c.apiKey)
 	httpReq.Header.Set("Accept", "application/json")
-	httpReq.Header.Set("User-Agent", "mux-model-catalog/1.0")
+	httpReq.Header.Set("User-Agent", "relay-model-catalog/1.0")
 	httpReq.GetBody = func() (io.ReadCloser, error) { return io.NopCloser(bytes.NewReader(body)), nil }
 
 	resp, err := core.DoWithRetry(ctx, c.httpClient, httpReq, c.retry, c.logger)
@@ -202,11 +202,11 @@ func (c *ConcentrateResponsesClient) Chat(ctx context.Context, messages []core.M
 		return nil, fmt.Errorf("concentrate: decode response: %w", err)
 	}
 
-	return c.toMuxResponse(apiResp), nil
+	return c.toRelayResponse(apiResp), nil
 }
 
 // StreamChat implements core.Provider using the Responses API with SSE streaming.
-func (c *ConcentrateResponsesClient) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (c *ConcentrateResponsesClient) StreamChat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	req, err := c.buildRequest(messages, opts, true)
 	if err != nil {
 		return nil, err
@@ -226,7 +226,7 @@ func (c *ConcentrateResponsesClient) StreamChat(ctx context.Context, messages []
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+c.apiKey)
 	httpReq.Header.Set("Accept", "text/event-stream")
-	httpReq.Header.Set("User-Agent", "mux-model-catalog/1.0")
+	httpReq.Header.Set("User-Agent", "relay-model-catalog/1.0")
 	httpReq.GetBody = func() (io.ReadCloser, error) { return io.NopCloser(bytes.NewReader(body)), nil }
 
 	resp, err := core.DoWithRetry(streamCtx, c.httpClient, httpReq, c.retry, c.logger)
@@ -257,7 +257,7 @@ func (c *ConcentrateResponsesClient) Ping(ctx context.Context) error {
 		return fmt.Errorf("concentrate: create ping request: %w", err)
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "mux-model-catalog/1.0")
+	req.Header.Set("User-Agent", "relay-model-catalog/1.0")
 	if c.apiKey != "" {
 		req.Header.Set("Authorization", "Bearer "+c.apiKey)
 	}
@@ -274,7 +274,7 @@ func (c *ConcentrateResponsesClient) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (c *ConcentrateResponsesClient) buildRequest(messages []core.MuxMessage, opts core.ChatOptions, stream bool) (responsesRequest, error) {
+func (c *ConcentrateResponsesClient) buildRequest(messages []core.RelayMessage, opts core.ChatOptions, stream bool) (responsesRequest, error) {
 	req := responsesRequest{
 		Model:           opts.Model,
 		Input:           c.messagesToInput(messages),
@@ -387,7 +387,7 @@ func normalizeToolParams(params map[string]interface{}) map[string]interface{} {
 	return params
 }
 
-func (c *ConcentrateResponsesClient) messagesToInput(messages []core.MuxMessage) []map[string]interface{} {
+func (c *ConcentrateResponsesClient) messagesToInput(messages []core.RelayMessage) []map[string]interface{} {
 	input := make([]map[string]interface{}, 0, len(messages))
 	for _, msg := range messages {
 		if len(msg.ToolResults) > 0 {
@@ -458,15 +458,15 @@ func concentrateContentParts(parts []core.ContentPart) []map[string]interface{} 
 	return content
 }
 
-func (c *ConcentrateResponsesClient) toMuxResponse(resp responsesResponse) *core.MuxResponse {
-	muxResp := &core.MuxResponse{
+func (c *ConcentrateResponsesClient) toRelayResponse(resp responsesResponse) *core.RelayResponse {
+	relayResp := &core.RelayResponse{
 		Content:      c.extractOutputText(resp.Output),
 		FinishReason: concentrateFinishReason(resp),
 		RequestID:    resp.ID,
 	}
 
 	if resp.Usage != nil {
-		muxResp.Usage = &core.MuxUsage{
+		relayResp.Usage = &core.RelayUsage{
 			PromptTokens:     resp.Usage.InputTokens,
 			CompletionTokens: resp.Usage.OutputTokens,
 			TotalTokens:      resp.Usage.TotalTokens,
@@ -480,7 +480,7 @@ func (c *ConcentrateResponsesClient) toMuxResponse(resp responsesResponse) *core
 			if item.Arguments != "" {
 				_ = json.Unmarshal([]byte(item.Arguments), &args)
 			}
-			muxResp.ToolCalls = append(muxResp.ToolCalls, core.ToolCall{
+			relayResp.ToolCalls = append(relayResp.ToolCalls, core.ToolCall{
 				ID:        item.CallID,
 				Name:      item.Name,
 				Arguments: args,
@@ -488,7 +488,7 @@ func (c *ConcentrateResponsesClient) toMuxResponse(resp responsesResponse) *core
 		}
 	}
 
-	return muxResp
+	return relayResp
 }
 
 func (c *ConcentrateResponsesClient) extractOutputText(output []outputItem) string {
@@ -537,7 +537,7 @@ type streamEvent struct {
 }
 
 func (c *ConcentrateResponsesClient) handleStream(ctx context.Context, cancel context.CancelFunc, resp *http.Response, requestID string) *core.StreamResult {
-	events := make(chan core.MuxStreamEvent, core.StreamChannelBuffer)
+	events := make(chan core.RelayStreamEvent, core.StreamChannelBuffer)
 
 	go func() {
 		defer close(events)
@@ -551,7 +551,7 @@ func (c *ConcentrateResponsesClient) handleStream(ctx context.Context, cancel co
 			event, err := reader.Read()
 			if err != nil {
 				if err != io.EOF {
-					sendConcentrateStreamEvent(ctx, events, core.MuxStreamEvent{Type: "error", Error: err.Error()})
+					sendConcentrateStreamEvent(ctx, events, core.RelayStreamEvent{Type: "error", Error: err.Error()})
 				}
 				return
 			}
@@ -559,13 +559,13 @@ func (c *ConcentrateResponsesClient) handleStream(ctx context.Context, cancel co
 			switch event.Type {
 			case "response.output_text.delta":
 				if event.Delta != "" {
-					if !sendConcentrateStreamEvent(ctx, events, core.MuxStreamEvent{Type: "content", Content: event.Delta}) {
+					if !sendConcentrateStreamEvent(ctx, events, core.RelayStreamEvent{Type: "content", Content: event.Delta}) {
 						return
 					}
 				}
 			case "response.reasoning_text.delta", "response.reasoning_summary_text.delta":
 				if event.Delta != "" {
-					if !sendConcentrateStreamEvent(ctx, events, core.MuxStreamEvent{Type: "thinking", Thinking: event.Delta}) {
+					if !sendConcentrateStreamEvent(ctx, events, core.RelayStreamEvent{Type: "thinking", Thinking: event.Delta}) {
 						return
 					}
 				}
@@ -597,7 +597,7 @@ func (c *ConcentrateResponsesClient) handleStream(ctx context.Context, cancel co
 					_ = json.Unmarshal([]byte(item.Arguments), &args)
 				}
 				emittedToolCall = true
-				if !sendConcentrateStreamEvent(ctx, events, core.MuxStreamEvent{
+				if !sendConcentrateStreamEvent(ctx, events, core.RelayStreamEvent{
 					Type: "tool_call",
 					ToolCall: &core.ToolCall{
 						ID:        item.CallID,
@@ -610,7 +610,7 @@ func (c *ConcentrateResponsesClient) handleStream(ctx context.Context, cancel co
 			case "response.completed":
 				var r responsesResponse
 				if err := json.Unmarshal(event.Response, &r); err == nil && r.Usage != nil {
-					if !sendConcentrateStreamEvent(ctx, events, core.MuxStreamEvent{Type: "usage", Usage: &core.MuxUsage{
+					if !sendConcentrateStreamEvent(ctx, events, core.RelayStreamEvent{Type: "usage", Usage: &core.RelayUsage{
 						PromptTokens:     r.Usage.InputTokens,
 						CompletionTokens: r.Usage.OutputTokens,
 						TotalTokens:      r.Usage.TotalTokens,
@@ -622,13 +622,13 @@ func (c *ConcentrateResponsesClient) handleStream(ctx context.Context, cancel co
 				if emittedToolCall {
 					stopReason = "tool_calls"
 				}
-				sendConcentrateStreamEvent(ctx, events, core.MuxStreamEvent{Type: "done", StopReason: stopReason})
+				sendConcentrateStreamEvent(ctx, events, core.RelayStreamEvent{Type: "done", StopReason: stopReason})
 				return
 			case "response.incomplete":
 				var r responsesResponse
 				_ = json.Unmarshal(event.Response, &r)
 				if r.Usage != nil {
-					if !sendConcentrateStreamEvent(ctx, events, core.MuxStreamEvent{Type: "usage", Usage: &core.MuxUsage{
+					if !sendConcentrateStreamEvent(ctx, events, core.RelayStreamEvent{Type: "usage", Usage: &core.RelayUsage{
 						PromptTokens:     r.Usage.InputTokens,
 						CompletionTokens: r.Usage.OutputTokens,
 						TotalTokens:      r.Usage.TotalTokens,
@@ -636,7 +636,7 @@ func (c *ConcentrateResponsesClient) handleStream(ctx context.Context, cancel co
 						return
 					}
 				}
-				sendConcentrateStreamEvent(ctx, events, core.MuxStreamEvent{Type: "done", StopReason: concentrateFinishReason(r)})
+				sendConcentrateStreamEvent(ctx, events, core.RelayStreamEvent{Type: "done", StopReason: concentrateFinishReason(r)})
 				return
 			case "response.failed":
 				var r responsesResponse
@@ -645,14 +645,14 @@ func (c *ConcentrateResponsesClient) handleStream(ctx context.Context, cancel co
 				if r.Error != nil && r.Error.Message != "" {
 					message = r.Error.Message
 				}
-				sendConcentrateStreamEvent(ctx, events, core.MuxStreamEvent{Type: "error", Error: message})
+				sendConcentrateStreamEvent(ctx, events, core.RelayStreamEvent{Type: "error", Error: message})
 				return
 			case "error":
 				message := event.Message
 				if message == "" {
 					message = "stream error"
 				}
-				sendConcentrateStreamEvent(ctx, events, core.MuxStreamEvent{Type: "error", Error: message})
+				sendConcentrateStreamEvent(ctx, events, core.RelayStreamEvent{Type: "error", Error: message})
 				return
 			}
 		}
@@ -661,7 +661,7 @@ func (c *ConcentrateResponsesClient) handleStream(ctx context.Context, cancel co
 	return llm.NewStreamResult(events, requestID, cancel)
 }
 
-func sendConcentrateStreamEvent(ctx context.Context, events chan<- core.MuxStreamEvent, event core.MuxStreamEvent) bool {
+func sendConcentrateStreamEvent(ctx context.Context, events chan<- core.RelayStreamEvent, event core.RelayStreamEvent) bool {
 	select {
 	case events <- event:
 		return true

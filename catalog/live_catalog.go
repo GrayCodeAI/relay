@@ -3,7 +3,7 @@ package catalog
 import (
 	"sort"
 
-	"github.com/GrayCodeAI/mux/catalog/registry"
+	"github.com/GrayCodeAI/relay/catalog/registry"
 )
 
 // DeploymentIDForLiveCatalogKey maps a live fetch catalog key to a deployment ID.

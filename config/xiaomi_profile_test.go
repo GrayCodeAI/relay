@@ -22,7 +22,7 @@ func TestResolveXiaomiOpenAIBase_TokenPlanRegionWinsOverStaleBase(t *testing.T) 
 
 func TestSyncProviderConfigFromCatalog_PreservesTokenPlanRegion(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("MUX_CONFIG_DIR", dir)
+	t.Setenv("RELAY_CONFIG_DIR", dir)
 	existing := &ProviderConfig{
 		Version:                   "1",
 		XiaomiMimoTokenPlanRegion: "ams",

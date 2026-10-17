@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/llm"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/llm"
 )
 
 func (e *Engine) policyCatalog(ctx context.Context) (*catalog.CompiledCatalog, error) {
@@ -165,7 +165,7 @@ func (e *Engine) ProviderForModel(ctx context.Context, modelID string) string {
 	return catalog.ProviderForModel(compiled, modelID)
 }
 
-// PrimaryModel returns Mux's stable best-effort catalog primary model.
+// PrimaryModel returns Relay's stable best-effort catalog primary model.
 func (e *Engine) PrimaryModel(ctx context.Context) string {
 	compiled, _ := e.policyCatalog(ctx)
 	if model := catalog.PrimaryModel(compiled); model != "" {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/credentials"
+	"github.com/GrayCodeAI/relay/credentials"
 )
 
 func TestNativeCompactionUsesInjectedCredentialStore(t *testing.T) {

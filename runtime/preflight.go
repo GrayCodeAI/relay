@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	muxcfg "github.com/GrayCodeAI/mux/config"
-	"github.com/GrayCodeAI/mux/credentials"
+	"github.com/GrayCodeAI/relay/catalog"
+	relaycfg "github.com/GrayCodeAI/relay/config"
+	"github.com/GrayCodeAI/relay/credentials"
 )
 
 // PreflightStatus is ok, warn, or fail.
@@ -87,7 +87,7 @@ func Preflight(ctx context.Context) PreflightReport {
 	}
 
 	// Provider credentials configured
-	hasCreds := muxcfg.HasAnyConfiguredDeployment(ctx)
+	hasCreds := relaycfg.HasAnyConfiguredDeployment(ctx)
 	if !hasCreds {
 		checks = append(checks, PreflightCheck{
 			Name: "credentials", Status: PreflightFail,

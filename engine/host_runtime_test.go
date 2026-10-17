@@ -11,7 +11,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/credentials"
+	"github.com/GrayCodeAI/relay/credentials"
 )
 
 func TestCustomGatewayOptionsValidateHostMetadata(t *testing.T) {

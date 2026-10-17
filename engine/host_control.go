@@ -9,27 +9,27 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/catalog/registry"
-	"github.com/GrayCodeAI/mux/catalog/xiaomi"
-	"github.com/GrayCodeAI/mux/catalog/zai"
-	"github.com/GrayCodeAI/mux/config"
-	"github.com/GrayCodeAI/mux/credentials"
-	"github.com/GrayCodeAI/mux/runtime"
-	"github.com/GrayCodeAI/mux/setup"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/catalog/registry"
+	"github.com/GrayCodeAI/relay/catalog/xiaomi"
+	"github.com/GrayCodeAI/relay/catalog/zai"
+	"github.com/GrayCodeAI/relay/config"
+	"github.com/GrayCodeAI/relay/credentials"
+	"github.com/GrayCodeAI/relay/runtime"
+	"github.com/GrayCodeAI/relay/setup"
 )
 
 // SecretStoreName is safe presentation metadata for host UIs.
 func SecretStoreName() string { return credentials.PlatformSecretStoreName() }
 
 // SetSecretStoreServiceName overrides the OS secret-store service name (default
-// "mux"). Hosts call this once at startup so existing credentials filed under
+// "relay"). Hosts call this once at startup so existing credentials filed under
 // their product name (e.g. "decoder") stay readable.
 func SetSecretStoreServiceName(name string) { credentials.SetServiceName(name) }
 
 // -- Test-fixture re‑exports -------------------------------------------------
 // These let host test code inject credential fixtures through the engine
-// boundary instead of importing mux/credentials directly.
+// boundary instead of importing relay/credentials directly.
 
 // SetDefaultStore replaces the process-wide credential store (for tests).
 var SetDefaultStore = credentials.SetDefaultStore
@@ -92,7 +92,7 @@ func (e *Engine) HasCredentialEnv(ctx context.Context, envVar string) bool {
 func (e *Engine) SaveCredentialEnv(ctx context.Context, envVar, secret string) error {
 	envVar, secret = strings.TrimSpace(envVar), strings.TrimSpace(secret)
 	if envVar == "" || secret == "" {
-		return invalid("save_credential_env", "mux engine: credential env and value are required")
+		return invalid("save_credential_env", "relay engine: credential env and value are required")
 	}
 	if err := config.ValidateCredentialSecret(envVar, secret); err != nil {
 		return &Error{Code: ErrorInvalidRequest, Operation: "save_credential_env", Message: err.Error(), Cause: err}
@@ -203,7 +203,7 @@ func (e *Engine) SetGatewayRegion(ctx context.Context, providerID, value string)
 			}
 		}
 	default:
-		return invalid("set_gateway_region", "mux engine: gateway does not support regions")
+		return invalid("set_gateway_region", "relay engine: gateway does not support regions")
 	}
 	if err := e.saveProviderConfig(ctx, cfg); err != nil {
 		return err
@@ -308,7 +308,7 @@ func (e *Engine) DeploymentRoutingEnabled(override *bool) bool {
 }
 
 func (e *Engine) DeploymentStatus(ctx context.Context, activeModel string) (string, error) {
-	// Compatibility formatter remains Mux-owned while setup internals migrate
+	// Compatibility formatter remains Relay-owned while setup internals migrate
 	// to injected paths. Host code receives presentation text only.
 	report, err := setup.DeploymentStatusFromPaths(nonNilContext(ctx), activeModel, e.providerConfigPath, e.catalogPath)
 	if err != nil {
@@ -461,7 +461,7 @@ func (e *Engine) PreflightWithOptions(ctx context.Context, opts PreflightOptions
 			if err == nil && !modelListContains(liveModels, activeModel) {
 				err = &Error{
 					Code: ErrorModelUnavailable, Operation: "preflight", Provider: providerID, Model: activeModel,
-					Message: fmt.Sprintf("mux engine: selected model %q is not present in %s live model list", activeModel, providerID),
+					Message: fmt.Sprintf("relay engine: selected model %q is not present in %s live model list", activeModel, providerID),
 				}
 			}
 		}
@@ -577,7 +577,7 @@ func (e *Engine) MigrateProviderSecretsContext(ctx context.Context) error {
 	cfg := *cfgState
 	writes, err := e.importProviderConfigSecrets(ctx, cfg)
 	if err != nil {
-		return &Error{Code: ErrorInternal, Operation: "migrate_provider_secrets", Message: "mux engine: could not import provider credentials", Cause: err}
+		return &Error{Code: ErrorInternal, Operation: "migrate_provider_secrets", Message: "relay engine: could not import provider credentials", Cause: err}
 	}
 	sanitized := config.SanitizeProviderConfigForDisk(cfg)
 	if err := writeProviderConfigAtomic(path, &sanitized); err != nil {

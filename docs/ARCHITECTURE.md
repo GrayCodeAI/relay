@@ -1,11 +1,11 @@
 <div align="center">
 
-# <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/bird.svg" width="16" height="16" alt="bird" /> mux Architecture
+# <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/bird.svg" width="16" height="16" alt="bird" /> relay Architecture
 
 **Universal LLM Provider Runtime**
 
 [![Go](https://img.shields.io/badge/Go-1.27.2+-00ADD8?logo=go)](https://go.dev/)
-[![Library](https://img.shields.io/badge/type-Go%20library-blue)](https://pkg.go.dev/github.com/GrayCodeAI/mux)
+[![Library](https://img.shields.io/badge/type-Go%20library-blue)](https://pkg.go.dev/github.com/GrayCodeAI/relay)
 
 </div>
 
@@ -13,16 +13,16 @@
 
 ## <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/target.svg" width="16" height="16" alt="target" /> Overview
 
-mux is the LLM provider runtime for the decoder ecosystem. It sits between the application and LLM APIs, handling **authentication**, **model resolution**, **streaming**, **retries**, **rate limiting**, and **caching**.
+relay is the LLM provider runtime for the decoder ecosystem. It sits between the application and LLM APIs, handling **authentication**, **model resolution**, **streaming**, **retries**, **rate limiting**, and **caching**.
 
-> <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/lightbulb.svg" width="16" height="16" alt="lightbulb" /> No decoder ecosystem component talks to an LLM API directly — all communication goes through mux.
+> <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/lightbulb.svg" width="16" height="16" alt="lightbulb" /> No decoder ecosystem component talks to an LLM API directly — all communication goes through relay.
 
 ---
 
 ## <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/blocks.svg" width="16" height="16" alt="blocks" /> Components
 
 ```
-mux/
+relay/
 ├── engine/                  Stable host-facing facade (decoder imports only this + llm/graph/tools)
 ├── llm/                     Host-facing DTOs + Provider port (engine re-exports)
 ├── graph/                   Portable execution-graph vocabulary
@@ -44,19 +44,19 @@ mux/
 ```
 
 The current distributed-routing foundation and its limits are described in
-[Decentralized Mux routing](architecture/DECENTRALIZED-MUX.md).
+[Decentralized Relay routing](architecture/DECENTRALIZED-RELAY.md).
 
 ---
 
 ## <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/globe.svg" width="16" height="16" alt="globe" /> API
 
-mux is a Go library: it ships no binary, no `cmd/`, and no `mux serve`
+relay is a Go library: it ships no binary, no `cmd/`, and no `relay serve`
 command. Hosts such as decoder call the [`engine`](../engine/) facade in-process.
 
 `internal/api` contains an HTTP server (`api.NewServer(api.Config{...})`, then
 `ListenAndServe(addr)`) whose contract is [`api/openapi.yaml`](../api/openapi.yaml).
-The package is internal, so only code inside the mux module can construct it,
-and nothing in mux does today. The OpenAPI `servers` entry
+The package is internal, so only code inside the relay module can construct it,
+and nothing in relay does today. The OpenAPI `servers` entry
 (`http://localhost:8080`) is an example address, not a default.
 
 | | |
@@ -113,9 +113,9 @@ it. Hosts do not call `DetectProvider`; they select through `engine`.
 ## <img src="https://cdn.jsdelivr.net/gh/lucide-icons/lucide@latest/icons/radio.svg" width="16" height="16" alt="radio" /> Streaming
 
 Providers implement both a blocking `Chat` and an SSE-based `StreamChat`;
-streamed provider events are normalized into `MuxStreamEvent`s. Hosts use
+streamed provider events are normalized into `RelayStreamEvent`s. Hosts use
 `engine.Stream` (pull-based, must be closed) or `engine.Generate`. Inside
-mux, a `*provider.MuxClient` exposes the same pair:
+relay, a `*provider.RelayClient` exposes the same pair:
 
 ```go
 sr, err := client.StreamChat(ctx, messages, opts)

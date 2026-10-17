@@ -1,6 +1,6 @@
 package live
 
-import "github.com/GrayCodeAI/mux/catalog/xiaomi"
+import "github.com/GrayCodeAI/relay/catalog/xiaomi"
 
 func enrichMimoEntry(e Entry, platform map[string]xiaomi.PlatformModel) Entry {
 	display, desc, ctx, maxOut, in, out, meta := xiaomi.ApplyPlatformMetadata(

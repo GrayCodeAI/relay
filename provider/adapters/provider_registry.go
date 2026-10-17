@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/GrayCodeAI/mux/catalog/registry"
-	"github.com/GrayCodeAI/mux/config"
-	"github.com/GrayCodeAI/mux/credentials"
+	"github.com/GrayCodeAI/relay/catalog/registry"
+	"github.com/GrayCodeAI/relay/config"
+	"github.com/GrayCodeAI/relay/credentials"
 )
 
 // ProviderType classifies providers.

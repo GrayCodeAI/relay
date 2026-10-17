@@ -1,4 +1,4 @@
-package mux
+package relay
 
 import (
 	"context"

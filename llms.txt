@@ -1,6 +1,6 @@
-# Mux — LLM provider runtime for Go
+# Relay — LLM provider runtime for Go
 
-Mux is a host-neutral provider runtime. It owns credentials, catalog/route
+Relay is a host-neutral provider runtime. It owns credentials, catalog/route
 resolution, provider transports, normalized request/response streams, retries,
 fallback and usage. Hosts (Decoder, etc.) import exactly four packages:
 engine, llm, graph, tools. Everything else is engine-internal.
@@ -11,7 +11,7 @@ engine, llm, graph, tools. Everything else is engine-internal.
 - docs/architecture/HOST-ENGINE-BOUNDARY.md — frozen host-facing contract
 - docs/guides/CREDENTIAL-SETUP-FLOW.md — API keys and credentials store
 - engine/ — stable host facade (engine/provider.go re-exports llm types)
-- llm/ — host-facing DTOs (MuxMessage, MuxResponse, MuxTool, MuxUsage)
+- llm/ — host-facing DTOs (RelayMessage, RelayResponse, RelayTool, RelayUsage)
 - graph/ — portable execution graph vocabulary
 - tools/ — tool call/result contracts
 - provider/ — runtime composition root (internal)

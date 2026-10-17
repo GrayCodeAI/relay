@@ -8,16 +8,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/mux/conversation"
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/conversation"
+	"github.com/GrayCodeAI/relay/provider/core"
 	"github.com/google/uuid"
 )
 
 // This file implements an OpenAI-compatible proxy endpoint
-// (POST /v1/chat/completions, LiteLLM-style) on top of mux's conversation
+// (POST /v1/chat/completions, LiteLLM-style) on top of relay's conversation
 // engine. It translates the OpenAI request/response shapes to and from the
 // engine's prompt path so existing tooling that speaks the OpenAI API can talk
-// to mux unchanged.
+// to relay unchanged.
 
 // openAIChatMessage is a single message in an OpenAI chat request/response.
 type openAIChatMessage struct {
@@ -26,7 +26,7 @@ type openAIChatMessage struct {
 }
 
 // openAIChatRequest is the subset of the OpenAI /v1/chat/completions request
-// body that mux understands.
+// body that relay understands.
 type openAIChatRequest struct {
 	Model       string              `json:"model"`
 	Messages    []openAIChatMessage `json:"messages"`
@@ -108,7 +108,7 @@ const maxOpenAIBodyBytes = 10 << 20 // 10 MiB
 
 // handleOpenAIChatCompletions implements POST /v1/chat/completions.
 func (s *Server) handleOpenAIChatCompletions(w http.ResponseWriter, r *http.Request) {
-	// OpenAI clients send many fields mux does not consume (seed, logprobs,
+	// OpenAI clients send many fields relay does not consume (seed, logprobs,
 	// stream_options, ...). Decode leniently rather than with the strict
 	// unknown-field rejection used by decodeJSONBody.
 	// Use a larger body limit than the native /prompt endpoint (1 MiB) because
@@ -136,7 +136,7 @@ func (s *Server) handleOpenAIChatCompletions(w http.ResponseWriter, r *http.Requ
 		SystemPrompt: system,
 		MaxTokens:    req.MaxTokens,
 		Temperature:  req.Temperature,
-		Tools:        openAIToolsToMux(req.Tools),
+		Tools:        openAIToolsToRelay(req.Tools),
 	}
 
 	id := "chatcmpl-" + uuid.New().String()
@@ -283,7 +283,7 @@ func (s *Server) openAIUsageForNode(ctx context.Context, nodeID string) (openAIU
 	return usage, openAIFinishReason(node.StopReason)
 }
 
-// openAIFinishReason maps mux stop reasons to OpenAI finish_reason values.
+// openAIFinishReason maps relay stop reasons to OpenAI finish_reason values.
 func openAIFinishReason(stop string) string {
 	switch stop {
 	case "max_tokens":
@@ -331,14 +331,14 @@ func splitOpenAIMessages(messages []openAIChatMessage) (system, prompt string) {
 	return system, strings.Join(transcript, "\n\n")
 }
 
-// openAIToolsToMux converts OpenAI function/tool declarations to mux tools.
-func openAIToolsToMux(tools []openAITool) []core.MuxTool {
+// openAIToolsToRelay converts OpenAI function/tool declarations to relay tools.
+func openAIToolsToRelay(tools []openAITool) []core.RelayTool {
 	if len(tools) == 0 {
 		return nil
 	}
-	out := make([]core.MuxTool, 0, len(tools))
+	out := make([]core.RelayTool, 0, len(tools))
 	for _, t := range tools {
-		out = append(out, core.MuxTool{
+		out = append(out, core.RelayTool{
 			Name:        t.Function.Name,
 			Description: t.Function.Description,
 			Parameters:  t.Function.Parameters,

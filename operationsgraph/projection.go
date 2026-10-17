@@ -1,4 +1,4 @@
-// Package operationsgraph projects Mux routing and normalized generation
+// Package operationsgraph projects Relay routing and normalized generation
 // telemetry into the portable graycode-eco graph contract.
 package operationsgraph
 
@@ -12,15 +12,15 @@ import (
 	"strings"
 	"time"
 
-	graphcontracts "github.com/GrayCodeAI/mux/graph"
-	llmcontracts "github.com/GrayCodeAI/mux/llm"
+	graphcontracts "github.com/GrayCodeAI/relay/graph"
+	llmcontracts "github.com/GrayCodeAI/relay/llm"
 )
 
-const SchemaVersion = "mux.graph/v1"
+const SchemaVersion = "relay.graph/v1"
 
 type Input struct {
 	Route           *llmcontracts.ResolvedRoute
-	Usage           *llmcontracts.MuxUsage
+	Usage           *llmcontracts.RelayUsage
 	FinishReason    string
 	RequestID       string
 	Content         string
@@ -95,14 +95,14 @@ func Build(input Input) (*Export, error) {
 		}
 		if routeRef.ID != "" {
 			edge := graphcontracts.Edge{
-				ID:        "mux/edge/" + digest(generationRef.ID, routeRef.ID),
+				ID:        "relay/edge/" + digest(generationRef.ID, routeRef.ID),
 				Kind:      graphcontracts.EdgeDependsOn,
 				From:      generationRef,
 				To:        routeRef,
 				Scope:     input.Scope,
 				CreatedAt: at,
 				Provenance: graphcontracts.Provenance{
-					Producer: "mux",
+					Producer: "relay",
 					Version:  strings.TrimSpace(input.ProducerVersion),
 					SourceID: observationDigest,
 				},
@@ -127,13 +127,13 @@ func addNode(
 	input Input,
 	at time.Time,
 ) (graphcontracts.Ref, error) {
-	id := "mux/" + entity + "/" + digest(observationDigest, entity)
+	id := "relay/" + entity + "/" + digest(observationDigest, entity)
 	ref := graphcontracts.Ref{Kind: graphcontracts.NodeOperations, ID: id}
 	provenance := graphcontracts.Provenance{
-		Producer: "mux",
+		Producer: "relay",
 		Version:  strings.TrimSpace(input.ProducerVersion),
 		SourceID: observationDigest,
-		Evidence: []graphcontracts.ArtifactRef{{URI: "mux://" + entity + "/" + observationDigest}},
+		Evidence: []graphcontracts.ArtifactRef{{URI: "relay://" + entity + "/" + observationDigest}},
 	}
 	node := graphcontracts.Node{
 		ID: id, Kind: ref.Kind, Scope: input.Scope, CreatedAt: at,
@@ -143,7 +143,7 @@ func addNode(
 		return graphcontracts.Ref{}, fmt.Errorf("operationsgraph: %s node: %w", entity, err)
 	}
 	event := graphcontracts.Event{
-		ID:   "mux/observed/" + digest(id, at.Format(time.RFC3339Nano)),
+		ID:   "relay/observed/" + digest(id, at.Format(time.RFC3339Nano)),
 		Type: graphcontracts.EventObserved, Subject: ref, Scope: input.Scope,
 		OccurredAt: at, CorrelationID: strings.TrimSpace(input.CorrelationID),
 		IdempotencyKey: digest(id, at.Format(time.RFC3339Nano)), Provenance: provenance,

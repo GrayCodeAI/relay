@@ -1,4 +1,4 @@
-// Package setup wires catalog-backed deployment routing for decoder and mux CLIs.
+// Package setup wires catalog-backed deployment routing for decoder and relay CLIs.
 package setup
 
 import (
@@ -7,15 +7,15 @@ import (
 	"os"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/catalog/registry"
-	"github.com/GrayCodeAI/mux/catalog/xiaomi"
-	"github.com/GrayCodeAI/mux/catalog/zai"
-	"github.com/GrayCodeAI/mux/config"
-	"github.com/GrayCodeAI/mux/credentials"
-	"github.com/GrayCodeAI/mux/provider/adapters"
-	"github.com/GrayCodeAI/mux/provider/core"
-	"github.com/GrayCodeAI/mux/router"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/catalog/registry"
+	"github.com/GrayCodeAI/relay/catalog/xiaomi"
+	"github.com/GrayCodeAI/relay/catalog/zai"
+	"github.com/GrayCodeAI/relay/config"
+	"github.com/GrayCodeAI/relay/credentials"
+	"github.com/GrayCodeAI/relay/provider/adapters"
+	"github.com/GrayCodeAI/relay/provider/core"
+	"github.com/GrayCodeAI/relay/router"
 )
 
 // oidcBedrockCreds and oidcVertexToken are injectable seams over the
@@ -27,10 +27,10 @@ var (
 )
 
 // oidcEnabled reports whether the OIDC opt-in branch should be considered for
-// the given deployment. It is gated by MUX_OIDC=1 (or true/yes/on) OR by the
+// the given deployment. It is gated by RELAY_OIDC=1 (or true/yes/on) OR by the
 // deployment specifying a roleARN / WIF audience. It is OFF by default.
 func oidcEnabled(deployment config.DeploymentConfig) bool {
-	switch strings.ToLower(strings.TrimSpace(os.Getenv("MUX_OIDC"))) {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("RELAY_OIDC"))) {
 	case "1", "true", "yes", "on":
 		return true
 	}
@@ -47,9 +47,9 @@ func storeSecret(envKeys ...string) string {
 	return ""
 }
 
-// UseDeploymentRouting mirrors mux CLI behavior: env override, then provider.json shape.
+// UseDeploymentRouting mirrors relay CLI behavior: env override, then provider.json shape.
 func UseDeploymentRouting(cfg *config.ProviderConfig) bool {
-	switch strings.ToLower(strings.TrimSpace(os.Getenv("MUX_DEPLOYMENT_ROUTING"))) {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("RELAY_DEPLOYMENT_ROUTING"))) {
 	case "1", "true", "yes", "on":
 		return true
 	case "0", "false", "no", "off":
@@ -68,7 +68,7 @@ func DeploymentRoutingFromState(cfg *config.ProviderConfig) bool {
 func DeploymentProvider(ctx context.Context, cfg *config.ProviderConfig) (core.Provider, error) {
 	compiled, err := catalog.LoadCatalog(ctx, catalog.LoadCatalogOptions{
 		CachePath:     catalog.DefaultCachePath(),
-		RefreshRemote: strings.EqualFold(os.Getenv("MUX_MODEL_CATALOG_REFRESH"), "true"),
+		RefreshRemote: strings.EqualFold(os.Getenv("RELAY_MODEL_CATALOG_REFRESH"), "true"),
 	})
 	if err != nil {
 		return nil, err

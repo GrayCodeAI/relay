@@ -1,7 +1,7 @@
 package catalog
 
 import (
-	"github.com/GrayCodeAI/mux/catalog/live"
+	"github.com/GrayCodeAI/relay/catalog/live"
 )
 
 // LiveEntriesToCatalog converts live fetch rows to catalog entries.

@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	mux "github.com/GrayCodeAI/mux/internal/health"
-	"github.com/GrayCodeAI/mux/storage"
+	relay "github.com/GrayCodeAI/relay/internal/health"
+	"github.com/GrayCodeAI/relay/storage"
 )
 
 // --- Usage analytics (#166) ---
@@ -126,7 +126,7 @@ func (s *Server) handleProviderHealth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Collect ping-based health from the HealthChecker.
-	pingStatuses := make(map[string]mux.HealthStatus)
+	pingStatuses := make(map[string]relay.HealthStatus)
 	if s.healthChecker != nil {
 		pingStatuses = s.healthChecker.AllProviderHealth()
 	}

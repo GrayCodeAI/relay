@@ -3,7 +3,7 @@ package resilience
 import (
 	"strings"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // ProviderThinkingFormat is the wire encoding for extended thinking / reasoning.

@@ -4,9 +4,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 
-	"github.com/GrayCodeAI/mux/catalog/opencodego"
+	"github.com/GrayCodeAI/relay/catalog/opencodego"
 )
 
 // OpenCodeGoClient routes OpenCode Go models through OpenAIClient and
@@ -31,7 +31,7 @@ func NewOpenCodeGoClient(apiKey, baseURL string, opts ...core.ClientOption) *Ope
 
 func (c *OpenCodeGoClient) Name() string { return "opencodego" }
 
-func (c *OpenCodeGoClient) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
+func (c *OpenCodeGoClient) Chat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.RelayResponse, error) {
 	opts.Model = opencodego.NativeModelID(opts.Model)
 	if opencodego.UsesMessagesAPI(opts.Model) {
 		return c.router.Chat(ctx, messages, opts, ChatProtocolMessages, openCodeGoMessagesFallback)
@@ -39,7 +39,7 @@ func (c *OpenCodeGoClient) Chat(ctx context.Context, messages []core.MuxMessage,
 	return c.router.OpenAI.Chat(ctx, messages, opts)
 }
 
-func (c *OpenCodeGoClient) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (c *OpenCodeGoClient) StreamChat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	opts.Model = opencodego.NativeModelID(opts.Model)
 	if opencodego.UsesMessagesAPI(opts.Model) {
 		return c.router.StreamChat(ctx, messages, opts, ProtocolStreamConfig{
@@ -57,7 +57,7 @@ func (c *OpenCodeGoClient) Ping(ctx context.Context) error {
 	return c.router.Anthropic.Ping(ctx)
 }
 
-func openCodeGoMessagesFallback(primaryErr error, primaryResp *core.MuxResponse) bool {
+func openCodeGoMessagesFallback(primaryErr error, primaryResp *core.RelayResponse) bool {
 	if primaryErr != nil {
 		return oaCompatUnsupportedError(primaryErr)
 	}

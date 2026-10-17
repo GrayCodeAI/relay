@@ -1,4 +1,4 @@
-# Mux OSS Landscape: Top-20 Selection Methodology as of 2026-09-24
+# Relay OSS Landscape: Top-20 Selection Methodology as of 2026-09-24
 
 ## Selection universe and inclusion/exclusion criteria
 
@@ -8,7 +8,7 @@ Use a bounded, architecture-first universe rather than a global stars ranking. T
 
 ### Cited Findings
 
-- Mux's comparison target is a host-neutral provider runtime: the public README says Mux owns credentials, model resolution, provider transports, normalized streams, retry/fallback, usage, and provider telemetry, while a host owns product UX, agent orchestration, tools, permissions, and sessions. [Mux README](https://github.com/GrayCodeAI/mux#what-is-mux)
+- Relay's comparison target is a host-neutral provider runtime: the public README says Relay owns credentials, model resolution, provider transports, normalized streams, retry/fallback, usage, and provider telemetry, while a host owns product UX, agent orchestration, tools, permissions, and sessions. [Relay README](https://github.com/GrayCodeAI/relay#what-is-relay)
 - The discovery universe was the union of four GitHub repository searches, current canonical redirects, and a seeded set of technically relevant serving/provider/runtime projects:
   - [`"llm gateway" in:name,description stars:>100 archived:false`](https://github.com/search?q=%22llm+gateway%22+in%3Aname%2Cdescription+stars%3A%3E100+archived%3Afalse&type=repositories)
   - [`"ai gateway" in:name,description stars:>100 archived:false`](https://github.com/search?q=%22ai+gateway%22+in%3Aname%2Cdescription+stars%3A%3E100+archived%3Afalse&type=repositories)
@@ -20,14 +20,14 @@ Use a bounded, architecture-first universe rather than a global stars ranking. T
   1. Public, substantive source code under a canonical GitHub repository.
   2. A non-archived repository with a default-branch commit no older than 180 days on the retrieval date.
   3. An OSI-approved license for the core runtime, with mixed enterprise or third-party subtrees explicitly disclosed.
-  4. Direct evidence for at least one Mux-critical concern: provider portability, routing, protocol translation, streaming, structured output, tools, reliability, serving, observability, or developer experience.
+  4. Direct evidence for at least one Relay-critical concern: provider portability, routing, protocol translation, streaming, structured output, tools, reliability, serving, observability, or developer experience.
   5. First-party architecture documentation, source, releases, or substantive engineering discussions sufficient to validate the classification.
 - Hard exclusions were:
-  - Agent applications, chat UI products, RAG builders, and workflow products that make Mux look like an app rather than a provider engine.
+  - Agent applications, chat UI products, RAG builders, and workflow products that make Relay look like an app rather than a provider engine.
   - Model-weight repositories, training frameworks, and generic compute projects without meaningful provider-runtime behavior.
   - Archived projects and projects whose default branch has been inactive for more than 180 days.
   - Source-only or source-available products without an OSI-approved core repository.
-  - General API gateways whose LLM-specific behavior is too small a part of the project to serve as a close Mux comparison.
+  - General API gateways whose LLM-specific behavior is too small a part of the project to serve as a close Relay comparison.
   - Additional official SDKs that merely duplicate a protocol already represented in a more influential SDK, unless they add a distinct language or wire-format lesson.
 - To prevent the portfolio from degenerating into a stars list, the final set is capped at **8 direct peers, 6 model-serving runtimes, 4 provider SDKs, and 2 adjacent donors**. These are portfolio constraints, not claims that lower-scoring projects are unimportant.
 - License status is evaluated from repository text, not only GitHub's SPDX field. MIT, Apache-2.0, and BSD-3-Clause are OSI-approved; a repository that is only source-available is not treated as OSS. [OSI MIT](https://opensource.org/license/mit); [OSI Apache-2.0](https://opensource.org/license/apache-2-0); [OSI BSD-3-Clause](https://opensource.org/license/bsd-3-clause)
@@ -40,7 +40,7 @@ Use a bounded, architecture-first universe rather than a global stars ranking. T
 ### Inferences
 
 - The right comparison object is a **portfolio**, not a single leaderboard: gateway peers establish the product boundary, serving engines establish downstream runtime behavior, SDKs establish wire semantics and DX, and telemetry projects establish normalized evidence.
-- Go and embeddability deserve explicit weight because Mux is a Go library intended for host ownership, but they should not erase broader ecosystem influence. Bifrost, AxonHub, GoModel, LocalAI, Ollama, and `go-openai` therefore gain materially from the Go/embeddability criterion.
+- Go and embeddability deserve explicit weight because Relay is a Go library intended for host ownership, but they should not erase broader ecosystem influence. Bifrost, AxonHub, GoModel, LocalAI, Ollama, and `go-openai` therefore gain materially from the Go/embeddability criterion.
 - Current canonical names matter for a roadmap. A comparison document that still points only to `envoyproxy/ai-gateway` would miss the project's 2026 identity and governance move.
 
 ### Gaps
@@ -53,22 +53,22 @@ Use a bounded, architecture-first universe rather than a global stars ranking. T
 
 ### Takeaway
 
-The final set contains **8 direct peers, 6 model-serving runtimes, 4 provider SDKs, and 2 adjacent donors**. The ranking is Mux-specific: architectural fit and Go/embeddability matter more than raw stars, while popularity remains a capped 15-point influence signal.
+The final set contains **8 direct peers, 6 model-serving runtimes, 4 provider SDKs, and 2 adjacent donors**. The ranking is Relay-specific: architectural fit and Go/embeddability matter more than raw stars, while popularity remains a capped 15-point influence signal.
 
 ### Cited Findings
 
 - **Snapshot rule:** GitHub REST/GraphQL metadata was retrieved on **2026-09-24**. Stars and forks are a live snapshot and will drift. “Latest release” is the latest published non-draft release; where a project intentionally publishes rolling prerelease/build tags, that status is marked. “Default-branch tip” is the exact commit observed during retrieval. [GitHub REST repositories API](https://docs.github.com/en/rest/repos/repos#get-a-repository)
 - **Raw commit-count rule:** the 90-day column counts commits on the default branch since `2026-06-25T00:00:00Z`. It is a maintenance signal only; bots, generated commits, and merge policy can make raw counts non-comparable. [GitHub commits API](https://docs.github.com/en/rest/commits/commits#list-commits)
 
-### Mux-specific ranked set
+### Relay-specific ranked set
 
 Score vector: **F/C/I/M/G/O/E** = architectural fit / capability overlap / influence / maintenance / Go-and-embeddability / OSS-license quality / evidence quality. Each is scored from 0–5 and weighted in the next section.
 
 | Rank | Project | Class | Score | F/C/I/M/G/O/E | Why it belongs |
 |---:|---|---|---:|---|---|
 | 1 | [maximhq/bifrost](https://github.com/maximhq/bifrost) | Direct peer | **97.0** | 5/5/4/5/5/5/5 | Closest current Go comparison: a unified provider API plus Go SDK, automatic fallback, load balancing, semantic caching, MCP, observability, and provider-native integrations. [Official overview](https://docs.getbifrost.ai/overview) |
-| 2 | [BerriAI/litellm](https://github.com/BerriAI/litellm) | Direct peer | **95.0** | 5/5/5/5/3/4/5 | The broadest canonical gateway benchmark: unified provider calls, auth/budgets, routing, retries/fallbacks, caching, logging, and an OpenAI-compatible gateway. Its Rust core plus Python SDK is not a Go/host-neutral match, which keeps it below Bifrost for Mux. [Request architecture](https://docs.litellm.ai/docs/proxy/architecture) |
-| 3 | [diegosouzapw/OmniRoute](https://github.com/diegosouzapw/OmniRoute) | Direct peer | **94.0** | 5/5/5/5/2/5/5 | Exceptionally active and influential in 2026; implements a local-first multi-provider API, model routing, retries/fallbacks, circuit breakers, caching, tools, streaming, and native protocol passthrough. Its broad CLI/dashboard/protocol surface is less library-like than Mux. [Architecture index](https://github.com/diegosouzapw/OmniRoute/blob/main/docs/README.md); [OpenAPI](https://github.com/diegosouzapw/OmniRoute/blob/main/docs/openapi.yaml) |
+| 2 | [BerriAI/litellm](https://github.com/BerriAI/litellm) | Direct peer | **95.0** | 5/5/5/5/3/4/5 | The broadest canonical gateway benchmark: unified provider calls, auth/budgets, routing, retries/fallbacks, caching, logging, and an OpenAI-compatible gateway. Its Rust core plus Python SDK is not a Go/host-neutral match, which keeps it below Bifrost for Relay. [Request architecture](https://docs.litellm.ai/docs/proxy/architecture) |
+| 3 | [diegosouzapw/OmniRoute](https://github.com/diegosouzapw/OmniRoute) | Direct peer | **94.0** | 5/5/5/5/2/5/5 | Exceptionally active and influential in 2026; implements a local-first multi-provider API, model routing, retries/fallbacks, circuit breakers, caching, tools, streaming, and native protocol passthrough. Its broad CLI/dashboard/protocol surface is less library-like than Relay. [Architecture index](https://github.com/diegosouzapw/OmniRoute/blob/main/docs/README.md); [OpenAPI](https://github.com/diegosouzapw/OmniRoute/blob/main/docs/openapi.yaml) |
 | 4 | [looplj/axonhub](https://github.com/looplj/axonhub) | Direct peer | **91.5** | 5/4.5/3/5/5/5/4.5 | A Go gateway with inbound/outbound transformer layers, unified internal requests, multi-channel load balancing, failover, tracing, cost, and native OpenAI/Anthropic/Gemini surfaces. [Repository README](https://github.com/looplj/axonhub) |
 | 5 | [ENTERPILOT/GoModel](https://github.com/ENTERPILOT/GoModel) | Direct peer | **90.0** | 5/4.5/2.5/5/5/5/4.5 | A compact Go runtime/gateway with OpenAI- and Anthropic-compatible APIs, model aliases, provider passthrough, retries/circuit breakers, scoped policies, caching, budgets, audit, and usage. [Official documentation](https://gomodel.enterpilot.io/) |
 | 6 | [mudler/LocalAI](https://github.com/mudler/LocalAI) | Model-serving runtime | **85.5** | 3.5/4/4.5/5/5/5/5 | The strongest Go local-runtime donor: a swappable-backend inference engine exposing OpenAI, Anthropic, Ollama, and other compatible APIs, with streaming, tools, structured output, and backend lifecycle management. [Architecture](https://localai.io/docs/reference/architecture/index.html) |
@@ -114,11 +114,11 @@ Score vector: **F/C/I/M/G/O/E** = architectural fit / capability overlap / influ
 
 ### Metadata interpretation
 
-- The ranking is demonstrably not stars-only: OmniRoute has more stars than LiteLLM, while Bifrost ranks first because its Go implementation, SDK, provider abstraction, and current activity align more closely with Mux. [Bifrost repository](https://github.com/maximhq/bifrost); [OmniRoute repository](https://github.com/diegosouzapw/OmniRoute)
+- The ranking is demonstrably not stars-only: OmniRoute has more stars than LiteLLM, while Bifrost ranks first because its Go implementation, SDK, provider abstraction, and current activity align more closely with Relay. [Bifrost repository](https://github.com/maximhq/bifrost); [OmniRoute repository](https://github.com/diegosouzapw/OmniRoute)
 - Portkey is a **maintenance-watch selection**. Its direct architectural relevance and 13,069 stars justify inclusion, but the exact default-branch tip is 2026-05-25 and the 90-day count since 2026-06-25 is zero. [GitHub API](https://api.github.com/repos/Portkey-AI/gateway)
 - Bifrost's release feed is component-scoped: the newest release is a Helm chart while gateway/transport components also released that day. Its exact current default-branch commit is the stronger maintenance signal. [Bifrost releases](https://github.com/maximhq/bifrost/releases)
 - llama.cpp and TensorRT-LLM intentionally expose rolling prerelease tags, so their latest build/release candidate and same-day default-branch commits are more meaningful than a conventional stable-version cadence. [llama.cpp releases](https://github.com/ggml-org/llama.cpp/releases); [TensorRT-LLM releases](https://github.com/NVIDIA/TensorRT-LLM/releases)
-- OpenTelemetry's GenAI conventions repository is new enough to have no observed GitHub release, but it is active and is the domain-specific successor target for Mux's `gen_ai.*` telemetry contract. [Repository README](https://github.com/open-telemetry/semantic-conventions-genai)
+- OpenTelemetry's GenAI conventions repository is new enough to have no observed GitHub release, but it is active and is the domain-specific successor target for Relay's `gen_ai.*` telemetry contract. [Repository README](https://github.com/open-telemetry/semantic-conventions-genai)
 
 ### Inferences
 
@@ -142,18 +142,18 @@ Only the eight gateway/runtime projects are true product-boundary peers. The oth
 
 #### Classification definitions
 
-- **Direct peer:** exposes or implements a multi-provider runtime/gateway boundary comparable to Mux: provider translation, model resolution, routing, streaming, retries/fallbacks, and/or operational controls. It need not share Mux's library-first deployment model.
-- **Model-serving runtime:** primarily executes models or manages inference workers. It is a downstream provider target and a donor for stream lifecycle, scheduling, batching, cancellation, health, and model lifecycle—not a direct substitute for Mux.
+- **Direct peer:** exposes or implements a multi-provider runtime/gateway boundary comparable to Relay: provider translation, model resolution, routing, streaming, retries/fallbacks, and/or operational controls. It need not share Relay's library-first deployment model.
+- **Model-serving runtime:** primarily executes models or manages inference workers. It is a downstream provider target and a donor for stream lifecycle, scheduling, batching, cancellation, health, and model lifecycle—not a direct substitute for Relay.
 - **Provider SDK:** owns one provider's protocol and developer experience. It is a donor for wire fidelity, typed streams, errors, tools, structured output, and compatibility behavior, not for universal routing.
-- **Adjacent capability donor:** contributes a cross-cutting capability Mux consumes or should interoperate with, especially traces, evaluations, or stable telemetry vocabulary.
+- **Adjacent capability donor:** contributes a cross-cutting capability Relay consumes or should interoperate with, especially traces, evaluations, or stable telemetry vocabulary.
 
 #### Eight direct peers
 
-| Project | Strategic role versus Mux |
+| Project | Strategic role versus Relay |
 |---|---|
 | [Bifrost](https://github.com/maximhq/bifrost) | The closest current implementation peer: Go, provider abstraction, direct SDK plus gateway modes, routing, failover, semantic cache, MCP, and telemetry. [Official overview](https://docs.getbifrost.ai/overview) |
-| [LiteLLM](https://github.com/BerriAI/litellm) | The broadest feature and ecosystem benchmark; compare router semantics, provider transforms, cost/spend, guardrails, and the SDK/proxy split. Its hybrid Python/Rust architecture is a deliberate contrast with Mux's Go host-facing facade. [Architecture](https://docs.litellm.ai/docs/proxy/architecture) |
-| [OmniRoute](https://github.com/diegosouzapw/OmniRoute) | A high-velocity, high-influence gateway benchmark for provider fallback, model aliases, local/cloud mixing, native passthrough, and resilience. It is broader and more product/CLI-heavy than Mux. [Architecture index](https://github.com/diegosouzapw/OmniRoute/blob/main/docs/README.md) |
+| [LiteLLM](https://github.com/BerriAI/litellm) | The broadest feature and ecosystem benchmark; compare router semantics, provider transforms, cost/spend, guardrails, and the SDK/proxy split. Its hybrid Python/Rust architecture is a deliberate contrast with Relay's Go host-facing facade. [Architecture](https://docs.litellm.ai/docs/proxy/architecture) |
+| [OmniRoute](https://github.com/diegosouzapw/OmniRoute) | A high-velocity, high-influence gateway benchmark for provider fallback, model aliases, local/cloud mixing, native passthrough, and resilience. It is broader and more product/CLI-heavy than Relay. [Architecture index](https://github.com/diegosouzapw/OmniRoute/blob/main/docs/README.md) |
 | [AxonHub](https://github.com/looplj/axonhub) | The clearest transformer-pipeline peer for inbound dialect → unified request → outbound provider → reverse stream/error transform. [Repository README](https://github.com/looplj/axonhub) |
 | [GoModel](https://github.com/ENTERPILOT/GoModel) | A compact Go peer for scoped workflow policies, model aliases, provider passthrough, cache/budget/rate-limit composition, and embedded operational DX. [Official documentation](https://gomodel.enterpilot.io/) |
 | [Agent Router](https://github.com/theagentrouter/agent-router) | A Go/Kubernetes/Envoy peer for declarative provider failover, request/response mutation, token-aware policy, model virtualization, and MCP routing. It is infrastructure-heavy rather than embeddable. [Capabilities](https://theagentrouter.ai/docs/capabilities/) |
@@ -183,7 +183,7 @@ Only the eight gateway/runtime projects are true product-boundary peers. The oth
 
 ### Comparison axes for using the set
 
-The comparison should be organized around Mux's actual boundaries rather than README feature counts:
+The comparison should be organized around Relay's actual boundaries rather than README feature counts:
 
 1. **Provider and wire portability:** inbound dialects, outbound transforms, native passthrough, provider-specific pass-through, custom endpoints, and lossless unsupported-feature behavior.
 2. **Model resolution:** aliases, logical tiers, live catalogs, capability metadata, context limits, pricing, deprecation, and model-role slots.
@@ -192,13 +192,13 @@ The comparison should be organized around Mux's actual boundaries rather than RE
 5. **Operational controls:** usage/cost attribution, budgets, audit privacy, caching policy, observability, readiness, and OpenTelemetry compatibility.
 6. **Host neutrality:** stable facade, internal provider composition, Go package boundaries, optional proxy/gRPC surfaces, and avoidance of agent/product semantics.
 
-These axes follow Mux's public boundaries and architecture. [Mux README](https://github.com/GrayCodeAI/mux#ecosystem-boundaries); [Mux architecture](https://github.com/GrayCodeAI/mux/blob/main/docs/ARCHITECTURE.md)
+These axes follow Relay's public boundaries and architecture. [Relay README](https://github.com/GrayCodeAI/relay#ecosystem-boundaries); [Relay architecture](https://github.com/GrayCodeAI/relay/blob/main/docs/ARCHITECTURE.md)
 
 ### Inferences
 
-- There is no exact open-source twin of Mux: no selected project combines Mux's Go 1.26 library-first host facade, internal provider registry, host-neutral engine boundary, and full routing/reliability stack in the same shape.
+- There is no exact open-source twin of Relay: no selected project combines Relay's Go 1.26 library-first host facade, internal provider registry, host-neutral engine boundary, and full routing/reliability stack in the same shape.
 - Bifrost, AxonHub, and GoModel are the highest-priority implementation peers. LiteLLM is the highest-priority feature and ecosystem benchmark. OmniRoute, Manifest, Portkey, and Agent Router should be compared selectively by subsystem rather than treated as identical products.
-- Serving engines and provider SDKs should not inflate a competitive feature total for Mux; they are reference implementations for specific contracts.
+- Serving engines and provider SDKs should not inflate a competitive feature total for Relay; they are reference implementations for specific contracts.
 
 ### Gaps
 
@@ -210,7 +210,7 @@ These axes follow Mux's public boundaries and architecture. [Mux README](https:/
 
 ### Takeaway
 
-The ranking is a transparent decision model, not an objective universal truth. Architecture fit (30), capability overlap (20), influence (15), maintenance (15), Go/embeddability (10), OSS quality (5), and evidence quality (5) produce a Mux-specific order in which stars can inform but never decide the result.
+The ranking is a transparent decision model, not an objective universal truth. Architecture fit (30), capability overlap (20), influence (15), maintenance (15), Go/embeddability (10), OSS quality (5), and evidence quality (5) produce a Relay-specific order in which stars can inform but never decide the result.
 
 ### Cited Findings
 
@@ -224,7 +224,7 @@ Each component is scored from 0 to 5 in half-point increments.
 
 | Component | Weight | 5-point meaning |
 |---|---:|---|
-| **F — Mux architecture fit** | 30 | Universal provider abstraction and a host-neutral runtime boundary closely matching Mux's purpose |
+| **F — Relay architecture fit** | 30 | Universal provider abstraction and a host-neutral runtime boundary closely matching Relay's purpose |
 | **C — Capability overlap** | 20 | Strong coverage of routing, protocol translation, streams, retries/fallbacks, caching, tools/structured output, and operations |
 | **I — Influence** | 15 | Strong adoption and ecosystem reach, anchored by stars/forks plus integrations, governance, release cadence, and production relevance; never stars alone |
 | **M — Maintenance** | 15 | Current commit, recent release, visible engineering cadence, active issues/PRs, and credible ownership |
@@ -243,10 +243,10 @@ Each component is scored from 0 to 5 in half-point increments.
 | [theopenco/llmgateway](https://github.com/theopenco/llmgateway) | 1,658 stars / 190 forks; active tip 2026-09-23; [v1.18.0 on 2026-09-21](https://github.com/theopenco/llmgateway/releases/tag/v1.18.0); TypeScript; AGPL-3.0 core. [API](https://api.github.com/repos/theopenco/llmgateway) | Very plausible direct peer, but the eight-peer cap is already occupied by stronger influence/fit combinations. AGPL is OSI-approved and was not the exclusion reason. [LICENSE](https://github.com/theopenco/llmgateway/blob/main/LICENSE); [OSI AGPL-3.0](https://opensource.org/license/agpl-v3) |
 | [smg-project/smg](https://github.com/smg-project/smg) | 543 / 172; active tip 2026-09-23; [v1.10.1 on 2026-08-27](https://github.com/smg-project/smg/releases/tag/v1.10.1); Rust; Apache-2.0. [API](https://api.github.com/repos/smg-project/smg) | Technically credible direct peer, but smaller adoption and no Go/embeddability advantage; displaced by the direct-peer cap. |
 | [mozilla-ai/otari](https://github.com/mozilla-ai/otari) | 490 / 57; active tip and [v0.9.0 release](https://github.com/mozilla-ai/otari/releases/tag/v0.9.0) on 2026-09-23; Python; Apache-2.0. [API](https://api.github.com/repos/mozilla-ai/otari) | Active OSS direct peer, but lower adoption and weaker Go/host-library fit. |
-| [llm-d/llm-d](https://github.com/llm-d/llm-d) | 4,640 / 788; active tip 2026-09-23; [v0.9.0 on 2026-08-17](https://github.com/llm-d/llm-d/releases/tag/v0.9.0); Shell-led Kubernetes orchestration; Apache-2.0. [API](https://api.github.com/repos/llm-d/llm-d) | Valuable distributed-inference/scheduling donor, but it orchestrates serving systems rather than implementing Mux's portable provider boundary; serving cap applies. |
-| [kserve/kserve](https://github.com/kserve/kserve) | 5,991 / 1,700; active tip 2026-09-23; [v0.20.0 on 2026-08-06](https://github.com/kserve/kserve/releases/tag/v0.20.0); Go; Apache-2.0. [API](https://api.github.com/repos/kserve/kserve) | Influential and credible, but primarily a Kubernetes inference platform; too broad for a top-20 Mux runtime comparison after six stronger serving/runtime donors. |
+| [llm-d/llm-d](https://github.com/llm-d/llm-d) | 4,640 / 788; active tip 2026-09-23; [v0.9.0 on 2026-08-17](https://github.com/llm-d/llm-d/releases/tag/v0.9.0); Shell-led Kubernetes orchestration; Apache-2.0. [API](https://api.github.com/repos/llm-d/llm-d) | Valuable distributed-inference/scheduling donor, but it orchestrates serving systems rather than implementing Relay's portable provider boundary; serving cap applies. |
+| [kserve/kserve](https://github.com/kserve/kserve) | 5,991 / 1,700; active tip 2026-09-23; [v0.20.0 on 2026-08-06](https://github.com/kserve/kserve/releases/tag/v0.20.0); Go; Apache-2.0. [API](https://api.github.com/repos/kserve/kserve) | Influential and credible, but primarily a Kubernetes inference platform; too broad for a top-20 Relay runtime comparison after six stronger serving/runtime donors. |
 | [triton-inference-server/server](https://github.com/triton-inference-server/server) | 11,003 / 1,839; active tip 2026-09-22; [v2.72.0 on 2026-08-31](https://github.com/triton-inference-server/server/releases/tag/v2.72.0); Python; BSD-3-Clause. [API](https://api.github.com/repos/triton-inference-server/server) | Excellent general inference-server donor, but less LLM/provider-portability-specific than vLLM/SGLang/LocalAI/Ollama/TensorRT and no Go advantage. |
-| [open-telemetry/opentelemetry-go](https://github.com/open-telemetry/opentelemetry-go) | 6,558 / 1,482; active tip 2026-09-23; [v1.46.0 on 2026-08-25](https://github.com/open-telemetry/opentelemetry-go/releases/tag/v1.46.0); Go; Apache-2.0. [API](https://api.github.com/repos/open-telemetry/opentelemetry-go) | A foundational dependency rather than an LLM comparison target. The new GenAI conventions repository supplies the more strategic donor for Mux's provider telemetry contract. |
+| [open-telemetry/opentelemetry-go](https://github.com/open-telemetry/opentelemetry-go) | 6,558 / 1,482; active tip 2026-09-23; [v1.46.0 on 2026-08-25](https://github.com/open-telemetry/opentelemetry-go/releases/tag/v1.46.0); Go; Apache-2.0. [API](https://api.github.com/repos/open-telemetry/opentelemetry-go) | A foundational dependency rather than an LLM comparison target. The new GenAI conventions repository supplies the more strategic donor for Relay's provider telemetry contract. |
 | [Helicone/ai-gateway](https://github.com/Helicone/ai-gateway) | 631 / 57; last tip 2025-11-21; Rust; GPL-3.0. [API](https://api.github.com/repos/Helicone/ai-gateway) | Fails the 180-day activity gate. The more active [Helicone platform](https://github.com/Helicone/helicone) is observability/product-heavy rather than a provider-runtime peer. |
 | [lm-sys/RouteLLM](https://github.com/lm-sys/RouteLLM) | 5,537 / 435; last tip 2024-08-10; no observed release; Apache-2.0. [API](https://api.github.com/repos/lm-sys/RouteLLM) | Influential routing research/code, but inactive for more than two years and therefore fails the maintenance gate. |
 | [huggingface/text-generation-inference](https://github.com/huggingface/text-generation-inference) | 10,884 / 1,291; repository archived; last tip 2026-03-21; [v3.3.7 on 2025-12-19](https://github.com/huggingface/text-generation-inference/releases/tag/v3.3.7). [API](https://api.github.com/repos/huggingface/text-generation-inference) | Archived, so it is excluded regardless of historical influence. |
@@ -258,7 +258,7 @@ Each component is scored from 0 to 5 in half-point increments.
 - General API/AI gateways such as [Kong](https://github.com/Kong/kong), [Apache APISIX](https://github.com/apache/apisix), [Higress](https://github.com/higress-group/higress), [kgateway](https://github.com/kgateway-dev/kgateway), and [Traefik](https://github.com/traefik/traefik) are credible routing/proxy donors, but their LLM-specific provider normalization is a smaller part of a much broader API gateway. [Higress API](https://api.github.com/repos/higress-group/higress); [kgateway API](https://api.github.com/repos/kgateway-dev/kgateway)
 - Official Go SDKs [openai/openai-go](https://github.com/openai/openai-go) and [anthropics/anthropic-sdk-go](https://github.com/anthropics/anthropic-sdk-go) are credible, but their wire behavior duplicates the selected OpenAI/Anthropic SDKs while the selected `go-openai` adds stronger community adoption and Go DX evidence. [openai-go API](https://api.github.com/repos/openai/openai-go); [anthropic-sdk-go API](https://api.github.com/repos/anthropics/anthropic-sdk-go)
 - Broad cloud SDKs such as [aws-sdk-go-v2](https://github.com/aws/aws-sdk-go-v2) and [azure-sdk-for-go](https://github.com/Azure/azure-sdk-for-go) are operationally important but too large to serve as focused LLM protocol/developer-experience comparisons. [AWS SDK API](https://api.github.com/repos/aws/aws-sdk-go-v2); [Azure SDK API](https://api.github.com/repos/Azure/azure-sdk-for-go)
-- Agent/RAG/UI application frameworks were excluded because they compete with a host such as Decoder, not with Mux's provider engine. This includes the architectural pattern represented by LangChain, LlamaIndex, Pydantic AI, Semantic Kernel, Dify, Open WebUI, and similar products.
+- Agent/RAG/UI application frameworks were excluded because they compete with a host such as Decoder, not with Relay's provider engine. This includes the architectural pattern represented by LangChain, LlamaIndex, Pydantic AI, Semantic Kernel, Dify, Open WebUI, and similar products.
 - Source-available-only routers were excluded even when functionally relevant. For example, [NadirClaw](https://github.com/NadirRouter/NadirClaw) describes itself as source-available, so it fails the OSI-core gate. [Repository](https://github.com/NadirRouter/NadirClaw)
 - The exact queried repositories `truefoundry/llm-gateway`, `lunary-ai/lunary`, `cloudflare/ai-gateway`, `kubernetes-sigs/llm-gateway`, and `humanloop/llm-router` did not resolve to public canonical repositories on the retrieval date. They therefore fail the public-repository evidence gate and are not presented as OSS comparison projects. [TrueFoundry lookup](https://api.github.com/repos/truefoundry/llm-gateway); [Lunary lookup](https://api.github.com/repos/lunary-ai/lunary); [Cloudflare lookup](https://api.github.com/repos/cloudflare/ai-gateway); [Kubernetes lookup](https://api.github.com/repos/kubernetes-sigs/llm-gateway); [Humanloop lookup](https://api.github.com/repos/humanloop/llm-router)
 
@@ -303,15 +303,15 @@ These are not treated as proof that a design is correct; they are evidence of wh
 - **Adaptive routing pressure:** Agent Router's [latency-aware routing issue](https://github.com/theagentrouter/agent-router/issues/812) captures the need to combine policy, health, latency, and model selection rather than use one static strategy.
 - **Serving and scheduling pressure:** SGLang's [distributed KV-cache roadmap](https://github.com/sgl-project/sglang/issues/21846) and [tokenizer-to-scheduler RFC](https://github.com/sgl-project/sglang/issues/16787) show how queueing, cache locality, and handoff affect streaming latency and reliability.
 - **API-surface pressure:** vLLM's [Responses API issue](https://github.com/vllm-project/vllm/issues/14721) and [multimodality RFC](https://github.com/vllm-project/vllm/issues/4194) document the difficulty of matching a fast-evolving client-facing API in a serving engine.
-- **Telemetry evolution and privacy:** OpenTelemetry GenAI's [vendor-neutral reasoning discussion](https://github.com/open-telemetry/semantic-conventions-genai/issues/192) and [content-capture environment-variable proposal](https://github.com/open-telemetry/semantic-conventions-genai/issues/497) directly inform Mux's normalized telemetry and privacy projection.
+- **Telemetry evolution and privacy:** OpenTelemetry GenAI's [vendor-neutral reasoning discussion](https://github.com/open-telemetry/semantic-conventions-genai/issues/192) and [content-capture environment-variable proposal](https://github.com/open-telemetry/semantic-conventions-genai/issues/497) directly inform Relay's normalized telemetry and privacy projection.
 
 #### Strongest repository/source combinations by research question
 
-- **Closest implementation comparison:** Bifrost source plus official Go SDK docs; AxonHub's transformer package; GoModel's provider/workflow/retry source. These should be compared directly to Mux's `provider/core`, `provider/adapters`, `router`, `runtime`, and `engine` boundaries. [Mux architecture](https://github.com/GrayCodeAI/mux/tree/main/provider)
-- **Feature breadth comparison:** LiteLLM's architecture and request flow, Portkey's gateway strategy docs, and OmniRoute's architecture/OpenAPI. [Mux features](https://github.com/GrayCodeAI/mux#features)
+- **Closest implementation comparison:** Bifrost source plus official Go SDK docs; AxonHub's transformer package; GoModel's provider/workflow/retry source. These should be compared directly to Relay's `provider/core`, `provider/adapters`, `router`, `runtime`, and `engine` boundaries. [Relay architecture](https://github.com/GrayCodeAI/relay/tree/main/provider)
+- **Feature breadth comparison:** LiteLLM's architecture and request flow, Portkey's gateway strategy docs, and OmniRoute's architecture/OpenAPI. [Relay features](https://github.com/GrayCodeAI/relay#features)
 - **Protocol correctness:** official SDK streaming helpers and the selected serving servers' compatibility matrices, followed by source-level fixture comparisons for reasoning, tools, structured output, and finish reasons.
 - **Reliability:** Agent Router/SGLang fallback and health designs, LiteLLM's retry/fallback flow, and the selected serving projects' scheduler/cancellation behavior.
-- **Observability:** Mux's current operations graph plus OpenTelemetry GenAI conventions; Langfuse is the product/UX donor for causal trace inspection and evaluation. [Mux operations graph](https://github.com/GrayCodeAI/mux/tree/main/operationsgraph)
+- **Observability:** Relay's current operations graph plus OpenTelemetry GenAI conventions; Langfuse is the product/UX donor for causal trace inspection and evaluation. [Relay operations graph](https://github.com/GrayCodeAI/relay/tree/main/operationsgraph)
 
 ### Inferences
 

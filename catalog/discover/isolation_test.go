@@ -10,11 +10,11 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/catalog/discover"
-	"github.com/GrayCodeAI/mux/catalog/live"
-	muxcfg "github.com/GrayCodeAI/mux/config"
-	"github.com/GrayCodeAI/mux/credentials"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/catalog/discover"
+	"github.com/GrayCodeAI/relay/catalog/live"
+	relaycfg "github.com/GrayCodeAI/relay/config"
+	"github.com/GrayCodeAI/relay/credentials"
 )
 
 func TestRun_DisableCredentialFallbackIgnoresAmbientStoreAndConfigPath(t *testing.T) {
@@ -24,8 +24,8 @@ func TestRun_DisableCredentialFallbackIgnoresAmbientStoreAndConfigPath(t *testin
 		return []live.Entry{{ID: "ambient/model"}}, nil
 	})
 
-	t.Setenv("MUX_CONFIG_DIR", t.TempDir())
-	if err := muxcfg.SaveProviderConfig(&muxcfg.ProviderConfig{
+	t.Setenv("RELAY_CONFIG_DIR", t.TempDir())
+	if err := relaycfg.SaveProviderConfig(&relaycfg.ProviderConfig{
 		Version:           "1",
 		CanopyWaveBaseURL: "https://ambient-canopy.invalid/v1",
 	}, ""); err != nil {
@@ -37,7 +37,7 @@ func TestRun_DisableCredentialFallbackIgnoresAmbientStoreAndConfigPath(t *testin
 	if err := store.Set(context.Background(), credentials.AccountForEnv("CANOPYWAVE_API_KEY"), "ambient-canopy-key-1234567890"); err != nil {
 		t.Fatal(err)
 	}
-	if muxcfg.DiscoveryCredentials(context.Background()).APIKeys["CANOPYWAVE_API_KEY"] == "" {
+	if relaycfg.DiscoveryCredentials(context.Background()).APIKeys["CANOPYWAVE_API_KEY"] == "" {
 		t.Fatal("test setup: ambient fallback credential is not visible")
 	}
 
@@ -90,8 +90,8 @@ func TestRefreshProviderWithOptions_DisableCredentialFallback(t *testing.T) {
 		return []live.Entry{{ID: "ambient/model"}}, nil
 	})
 
-	t.Setenv("MUX_CONFIG_DIR", t.TempDir())
-	if err := muxcfg.SaveProviderConfig(&muxcfg.ProviderConfig{
+	t.Setenv("RELAY_CONFIG_DIR", t.TempDir())
+	if err := relaycfg.SaveProviderConfig(&relaycfg.ProviderConfig{
 		Version:           "1",
 		CanopyWaveBaseURL: "https://ambient-canopy.invalid/v1",
 	}, ""); err != nil {
@@ -136,7 +136,7 @@ func TestRefreshProviderWithOptions_UsesOnlyScopedCachePath(t *testing.T) {
 	dir := t.TempDir()
 	globalPath := filepath.Join(dir, "global-catalog.json")
 	scopedPath := filepath.Join(dir, "engine-a", "catalog.json")
-	t.Setenv("MUX_MODEL_CATALOG_PATH", globalPath)
+	t.Setenv("RELAY_MODEL_CATALOG_PATH", globalPath)
 
 	global := catalog.SeedCatalog()
 	global.Aliases["global-cache-marker"] = "global-only"

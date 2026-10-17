@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 
-	"github.com/GrayCodeAI/mux/types"
+	"github.com/GrayCodeAI/relay/types"
 )
 
 // ZAIClient uses the OpenAI-compatible endpoint (paas/v4 or coding/paas/v4) first,
@@ -53,8 +53,8 @@ func (c *ZAIClient) Name() string {
 	return c.providerID
 }
 
-func (c *ZAIClient) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
-	return c.router.Chat(ctx, messages, opts, ChatProtocolCompletions, func(err error, _ *core.MuxResponse) bool {
+func (c *ZAIClient) Chat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.RelayResponse, error) {
+	return c.router.Chat(ctx, messages, opts, ChatProtocolCompletions, func(err error, _ *core.RelayResponse) bool {
 		if err != nil && c.router.Anthropic != nil && zaiFallbackChatError(err) {
 			c.logger.Info("Z.AI: OpenAI endpoint failed; retrying via Anthropic compatibility",
 				"provider", c.providerID, "error", err)
@@ -64,7 +64,7 @@ func (c *ZAIClient) Chat(ctx context.Context, messages []core.MuxMessage, opts c
 	})
 }
 
-func (c *ZAIClient) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (c *ZAIClient) StreamChat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	return c.router.StreamChat(ctx, messages, opts, ProtocolStreamConfig{
 		Primary: ChatProtocolCompletions,
 		FallbackOnError: func(err error) bool {
@@ -112,10 +112,10 @@ func zaiRetryableChatError(err error) bool {
 	if n := parseHTTPStatusFromError(msg); n > 0 {
 		return n >= 500 || n == http.StatusUnauthorized || n == http.StatusForbidden
 	}
-	// Structured path: trust core.MuxError's IsRetriable
-	var muxErr *core.MuxError
-	if errors.As(err, &muxErr) {
-		return muxErr.IsRetriable()
+	// Structured path: trust core.RelayError's IsRetriable
+	var relayErr *core.RelayError
+	if errors.As(err, &relayErr) {
+		return relayErr.IsRetriable()
 	}
 	// Conservative: only retry on explicitly transient errors
 	return types.IsTransient(err)

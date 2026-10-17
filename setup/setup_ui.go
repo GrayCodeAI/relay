@@ -4,8 +4,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/catalog/registry"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/catalog/registry"
 )
 
 // ModelUI is one selectable model for host /config UIs.

@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // OpenGatewayClient uses the OpenAI-compatible OpenGateway endpoint.
@@ -24,11 +24,11 @@ func NewOpenGatewayClient(apiKey, openAIBase string, compat *OpenAICompatConfig,
 
 func (c *OpenGatewayClient) Name() string { return "opengateway" }
 
-func (c *OpenGatewayClient) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
+func (c *OpenGatewayClient) Chat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.RelayResponse, error) {
 	return c.openAI.Chat(ctx, messages, opts)
 }
 
-func (c *OpenGatewayClient) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (c *OpenGatewayClient) StreamChat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	return c.openAI.StreamChat(ctx, messages, opts)
 }
 

@@ -8,7 +8,7 @@ import (
 
 // Provider is decoder's decoder-owned view of the provider engine: a composition of
 // the role interfaces below. It is the single integration surface — decoder never
-// holds an *muxengine.Engine, and mux never imports decoder/internal.
+// holds an *relayengine.Engine, and relay never imports decoder/internal.
 //
 // Callers that need only a subset depend on the relevant role interface
 // directly (e.g. session_factory depends only on Generator), keeping the
@@ -29,7 +29,7 @@ type Provider interface {
 // Lower-level channel-based streaming still uses StreamResult on the client
 // transport layer; that type is intentionally not part of this host port.
 type Generator interface {
-	Generate(ctx context.Context, req GenerateRequest) (*MuxResponse, error)
+	Generate(ctx context.Context, req GenerateRequest) (*RelayResponse, error)
 	Stream(ctx context.Context, req GenerateRequest) (EventStreamer, error)
 }
 
@@ -40,16 +40,16 @@ type Generator interface {
 // consumer.
 type EventStreamer interface {
 	Next() bool
-	Event() MuxStreamEvent
+	Event() RelayStreamEvent
 	Err() error
 	Close() error
 }
 
 // GenerateRequest is the normalized generation request.
 type GenerateRequest struct {
-	Messages     []MuxMessage
+	Messages     []RelayMessage
 	SystemPrompt string
-	Tools        []MuxTool
+	Tools        []RelayTool
 	Requirements Requirements
 	Preference   Preference
 	Limits       Limits
@@ -191,7 +191,7 @@ const (
 )
 
 // CatalogSnapshot is an immutable, point-in-time host-facing view of a loaded
-// model catalog. It is the canonical definition; mux's engine.CatalogSnapshot
+// model catalog. It is the canonical definition; relay's engine.CatalogSnapshot
 // is a type alias to this so a single struct crosses the host boundary.
 type CatalogSnapshot struct {
 	Models    []Model   `json:"models"`
@@ -398,7 +398,7 @@ type NativeCompactor interface {
 type NativeCompactionRequest struct {
 	Provider        string
 	Model           string
-	Messages        []MuxMessage
+	Messages        []RelayMessage
 	ContextWindow   int
 	ThresholdPct    int
 	MaxOutputTokens int

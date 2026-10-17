@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/catalog/registry"
-	"github.com/GrayCodeAI/mux/config"
-	client "github.com/GrayCodeAI/mux/provider"
-	"github.com/GrayCodeAI/mux/setup"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/catalog/registry"
+	"github.com/GrayCodeAI/relay/config"
+	client "github.com/GrayCodeAI/relay/provider"
+	"github.com/GrayCodeAI/relay/setup"
 )
 
 type selectionRuntimeState struct {
@@ -113,13 +113,13 @@ func ActiveProvider(ctx context.Context) string {
 }
 
 // NormalizeProviderID resolves catalog aliases and host-facing variants to the
-// runtime provider identifier used by Mux adapters and setup gateways.
+// runtime provider identifier used by Relay adapters and setup gateways.
 func NormalizeProviderID(provider string) string {
 	return normalizeRuntimeProviderID(provider)
 }
 
 // ActiveProviderID canonicalizes a host-facing provider/gateway id through the
-// runtime provider-id rules used by Mux.
+// runtime provider-id rules used by Relay.
 func ActiveProviderID(provider string) string {
 	return NormalizeProviderID(provider)
 }

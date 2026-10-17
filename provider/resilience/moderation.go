@@ -85,7 +85,7 @@ func (mp *ModerationProvider) Ping(ctx context.Context) error {
 }
 
 // Chat validates the input messages and forwards to the inner provider.
-func (mp *ModerationProvider) Chat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*MuxResponse, error) {
+func (mp *ModerationProvider) Chat(ctx context.Context, messages []RelayMessage, opts ChatOptions) (*RelayResponse, error) {
 	if err := mp.moderate(messages); err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (mp *ModerationProvider) Chat(ctx context.Context, messages []MuxMessage, o
 }
 
 // StreamChat validates the input messages and forwards to the inner provider.
-func (mp *ModerationProvider) StreamChat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*StreamResult, error) {
+func (mp *ModerationProvider) StreamChat(ctx context.Context, messages []RelayMessage, opts ChatOptions) (*StreamResult, error) {
 	if err := mp.moderate(messages); err != nil {
 		return nil, err
 	}
@@ -101,13 +101,13 @@ func (mp *ModerationProvider) StreamChat(ctx context.Context, messages []MuxMess
 }
 
 // moderate runs all validation checks on the input messages.
-func (mp *ModerationProvider) moderate(messages []MuxMessage) error {
+func (mp *ModerationProvider) moderate(messages []RelayMessage) error {
 	text := extractText(messages)
 
 	// Check blocked patterns.
 	for _, re := range mp.blockedRegexps {
 		if re.MatchString(text) {
-			return fmt.Errorf("mux: content moderation blocked: message matches blocked pattern %q", re.String())
+			return fmt.Errorf("relay: content moderation blocked: message matches blocked pattern %q", re.String())
 		}
 	}
 
@@ -115,14 +115,14 @@ func (mp *ModerationProvider) moderate(messages []MuxMessage) error {
 	if mp.maxTokens > 0 {
 		tokens := estimateTokens(text)
 		if tokens > mp.maxTokens {
-			return fmt.Errorf("mux: content moderation blocked: estimated token count %d exceeds limit %d", tokens, mp.maxTokens)
+			return fmt.Errorf("relay: content moderation blocked: estimated token count %d exceeds limit %d", tokens, mp.maxTokens)
 		}
 	}
 
 	// Check custom checker.
 	if mp.customChecker != nil {
 		if err := mp.customChecker(text); err != nil {
-			return fmt.Errorf("mux: content moderation blocked: %w", err)
+			return fmt.Errorf("relay: content moderation blocked: %w", err)
 		}
 	}
 
@@ -130,7 +130,7 @@ func (mp *ModerationProvider) moderate(messages []MuxMessage) error {
 }
 
 // extractText concatenates the text content of all messages.
-func extractText(messages []MuxMessage) string {
+func extractText(messages []RelayMessage) string {
 	var b strings.Builder
 	for _, m := range messages {
 		if m.Content != "" {

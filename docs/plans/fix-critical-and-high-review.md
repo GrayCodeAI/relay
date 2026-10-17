@@ -1,7 +1,7 @@
-# Plan: Fix Critical + High-Impact Review Findings — mux
+# Plan: Fix Critical + High-Impact Review Findings — relay
 
 > Branch: `fix/critical-and-high-review-2026-06`
-> PR: <https://github.com/GrayCodeAI/mux/pull/38>
+> PR: <https://github.com/GrayCodeAI/relay/pull/38>
 > Status: **✅ COMPLETE — all 8 items committed, 8 PRs merged into the branch.**
 > Constraint: **no new go.mod / go.sum dependencies** for any item in this plan.
 
@@ -16,20 +16,20 @@
 | H1  | high | Unify Gemini SSE parser | ✅ committed | `98af9e7` |
 | H2  | high | Extract shared `providerRequest` builder | ✅ committed | `704162f` |
 | H3  | high | Unify Anthropic response parsing (3 → 1) | ✅ committed | `cf61ca7` |
-| H4  | high | Wire `MuxError` into provider error paths | ✅ committed | `d8993ba` |
+| H4  | high | Wire `RelayError` into provider error paths | ✅ committed | `d8993ba` |
 
 **Net diff**: 8 production-code changes + 8 test files; all tests pass with `-race`; `go vet ./...` clean; `go.mod` / `go.sum` unchanged. **No new dependencies.**
 
 ## Context
 
-A deep code review of `mux` and `decoder` (see `docs/plans/review-2026-06-summary.md`
+A deep code review of `relay` and `decoder` (see `docs/plans/review-2026-06-summary.md`
 — to be created if you want it archived here) surfaced 7 critical and 9 high
-items. This plan covers **all mux items** (C1, C2, C6, C7, H1, H2, H3, H4)
+items. This plan covers **all relay items** (C1, C2, C6, C7, H1, H2, H3, H4)
 broken into a sequence of small, reviewable PRs.
 
 The decoder-side companion plan lives at `../decoder/docs/plans/fix-critical-and-high-review.md`.
 
-## Scope (mux)
+## Scope (relay)
 
 | ID | Severity | Title | File(s) | Effort |
 |----|----------|-------|---------|--------|
@@ -40,7 +40,7 @@ The decoder-side companion plan lives at `../decoder/docs/plans/fix-critical-and
 | H1 | high | Unify Gemini SSE parser | `provider/gemini.go:496-535` | M |
 | H2 | high | Extract shared `providerRequest` builder | `provider/anthropic.go`, `provider/openai.go` | L |
 | H3 | high | Unify Anthropic response parsing (3 → 1) | `provider/{anthropic,bedrock,vertex}.go` | M |
-| H4 | high | Wire `MuxError` into provider error paths | `provider/errors.go`, all `provider/*.go` | M |
+| H4 | high | Wire `RelayError` into provider error paths | `provider/errors.go`, all `provider/*.go` | M |
 
 ## Out of scope (deferred to next plan)
 
@@ -165,7 +165,7 @@ keyring), the goroutine leaks indefinitely.
 Superseded: the ambient auto-registration path and its opt-in environment
 variable were removed entirely. Unknown provider names fail closed unless the
 client receives an explicit base URL or calls
-`MuxClient.RegisterCustomProvider`. Custom registration is instance-owned.
+`RelayClient.RegisterCustomProvider`. Custom registration is instance-owned.
 
 ---
 
@@ -201,7 +201,7 @@ between reads.
 - Existing `cloud_providers_test.go` should pass unchanged.
 
 **Risk**: medium. Streaming changes can break live behavior. Mitigation:
-ship behind a feature flag (`MUX_GEMINI_SHARED_PARSER=0` to revert to
+ship behind a feature flag (`RELAY_GEMINI_SHARED_PARSER=0` to revert to
 the old path), keep both code paths for one release, then remove.
 
 **Rollback**: feature flag. If regressions appear, set the env var to 0.
@@ -251,7 +251,7 @@ A wire-format change needs 3 edits.
 
 **Fix**:
 1. Move the parser to `provider/anthropic_response.go` (or
-   `provider/response.go`) as `parseAnthropicResponse(raw []byte, requestID, orgID string) (*MuxResponse, error)`.
+   `provider/response.go`) as `parseAnthropicResponse(raw []byte, requestID, orgID string) (*RelayResponse, error)`.
 2. All three call sites import it. They differ only in how `requestID` /
    `orgID` are extracted from the response (HTTP headers), so pass those in.
 3. `buildAnthropicMessages` is already shared; mirror the same pattern.
@@ -274,24 +274,24 @@ its own test; the shared parser is unit-tested independently.
 
 ---
 
-## PR 8 — Wire `MuxError` into provider error paths (H4)
+## PR 8 — Wire `RelayError` into provider error paths (H4)
 
-**Refactor**: `provider/errors.go:7` defines `MuxError` with
+**Refactor**: `provider/errors.go:7` defines `RelayError` with
 `IsRetriable()`, `IsAuthError()`, `IsRateLimited()` methods, but **no
-provider returns `*MuxError`**. All error paths use
-`fmt.Errorf("mux: …")`. `doWithRetry` does its own string classification
+provider returns `*RelayError`**. All error paths use
+`fmt.Errorf("relay: …")`. `doWithRetry` does its own string classification
 instead of using the structured type.
 
 **Fix**:
-1. `formatAPIError` returns `*MuxError` (wrap into a `*MuxError` with
+1. `formatAPIError` returns `*RelayError` (wrap into a `*RelayError` with
    `StatusCode`, `RequestID`, `Message`, `Err`).
-2. `doWithRetry` checks `var muxErr *MuxError; if errors.As(err, &muxErr) { … }`
+2. `doWithRetry` checks `var relayErr *RelayError; if errors.As(err, &relayErr) { … }`
    instead of string-matching status codes.
 3. All provider error returns flow through `formatAPIError`.
 4. Public API consumers (decoder) can now use `errors.As` for typed errors.
 
 **Files**:
-- `provider/errors.go` (extend `MuxError` with `Unwrap()`, helpers)
+- `provider/errors.go` (extend `RelayError` with `Unwrap()`, helpers)
 - `provider/anthropic.go`, `provider/openai.go`, `provider/gemini.go`,
   `provider/bedrock.go`, `provider/vertex.go`, `provider/azure.go` (use the
   shared `formatAPIError`)
@@ -301,10 +301,10 @@ instead of using the structured type.
   `isRetriableError` heuristic)
 
 **Test plan**:
-- `TestMuxError_IsRetriable` — table of status codes.
-- `TestRetry_UsesMuxError` — mock 401; assert retry does NOT happen
+- `TestRelayError_IsRetriable` — table of status codes.
+- `TestRetry_UsesRelayError` — mock 401; assert retry does NOT happen
   (auth errors are not retriable).
-- `TestFallback_UsesMuxError` — mock auth error in second provider;
+- `TestFallback_UsesRelayError` — mock auth error in second provider;
   assert fallback to third.
 - All existing tests pass.
 
@@ -343,10 +343,10 @@ Coverage target: maintained at 60%+ (CI gate).
 1. **C7 default-deny vs opt-in flag** — confirm you want the flag
    (instead of hard removal of the dynamic path).
 2. **H1 feature flag** — confirm you're OK with a temporary
-   `MUX_GEMINI_SHARED_PARSER` env var for one release.
+   `RELAY_GEMINI_SHARED_PARSER` env var for one release.
 3. **H2 / H3 sequencing** — H2 first (bigger, but independent) or H3
    first (smaller, lower risk)?
 4. **H4 scope** — should `provider/recorder.go` and `provider/coalesce.go`
-   also adopt `MuxError`, or is that M-tier?
+   also adopt `RelayError`, or is that M-tier?
 5. **Branch lifetime** — keep the branch as a long-lived namespace, or
    squash each PR to a single commit on merge?

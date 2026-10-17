@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GrayCodeAI/mux/conversation"
-	mux "github.com/GrayCodeAI/mux/internal/health"
-	"github.com/GrayCodeAI/mux/internal/httputil"
-	"github.com/GrayCodeAI/mux/provider/core"
-	"github.com/GrayCodeAI/mux/provider/observability"
-	"github.com/GrayCodeAI/mux/storage"
+	"github.com/GrayCodeAI/relay/conversation"
+	relay "github.com/GrayCodeAI/relay/internal/health"
+	"github.com/GrayCodeAI/relay/internal/httputil"
+	"github.com/GrayCodeAI/relay/provider/core"
+	"github.com/GrayCodeAI/relay/provider/observability"
+	"github.com/GrayCodeAI/relay/storage"
 )
 
 const maxRequestBodyBytes = 1 << 20
@@ -21,12 +21,12 @@ type Server struct {
 	engine        *conversation.Engine
 	store         storage.Store
 	analytics     storage.AnalyticsStore
-	healthChecker *mux.HealthChecker
+	healthChecker *relay.HealthChecker
 	reranker      Reranker // optional: provider-backed /rerank; nil => lexical fallback
 	apiKey        string
 	virtualKeyFor func(token string) string // optional: maps a bearer token to a virtual key id
-	mux           *http.ServeMux
-	handler       http.Handler // traced handler wrapping mux
+	relay         *http.ServeMux
+	handler       http.Handler // traced handler wrapping relay
 	bgCtx         context.Context
 	bgCancel      context.CancelFunc // cancelled on Shutdown to release bgCtx
 	httpSrv       *http.Server
@@ -36,8 +36,8 @@ type Config struct {
 	Store         storage.Store
 	Analytics     storage.AnalyticsStore // optional: enables /api/usage, /api/costs
 	Provider      core.Provider
-	HealthChecker *mux.HealthChecker // optional: enables /api/health/providers
-	Reranker      Reranker           // optional: provider-backed /rerank; nil => lexical fallback
+	HealthChecker *relay.HealthChecker // optional: enables /api/health/providers
+	Reranker      Reranker             // optional: provider-backed /rerank; nil => lexical fallback
 	APIKey        string
 	Port          int
 	// VirtualKeyResolver optionally maps an inbound bearer/API-key token to a
@@ -57,12 +57,12 @@ func NewServer(cfg Config) *Server {
 		reranker:      cfg.Reranker,
 		apiKey:        cfg.APIKey,
 		virtualKeyFor: cfg.VirtualKeyResolver,
-		mux:           http.NewServeMux(),
+		relay:         http.NewServeMux(),
 		bgCtx:         ctx,
 		bgCancel:      cancel,
 	}
 	s.routes()
-	s.handler = httputil.SecurityHeaders(TracingMiddleware(s.mux))
+	s.handler = httputil.SecurityHeaders(TracingMiddleware(s.relay))
 	return s
 }
 
@@ -99,25 +99,25 @@ func (s *Server) Shutdown() error {
 }
 
 func (s *Server) routes() {
-	s.mux.HandleFunc("GET /health", s.handleHealth)
-	s.mux.HandleFunc("GET /ready", s.handleReady)
-	s.mux.HandleFunc("POST /prompt", s.auth(s.handlePrompt))
-	s.mux.HandleFunc("POST /rerank", s.auth(s.handleRerank))
+	s.relay.HandleFunc("GET /health", s.handleHealth)
+	s.relay.HandleFunc("GET /ready", s.handleReady)
+	s.relay.HandleFunc("POST /prompt", s.auth(s.handlePrompt))
+	s.relay.HandleFunc("POST /rerank", s.auth(s.handleRerank))
 
 	// OpenAI-compatible (LiteLLM-style) proxy endpoint.
-	s.mux.HandleFunc("POST /v1/chat/completions", s.auth(s.handleOpenAIChatCompletions))
-	s.mux.HandleFunc("POST /nodes/{id}/prompt", s.auth(s.handlePromptFrom))
-	s.mux.HandleFunc("GET /nodes", s.auth(s.handleListNodes))
-	s.mux.HandleFunc("GET /nodes/{id}", s.auth(s.handleGetNode))
-	s.mux.HandleFunc("GET /nodes/{id}/tree", s.auth(s.handleGetTree))
-	s.mux.HandleFunc("DELETE /nodes/{id}", s.auth(s.handleDeleteNode))
-	s.mux.HandleFunc("PUT /nodes/{id}/aliases/{alias}", s.auth(s.handleCreateAlias))
-	s.mux.HandleFunc("DELETE /aliases/{alias}", s.auth(s.handleDeleteAlias))
+	s.relay.HandleFunc("POST /v1/chat/completions", s.auth(s.handleOpenAIChatCompletions))
+	s.relay.HandleFunc("POST /nodes/{id}/prompt", s.auth(s.handlePromptFrom))
+	s.relay.HandleFunc("GET /nodes", s.auth(s.handleListNodes))
+	s.relay.HandleFunc("GET /nodes/{id}", s.auth(s.handleGetNode))
+	s.relay.HandleFunc("GET /nodes/{id}/tree", s.auth(s.handleGetTree))
+	s.relay.HandleFunc("DELETE /nodes/{id}", s.auth(s.handleDeleteNode))
+	s.relay.HandleFunc("PUT /nodes/{id}/aliases/{alias}", s.auth(s.handleCreateAlias))
+	s.relay.HandleFunc("DELETE /aliases/{alias}", s.auth(s.handleDeleteAlias))
 
 	// Analytics and health dashboard endpoints.
-	s.mux.HandleFunc("GET /api/usage", s.auth(s.handleUsageAnalytics))
-	s.mux.HandleFunc("GET /api/costs", s.auth(s.handleCostSummary))
-	s.mux.HandleFunc("GET /api/health/providers", s.auth(s.handleProviderHealth))
+	s.relay.HandleFunc("GET /api/usage", s.auth(s.handleUsageAnalytics))
+	s.relay.HandleFunc("GET /api/costs", s.auth(s.handleCostSummary))
+	s.relay.HandleFunc("GET /api/health/providers", s.auth(s.handleProviderHealth))
 }
 
 func (s *Server) auth(next http.HandlerFunc) http.HandlerFunc {
@@ -161,12 +161,12 @@ func (s *Server) handleReady(w http.ResponseWriter, _ *http.Request) {
 }
 
 type promptRequest struct {
-	Message      string         `json:"message"`
-	Model        string         `json:"model,omitempty"`
-	SystemPrompt string         `json:"system_prompt,omitempty"`
-	MaxTokens    int            `json:"max_tokens,omitempty"`
-	Stream       bool           `json:"stream,omitempty"`
-	Tools        []core.MuxTool `json:"tools,omitempty"`
+	Message      string           `json:"message"`
+	Model        string           `json:"model,omitempty"`
+	SystemPrompt string           `json:"system_prompt,omitempty"`
+	MaxTokens    int              `json:"max_tokens,omitempty"`
+	Stream       bool             `json:"stream,omitempty"`
+	Tools        []core.RelayTool `json:"tools,omitempty"`
 }
 
 func (s *Server) handlePrompt(w http.ResponseWriter, r *http.Request) {

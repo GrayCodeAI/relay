@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/mux/catalog/live"
+	"github.com/GrayCodeAI/relay/catalog/live"
 )
 
 func TestCatalogFromLegacyCompiles(t *testing.T) {

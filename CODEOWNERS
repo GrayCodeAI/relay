@@ -1,4 +1,4 @@
-# CODEOWNERS for mux (LLM client library)
+# CODEOWNERS for relay (LLM client library)
 * @GrayCodeAI/maintainers
 
 # Provider integration (security-sensitive — handles API keys)

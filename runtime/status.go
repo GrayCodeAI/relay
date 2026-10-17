@@ -3,7 +3,7 @@ package runtime
 import (
 	"context"
 
-	"github.com/GrayCodeAI/mux/setup"
+	"github.com/GrayCodeAI/relay/setup"
 )
 
 // DeploymentStatus returns deployment-routing diagnostics for host UIs.

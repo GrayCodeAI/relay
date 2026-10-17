@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Hard-reset mux to origin/main. Use after a history rewrite or stale SHAs.
+# Hard-reset relay to origin/main. Use after a history rewrite or stale SHAs.
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
@@ -7,8 +7,8 @@ cd "$(git rev-parse --show-toplevel)"
 echo "==> Fetching origin"
 git fetch origin
 
-echo "==> Resetting mux to origin/main"
+echo "==> Resetting relay to origin/main"
 git checkout main
 git reset --hard origin/main
 
-echo "==> Done. mux: $(git rev-parse --short HEAD)"
+echo "==> Done. relay: $(git rev-parse --short HEAD)"

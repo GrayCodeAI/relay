@@ -3,7 +3,7 @@ package embeddings
 import (
 	"testing"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 func TestDefaultEmbeddingParamsCohere(t *testing.T) {
@@ -98,7 +98,7 @@ func TestEmbeddingResponseStruct(t *testing.T) {
 	resp := &EmbeddingResponse{
 		Embeddings: [][]float32{{0.1, 0.2}},
 		Model:      "test",
-		Usage:      &core.MuxUsage{PromptTokens: 5, TotalTokens: 5},
+		Usage:      &core.RelayUsage{PromptTokens: 5, TotalTokens: 5},
 	}
 	if resp.Model != "test" {
 		t.Errorf("Model = %q, want %q", resp.Model, "test")

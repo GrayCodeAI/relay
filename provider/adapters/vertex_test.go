@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/provider/core"
-	"github.com/GrayCodeAI/mux/types"
+	"github.com/GrayCodeAI/relay/provider/core"
+	"github.com/GrayCodeAI/relay/types"
 )
 
 func TestNewVertexClient(t *testing.T) {
@@ -71,7 +71,7 @@ func TestVertexClient_Chat_Success(t *testing.T) {
 	c.SetRetry(core.RetryConfig{RetryConfig: types.RetryConfig{MaxRetries: 0}})
 	c.httpClient = &http.Client{Transport: transport}
 
-	resp, err := c.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "claude-sonnet-4-20250514", MaxTokens: 256})
+	resp, err := c.Chat(context.Background(), []core.RelayMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "claude-sonnet-4-20250514", MaxTokens: 256})
 	if err != nil {
 		t.Fatalf("Chat: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestVertexClient_Chat_Success(t *testing.T) {
 func TestVertexClient_Chat_EmptyModel(t *testing.T) {
 	t.Parallel()
 	c := NewVertexClient("proj", "us-central1", "tok")
-	_, err := c.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: ""})
+	_, err := c.Chat(context.Background(), []core.RelayMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: ""})
 	if err == nil {
 		t.Fatal("expected error for empty model")
 	}
@@ -101,7 +101,7 @@ func TestVertexClient_Chat_APIError(t *testing.T) {
 	c.SetRetry(core.RetryConfig{RetryConfig: types.RetryConfig{MaxRetries: 0}})
 	c.httpClient = &http.Client{Transport: transport}
 
-	_, err := c.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "claude-sonnet-4-20250514", MaxTokens: 256})
+	_, err := c.Chat(context.Background(), []core.RelayMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "claude-sonnet-4-20250514", MaxTokens: 256})
 	if err == nil {
 		t.Fatal("expected error for forbidden")
 	}
@@ -122,7 +122,7 @@ func TestVertexClient_StreamChat_Success(t *testing.T) {
 	c.SetRetry(core.RetryConfig{RetryConfig: types.RetryConfig{MaxRetries: 0}})
 	c.httpClient = &http.Client{Transport: transport}
 
-	result, err := c.StreamChat(context.Background(), []core.MuxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "claude-sonnet-4-20250514", MaxTokens: 256})
+	result, err := c.StreamChat(context.Background(), []core.RelayMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: "claude-sonnet-4-20250514", MaxTokens: 256})
 	if err != nil {
 		t.Fatalf("StreamChat: %v", err)
 	}
@@ -145,7 +145,7 @@ func TestVertexClient_StreamChat_Success(t *testing.T) {
 func TestVertexClient_StreamChat_EmptyModel(t *testing.T) {
 	t.Parallel()
 	c := NewVertexClient("proj", "us-central1", "tok")
-	_, err := c.StreamChat(context.Background(), []core.MuxMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: ""})
+	_, err := c.StreamChat(context.Background(), []core.RelayMessage{{Role: "user", Content: "Hi"}}, core.ChatOptions{Model: ""})
 	if err == nil {
 		t.Fatal("expected error for empty model")
 	}
@@ -209,7 +209,7 @@ func TestVertexClient_buildBody(t *testing.T) {
 	t.Parallel()
 	c := NewVertexClient("proj", "us-central1", "tok")
 
-	body, err := c.BuildBody([]core.MuxMessage{
+	body, err := c.BuildBody([]core.RelayMessage{
 		{Role: "user", Content: "hello"},
 	}, core.ChatOptions{
 		Model:     "claude-sonnet-4-20250514",

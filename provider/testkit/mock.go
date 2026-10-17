@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GrayCodeAI/mux/llm"
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/llm"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // MockMode controls how the mock provider responds.
@@ -32,13 +32,13 @@ const (
 // Chat/StreamChat consumes the next turn, letting tests drive multi-turn
 // tool-calling conversations without a network.
 type MockTurn struct {
-	Content      string                                                  // assistant text
-	ToolCalls    []core.ToolCall                                         // optional tool calls
-	FinishReason string                                                  // defaults to end_turn / tool_use
-	Usage        *core.MuxUsage                                          // defaults to a small non-zero usage
-	Err          error                                                   // if set, the call fails with it
-	Delay        time.Duration                                           // simulate latency (cancellation aware)
-	OnBefore     func(messages []core.MuxMessage, opts core.ChatOptions) // inspect inputs, late (outside lock)
+	Content      string                                                    // assistant text
+	ToolCalls    []core.ToolCall                                           // optional tool calls
+	FinishReason string                                                    // defaults to end_turn / tool_use
+	Usage        *core.RelayUsage                                          // defaults to a small non-zero usage
+	Err          error                                                     // if set, the call fails with it
+	Delay        time.Duration                                             // simulate latency (cancellation aware)
+	OnBefore     func(messages []core.RelayMessage, opts core.ChatOptions) // inspect inputs, late (outside lock)
 }
 
 // MockProvider is a core.Provider implementation for testing.
@@ -66,7 +66,7 @@ type MockProvider struct {
 
 // MockCall records a single call to the mock provider.
 type MockCall struct {
-	Messages []core.MuxMessage
+	Messages []core.RelayMessage
 	Options  core.ChatOptions
 }
 
@@ -85,7 +85,7 @@ func (m *MockProvider) Name() string { return "mock" }
 func (m *MockProvider) Ping(_ context.Context) error { return nil }
 
 // Chat returns a mock response based on Mode.
-func (m *MockProvider) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
+func (m *MockProvider) Chat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.RelayResponse, error) {
 	m.mu.Lock()
 	m.Calls = append(m.Calls, MockCall{Messages: messages, Options: opts})
 
@@ -102,7 +102,7 @@ func (m *MockProvider) Chat(ctx context.Context, messages []core.MuxMessage, opt
 			m.scriptIndex++
 		default:
 			m.mu.Unlock()
-			return nil, fmt.Errorf("mux: mock script exhausted after %d turns", len(m.Script))
+			return nil, fmt.Errorf("relay: mock script exhausted after %d turns", len(m.Script))
 		}
 	}
 	m.mu.Unlock()
@@ -143,9 +143,9 @@ func (m *MockProvider) Chat(ctx context.Context, messages []core.MuxMessage, opt
 		}
 		usage := turn.Usage
 		if usage == nil {
-			usage = &core.MuxUsage{PromptTokens: 10, CompletionTokens: 5, TotalTokens: 15}
+			usage = &core.RelayUsage{PromptTokens: 10, CompletionTokens: 5, TotalTokens: 15}
 		}
-		return &core.MuxResponse{
+		return &core.RelayResponse{
 			Content:      turn.Content,
 			ToolCalls:    turn.ToolCalls,
 			FinishReason: finish,
@@ -158,9 +158,9 @@ func (m *MockProvider) Chat(ctx context.Context, messages []core.MuxMessage, opt
 	// Re-add the call synchronously after script branch? Already recorded above.
 	switch m.Mode {
 	case MockModeError:
-		return nil, fmt.Errorf("mux: mock error")
+		return nil, fmt.Errorf("relay: mock error")
 	case MockModeMaxTokens:
-		return &core.MuxResponse{Content: "partial response", FinishReason: "max_tokens", Usage: &core.MuxUsage{PromptTokens: 10, CompletionTokens: 100, TotalTokens: 110}}, nil
+		return &core.RelayResponse{Content: "partial response", FinishReason: "max_tokens", Usage: &core.RelayUsage{PromptTokens: 10, CompletionTokens: 100, TotalTokens: 110}}, nil
 	case MockModeToolUse:
 		name := m.ToolName
 		if name == "" {
@@ -170,13 +170,13 @@ func (m *MockProvider) Chat(ctx context.Context, messages []core.MuxMessage, opt
 		if args == nil {
 			args = map[string]interface{}{"input": "test"}
 		}
-		return &core.MuxResponse{
+		return &core.RelayResponse{
 			ToolCalls:    []core.ToolCall{{ID: "mock-tc-1", Name: name, Arguments: args}},
 			FinishReason: "tool_use",
-			Usage:        &core.MuxUsage{PromptTokens: 10, CompletionTokens: 5, TotalTokens: 15},
+			Usage:        &core.RelayUsage{PromptTokens: 10, CompletionTokens: 5, TotalTokens: 15},
 		}, nil
 	case MockModeFixed:
-		return &core.MuxResponse{Content: m.Response, FinishReason: "end_turn", Usage: &core.MuxUsage{PromptTokens: 10, CompletionTokens: 5, TotalTokens: 15}}, nil
+		return &core.RelayResponse{Content: m.Response, FinishReason: "end_turn", Usage: &core.RelayUsage{PromptTokens: 10, CompletionTokens: 5, TotalTokens: 15}}, nil
 	default: // echo
 		last := ""
 		for i := len(messages) - 1; i >= 0; i-- {
@@ -185,24 +185,24 @@ func (m *MockProvider) Chat(ctx context.Context, messages []core.MuxMessage, opt
 				break
 			}
 		}
-		return &core.MuxResponse{Content: "echo: " + last, FinishReason: "end_turn", Usage: &core.MuxUsage{PromptTokens: 10, CompletionTokens: 5, TotalTokens: 15}}, nil
+		return &core.RelayResponse{Content: "echo: " + last, FinishReason: "end_turn", Usage: &core.RelayUsage{PromptTokens: 10, CompletionTokens: 5, TotalTokens: 15}}, nil
 	}
 }
 
 // StreamChat streams a mock response word by word.
-func (m *MockProvider) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (m *MockProvider) StreamChat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	resp, err := m.Chat(ctx, messages, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	streamCtx, cancel := context.WithCancel(ctx)
-	ch := make(chan core.MuxStreamEvent, 64)
+	ch := make(chan core.RelayStreamEvent, 64)
 
 	go func() {
 		defer close(ch)
 		if resp.FinishReason == "tool_use" && len(resp.ToolCalls) > 0 {
-			core.Emit(streamCtx, ch, core.MuxStreamEvent{Type: "tool_call", ToolCall: &resp.ToolCalls[0]})
+			core.Emit(streamCtx, ch, core.RelayStreamEvent{Type: "tool_call", ToolCall: &resp.ToolCalls[0]})
 		} else {
 			words := strings.Fields(resp.Content)
 			for _, w := range words {
@@ -213,10 +213,10 @@ func (m *MockProvider) StreamChat(ctx context.Context, messages []core.MuxMessag
 						return
 					}
 				}
-				core.Emit(streamCtx, ch, core.MuxStreamEvent{Type: "content", Content: w + " "})
+				core.Emit(streamCtx, ch, core.RelayStreamEvent{Type: "content", Content: w + " "})
 			}
 		}
-		core.Emit(streamCtx, ch, core.MuxStreamEvent{Type: "done"})
+		core.Emit(streamCtx, ch, core.RelayStreamEvent{Type: "done"})
 	}()
 
 	return llm.NewStreamResult(ch, "", cancel), nil

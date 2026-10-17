@@ -6,8 +6,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/provider/adapters"
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/adapters"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 func TestCustomProviderIsClientOwned(t *testing.T) {
@@ -53,7 +53,7 @@ func TestCustomProviderIsClientOwned(t *testing.T) {
 }
 
 func TestExplicitCustomProviderNeedsNoGlobalRegistration(t *testing.T) {
-	c := Client(&core.MuxConfig{Provider: "private", BaseURL: "https://private.example.test/v1", APIKey: "local-key"})
+	c := Client(&core.RelayConfig{Provider: "private", BaseURL: "https://private.example.test/v1", APIKey: "local-key"})
 	info := c.GetProviderInfo("private")
 	if info == nil || info.BaseURL != "https://private.example.test/v1" {
 		t.Fatalf("explicit provider info = %+v", info)
@@ -87,14 +87,14 @@ func TestCustomProviderRejectsUnsafeConfiguration(t *testing.T) {
 	if c.GetProviderInfo("private") != nil {
 		t.Fatal("invalid custom provider was registered")
 	}
-	invalid := Client(&core.MuxConfig{Provider: "private", BaseURL: "https://user:secret@example.test/v1"})
+	invalid := Client(&core.RelayConfig{Provider: "private", BaseURL: "https://user:secret@example.test/v1"})
 	if _, err := invalid.getOrCreateProvider("private"); err == nil || !strings.Contains(err.Error(), "invalid base URL") {
 		t.Fatalf("unsafe explicit URL error = %v", err)
 	}
 }
 
 func TestCustomProviderOverridesInitialExplicitEndpoint(t *testing.T) {
-	c := Client(&core.MuxConfig{Provider: "private", BaseURL: "https://old.example.test/v1", APIKey: "local-key"})
+	c := Client(&core.RelayConfig{Provider: "private", BaseURL: "https://old.example.test/v1", APIKey: "local-key"})
 	if err := c.RegisterCustomProvider("private", "https://new.example.test/v1", ""); err != nil {
 		t.Fatal(err)
 	}

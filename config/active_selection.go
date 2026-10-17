@@ -3,7 +3,7 @@ package config
 import (
 	"strings"
 
-	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/relay/catalog"
 )
 
 // ActiveModel returns the user's selected model from provider.json (canonical when possible).

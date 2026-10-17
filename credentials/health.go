@@ -14,7 +14,7 @@ func StorageStatus(ctx context.Context) (ok bool, detail string) {
 	if store == nil {
 		return false, "credential store not initialized"
 	}
-	_, err := store.Get(ctx, AccountForEnv("___MUX_STORAGE_PROBE___"))
+	_, err := store.Get(ctx, AccountForEnv("___RELAY_STORAGE_PROBE___"))
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		return false, err.Error()
 	}

@@ -3,8 +3,8 @@ package runtime
 import (
 	"context"
 
-	"github.com/GrayCodeAI/mux/provider"
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // ChatTransportOpts supplies host-side overrides while transport ownership
@@ -64,5 +64,5 @@ func directChatProvider(_ context.Context, primary string) core.Provider {
 	if primary == "" {
 		return nil
 	}
-	return provider.NewLazyProvider(&core.MuxConfig{Provider: primary})
+	return provider.NewLazyProvider(&core.RelayConfig{Provider: primary})
 }
