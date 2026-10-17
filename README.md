@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.svg" alt="mux" width="480"/>
+  <img src="assets/logo.svg" alt="relay" width="480"/>
 </p>
 
 <h1 align="center">Universal LLM Provider Runtime</h1>
@@ -11,9 +11,9 @@
 <p align="center">
   <a href="https://golang.org/"><img src="https://img.shields.io/badge/Go-1.27.2+-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License"></a>
-  <a href="https://github.com/GrayCodeAI/mux/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/GrayCodeAI/mux/ci.yml?style=flat-square&label=tests" alt="CI"></a>
-  <a href="https://github.com/GrayCodeAI/mux/releases"><img src="https://img.shields.io/github/v/release/GrayCodeAI/mux?style=flat-square&label=release&color=green" alt="Release"></a>
-  <a href="https://pkg.go.dev/github.com/GrayCodeAI/mux"><img src="https://img.shields.io/badge/godoc-reference-00ADD8?style=flat-square&logo=go" alt="GoDoc"></a>
+  <a href="https://github.com/GrayCodeAI/relay/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/GrayCodeAI/relay/ci.yml?style=flat-square&label=tests" alt="CI"></a>
+  <a href="https://github.com/GrayCodeAI/relay/releases"><img src="https://img.shields.io/github/v/release/GrayCodeAI/relay?style=flat-square&label=release&color=green" alt="Release"></a>
+  <a href="https://pkg.go.dev/github.com/GrayCodeAI/relay"><img src="https://img.shields.io/badge/godoc-reference-00ADD8?style=flat-square&logo=go" alt="GoDoc"></a>
 </p>
 
 <p align="center">
@@ -28,24 +28,24 @@
 
 ---
 
-## What is mux
+## What is relay
 
-mux is the LLM provider runtime that powers the [decoder](https://github.com/GrayCodeAI/decoder) coding agent. It handles everything between your application and LLM APIs — authentication, model resolution, streaming, retries, rate limiting, and caching.
+relay is the LLM provider runtime that powers the [decoder](https://github.com/GrayCodeAI/decoder) coding agent. It handles everything between your application and LLM APIs — authentication, model resolution, streaming, retries, rate limiting, and caching.
 
-When your app calls a model, mux figures out which provider to use, how to talk to it, and how to stream the response back. Switch from Anthropic to Ollama? mux handles the translation. API returns 529? mux retries with backoff. Response hits `max_tokens`? mux continues automatically.
+When your app calls a model, relay figures out which provider to use, how to talk to it, and how to stream the response back. Switch from Anthropic to Ollama? relay handles the translation. API returns 529? relay retries with backoff. Response hits `max_tokens`? relay continues automatically.
 
-**Your app never talks to an LLM API directly. mux does.**
+**Your app never talks to an LLM API directly. relay does.**
 
 Decoder is the product face: it owns UX, agent orchestration, tools, permissions,
-sessions, and product semantics. Mux is the provider engine: it owns
+sessions, and product semantics. Relay is the provider engine: it owns
 credentials, catalog and route resolution, provider transports, normalized
 streams, retry/fallback, usage, and provider telemetry. Decoder integrates through
-the stable [`engine`](engine/) facade rather than assembling Mux's internal
+the stable [`engine`](engine/) facade rather than assembling Relay's internal
 provider packages.
 
 ## Ecosystem Boundaries
 
-mux is a Decoder support engine. Keep the dependency edge one-way.
+relay is a Decoder support engine. Keep the dependency edge one-way.
 
 Hosts may import exactly four packages:
 
@@ -58,7 +58,7 @@ Hosts may import exactly four packages:
 
 Everything else is engine-internal: `provider`, `catalog`, `config`,
 `credentials`, `router`, `runtime`, and their subpackages are not shared
-contracts. Enforced by `decoder/scripts/check-mux-engine-boundary.sh`
+contracts. Enforced by `decoder/scripts/check-relay-engine-boundary.sh`
 and two Go AST tests in `decoder/internal/testaudit/`.
 
 Exception: a fixed set of engine-internal symbols is reachable through the
@@ -74,7 +74,7 @@ symbols are frozen as part of the contract; see
 ## Quick Start
 
 ```bash
-go get github.com/GrayCodeAI/mux@main
+go get github.com/GrayCodeAI/relay@main
 ```
 
 Until a post-rename release is tagged, use `@main`; the existing `v0.0.1` tag
@@ -89,7 +89,7 @@ import (
     "context"
     "fmt"
 
-    "github.com/GrayCodeAI/mux/engine"
+    "github.com/GrayCodeAI/relay/engine"
 )
 
 // Hosts (like decoder) must use the stable engine facade
@@ -164,7 +164,7 @@ GitHub OIDC keyless authentication for cloud deployments — mints a short-lived
 
 ### OpenAI-Compatible Proxy
 
-Serves `POST /v1/chat/completions` so existing OpenAI SDK clients can talk to mux unchanged.
+Serves `POST /v1/chat/completions` so existing OpenAI SDK clients can talk to relay unchanged.
 
 ### Load-Balancing Strategies
 
@@ -184,7 +184,7 @@ Named `primary` / `weak` / `editor` model slots with fallback to primary, plus a
 
 ### gRPC Transport (opt-in, internal)
 
-`internal/grpc` holds an optional gRPC transport behind the `grpc` build tag. It serves `mux.v1.ChatService/Chat` with a registered `json` content subtype (no `.proto` files or generated stubs; clients call with `grpc.CallContentSubtype("json")`), backed by `EngineChatService` over `conversation.Engine`. The package is internal, so hosts cannot import it, and nothing in mux starts it. `google.golang.org/grpc` is a direct requirement in `go.mod`, so it appears in consumers' module graphs, but only `-tags grpc` builds link it.
+`internal/grpc` holds an optional gRPC transport behind the `grpc` build tag. It serves `relay.v1.ChatService/Chat` with a registered `json` content subtype (no `.proto` files or generated stubs; clients call with `grpc.CallContentSubtype("json")`), backed by `EngineChatService` over `conversation.Engine`. The package is internal, so hosts cannot import it, and nothing in relay starts it. `google.golang.org/grpc` is a direct requirement in `go.mod`, so it appears in consumers' module graphs, but only `-tags grpc` builds link it.
 
 ## Documentation
 
@@ -299,12 +299,12 @@ config.SaveProviderConfig(cfg, "")               // save changes
 ## Architecture
 
 ```
-mux/
+relay/
 ├── engine/                 # Stable host-facing facade (hosts import engine, llm, graph, tools)
 ├── llm/                    # Host-facing DTOs and the Provider port that engine re-exports
 ├── graph/                  # Portable execution-graph vocabulary
 ├── tools/                  # Tool-call and tool-result contracts
-├── provider/               # Provider runtime composition root (MuxClient)
+├── provider/               # Provider runtime composition root (RelayClient)
 │   ├── core/               # Provider-neutral wire, stream, retry, and transport primitives
 │   ├── adapters/           # Provider protocol adapters and construction registry
 │   ├── resilience/         # Rate limits, continuation, guardrails, and error policy
@@ -338,7 +338,7 @@ mux/
 ├── utils/                  # Error utilities
 ├── api/                    # OpenAPI spec for internal/api
 ├── internal/
-│   ├── api/                # HTTP API server (library code; no mux binary starts it)
+│   ├── api/                # HTTP API server (library code; no relay binary starts it)
 │   ├── cache/              # Cache backends and response cache warmer
 │   ├── grpc/               # Optional gRPC transport (build tag grpc)
 │   ├── health/             # Provider health checker
@@ -354,18 +354,18 @@ mux/
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed system design and data flows.
 
 `operationsgraph.Build` projects resolved routes and normalized usage into
-`mux.graph/v1` operations nodes. Provider, model, request ID, and generated
+`relay.graph/v1` operations nodes. Provider, model, request ID, and generated
 content are represented only by SHA-256 digests; token counts, finish reason,
 tool-call count, and deployment-routing state remain queryable.
 
 ## Ecosystem
 
-mux is part of the graycode-eco:
+relay is part of the graycode-eco:
 
 | Component | Repository | Purpose |
 |---|---|---|
 | **decoder** | [GrayCodeAI/decoder](https://github.com/GrayCodeAI/decoder) | AI coding agent |
-| **mux** | This repo | LLM provider runtime |
+| **relay** | This repo | LLM provider runtime |
 
 ## Development
 

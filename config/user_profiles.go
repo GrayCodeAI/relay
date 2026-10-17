@@ -11,7 +11,7 @@ import (
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ProviderProfiles — saved, named provider configurations that users can
-// switch between. Stored at ~/.mux/profiles.json.
+// switch between. Stored at ~/.relay/profiles.json.
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ProviderProfile is a saved provider configuration.
@@ -30,7 +30,7 @@ type ProviderProfile struct {
 // ProfilesPath returns the path to the profiles file.
 func ProfilesPath() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".mux", "profiles.json")
+	return filepath.Join(home, ".relay", "profiles.json")
 }
 
 // LoadProfiles reads saved provider profiles.

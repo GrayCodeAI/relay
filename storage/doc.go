@@ -1,4 +1,4 @@
-// Package storage provides mux's persistence layer: virtual keys and an
+// Package storage provides relay's persistence layer: virtual keys and an
 // SQLite-backed budget store (BudgetStore / SQLiteStore) for tracking usage
 // and spend limits.
 package storage

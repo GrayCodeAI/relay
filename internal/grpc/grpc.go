@@ -1,4 +1,4 @@
-// Package grpc is Mux's optional gRPC transport for the conversation engine.
+// Package grpc is Relay's optional gRPC transport for the conversation engine.
 //
 // This untagged file holds the transport-independent ChatService contract,
 // its request/response structs, a no-op default (NewChatService) and
@@ -6,12 +6,12 @@
 // prompt. It does not import google.golang.org/grpc.
 //
 // server_grpc.go (build tag "grpc") imports google.golang.org/grpc, registers
-// a "json" codec and serves mux.v1.ChatService/Chat. There are no .proto
+// a "json" codec and serves relay.v1.ChatService/Chat. There are no .proto
 // files or generated stubs: clients select grpc.CallContentSubtype("json").
 // Because of that tagged file, google.golang.org/grpc is a direct requirement
 // in go.mod and appears in consumers' module graphs, although untagged builds
 // do not link it. The package is internal, so hosts cannot import it, and
-// nothing in Mux starts the server. See README.md.
+// nothing in Relay starts the server. See README.md.
 package grpc
 
 import (
@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GrayCodeAI/mux/conversation"
+	"github.com/GrayCodeAI/relay/conversation"
 )
 
 // ChatRequest is the unary Chat request payload. It mirrors the HTTP
@@ -39,7 +39,7 @@ type ChatResponse struct {
 	FinishReason string
 }
 
-// ChatService is the mux gRPC service contract: a single unary Chat RPC.
+// ChatService is the relay gRPC service contract: a single unary Chat RPC.
 // EngineChatService is the conversation.Engine-backed implementation.
 type ChatService interface {
 	Chat(ctx context.Context, req *ChatRequest) (*ChatResponse, error)
@@ -55,7 +55,7 @@ var ErrUnimplemented = errUnimplemented{}
 
 type errUnimplemented struct{}
 
-func (errUnimplemented) Error() string { return "mux/grpc: ChatService not implemented" }
+func (errUnimplemented) Error() string { return "relay/grpc: ChatService not implemented" }
 
 func (noopChatService) Chat(_ context.Context, _ *ChatRequest) (*ChatResponse, error) {
 	return nil, ErrUnimplemented
@@ -88,7 +88,7 @@ func (s *EngineChatService) Chat(ctx context.Context, req *ChatRequest) (*ChatRe
 		return nil, ErrUnimplemented
 	}
 	if req == nil {
-		return nil, fmt.Errorf("mux/grpc: chat request is required")
+		return nil, fmt.Errorf("relay/grpc: chat request is required")
 	}
 	ch, err := s.engine.Prompt(ctx, req.Message, conversation.PromptOpts{
 		Model:        req.Model,

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/relay/catalog"
 )
 
 // ErrorCode is a stable, machine-readable engine failure category.
@@ -44,9 +44,9 @@ func (e *Error) Error() string {
 		return e.Message
 	}
 	if e.Operation != "" {
-		return fmt.Sprintf("mux engine: %s failed", e.Operation)
+		return fmt.Sprintf("relay engine: %s failed", e.Operation)
 	}
-	return "mux engine error"
+	return "relay engine error"
 }
 
 func (e *Error) Unwrap() error {

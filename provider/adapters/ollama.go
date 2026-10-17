@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // OllamaClient uses the OpenAI-compatible local Ollama endpoint.
@@ -24,11 +24,11 @@ func NewOllamaClient(apiKey, openAIBase string, compat *OpenAICompatConfig, opts
 
 func (c *OllamaClient) Name() string { return "ollama" }
 
-func (c *OllamaClient) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
+func (c *OllamaClient) Chat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.RelayResponse, error) {
 	return c.openAI.Chat(ctx, messages, opts)
 }
 
-func (c *OllamaClient) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (c *OllamaClient) StreamChat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	return c.openAI.StreamChat(ctx, messages, opts)
 }
 

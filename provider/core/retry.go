@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/GrayCodeAI/mux/types"
+	"github.com/GrayCodeAI/relay/types"
 )
 
 // RetryConfig controls retry behavior for HTTP clients.
@@ -99,9 +99,9 @@ func parseRetryDelay(errMsg string) time.Duration {
 // DoWithRetry executes an HTTP request with retry logic.
 //
 // Note: DoWithRetry operates at the transport layer, before
-// formatAPIError constructs *MuxError. Structured-error awareness
+// formatAPIError constructs *RelayError. Structured-error awareness
 // lives in the fallback chain (fallback.go:240-244) where
-// *MuxError.IsRetriable() / IsAuthError() drive provider
+// *RelayError.IsRetriable() / IsAuthError() drive provider
 // rotation. DoWithRetry only needs the raw transport status code
 // and the underlying network error to decide whether to retry the
 // same request.
@@ -168,5 +168,5 @@ func DoWithRetry(ctx context.Context, httpClient *http.Client, req *http.Request
 		_ = resp.Body.Close()
 	}
 
-	return nil, fmt.Errorf("mux: %s: max retries (%d) exceeded for %s: %w", req.URL.Host, rc.MaxRetries, req.URL.Path, lastErr)
+	return nil, fmt.Errorf("relay: %s: max retries (%d) exceeded for %s: %w", req.URL.Host, rc.MaxRetries, req.URL.Path, lastErr)
 }

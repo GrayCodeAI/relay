@@ -15,8 +15,8 @@ import (
 // so callers can match on either; the BudgetProvider depends only on the
 // structural method set, not on these specific values.
 var (
-	ErrBudgetExceeded    = errors.New("mux: virtual key budget exceeded")
-	ErrUnknownVirtualKey = errors.New("mux: unknown virtual key")
+	ErrBudgetExceeded    = errors.New("relay: virtual key budget exceeded")
+	ErrUnknownVirtualKey = errors.New("relay: unknown virtual key")
 )
 
 // VirtualKey is a logical key that maps to a real provider key and carries a

@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // DeepSeekClient uses the OpenAI-compatible DeepSeek endpoint.
@@ -24,11 +24,11 @@ func NewDeepSeekClient(apiKey, openAIBase string, compat *OpenAICompatConfig, op
 
 func (c *DeepSeekClient) Name() string { return "deepseek" }
 
-func (c *DeepSeekClient) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
+func (c *DeepSeekClient) Chat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.RelayResponse, error) {
 	return c.openAI.Chat(ctx, messages, opts)
 }
 
-func (c *DeepSeekClient) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (c *DeepSeekClient) StreamChat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	return c.openAI.StreamChat(ctx, messages, opts)
 }
 

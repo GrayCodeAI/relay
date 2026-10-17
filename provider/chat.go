@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GrayCodeAI/mux/provider/core"
-	"github.com/GrayCodeAI/mux/provider/resilience"
+	"github.com/GrayCodeAI/relay/provider/core"
+	"github.com/GrayCodeAI/relay/provider/resilience"
 )
 
 // Chat sends a chat request to the specified (or default) provider.
-func (c *MuxClient) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
+func (c *RelayClient) Chat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.RelayResponse, error) {
 	if len(messages) == 0 {
-		return nil, fmt.Errorf("mux: messages must not be empty")
+		return nil, fmt.Errorf("relay: messages must not be empty")
 	}
 	provider := opts.Provider
 	if provider == "" {
@@ -34,7 +34,7 @@ func (c *MuxClient) Chat(ctx context.Context, messages []core.MuxMessage, opts c
 			Temperature: opts.Temperature,
 			MaxTokens:   opts.MaxTokens,
 		}
-		return c.coalescer.Coalesce(ctx, key, func() (*core.MuxResponse, error) {
+		return c.coalescer.Coalesce(ctx, key, func() (*core.RelayResponse, error) {
 			return p.Chat(ctx, messages, opts)
 		})
 	}
@@ -43,9 +43,9 @@ func (c *MuxClient) Chat(ctx context.Context, messages []core.MuxMessage, opts c
 }
 
 // StreamChat sends a streaming chat request.
-func (c *MuxClient) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (c *RelayClient) StreamChat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	if len(messages) == 0 {
-		return nil, fmt.Errorf("mux: messages must not be empty")
+		return nil, fmt.Errorf("relay: messages must not be empty")
 	}
 	provider := opts.Provider
 	if provider == "" {
@@ -63,9 +63,9 @@ func (c *MuxClient) StreamChat(ctx context.Context, messages []core.MuxMessage, 
 
 // StreamChatContinue is like StreamChat but automatically continues if the response
 // hits max_tokens with text-only content. Continuations are transparent to the caller.
-func (c *MuxClient) StreamChatContinue(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions, cfg core.ContinuationConfig) (*core.StreamResult, error) {
+func (c *RelayClient) StreamChatContinue(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions, cfg core.ContinuationConfig) (*core.StreamResult, error) {
 	if len(messages) == 0 {
-		return nil, fmt.Errorf("mux: messages must not be empty")
+		return nil, fmt.Errorf("relay: messages must not be empty")
 	}
 	provider := opts.Provider
 	if provider == "" {

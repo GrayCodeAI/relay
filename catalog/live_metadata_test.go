@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/catalog/live"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/catalog/live"
 )
 
 func TestLiveEntriesToCatalog_PreservesFullJSONInOffering(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // MiniMaxClient uses the OpenAI-compatible MiniMax endpoint.
@@ -24,11 +24,11 @@ func NewMiniMaxClient(apiKey, openAIBase string, compat *OpenAICompatConfig, opt
 
 func (c *MiniMaxClient) Name() string { return "minimax" }
 
-func (c *MiniMaxClient) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
+func (c *MiniMaxClient) Chat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.RelayResponse, error) {
 	return c.openAI.Chat(ctx, messages, opts)
 }
 
-func (c *MiniMaxClient) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (c *MiniMaxClient) StreamChat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	return c.openAI.StreamChat(ctx, messages, opts)
 }
 

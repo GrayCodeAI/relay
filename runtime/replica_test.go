@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/config"
-	"github.com/GrayCodeAI/mux/router/controlplane"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/config"
+	"github.com/GrayCodeAI/relay/router/controlplane"
 )
 
 func TestNewReplicaFromStateUsesOnlyExplicitLocalDeployment(t *testing.T) {

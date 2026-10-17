@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/relay/catalog"
 )
 
 func testModelCatalog() catalog.ModelCatalog {
@@ -168,8 +168,8 @@ func TestLoadProviderConfigWithErrorRejectsConflictingVersionAliases(t *testing.
 func TestGetProviderConfigDir(t *testing.T) {
 	// Test with env var set
 	dir := t.TempDir()
-	os.Setenv("MUX_CONFIG_DIR", dir)
-	defer os.Unsetenv("MUX_CONFIG_DIR")
+	os.Setenv("RELAY_CONFIG_DIR", dir)
+	defer os.Unsetenv("RELAY_CONFIG_DIR")
 
 	got, err := GetProviderConfigDir()
 	if err != nil {
@@ -180,17 +180,17 @@ func TestGetProviderConfigDir(t *testing.T) {
 	}
 
 	// Test without env var (uses OS config dir when available)
-	os.Unsetenv("MUX_CONFIG_DIR")
+	os.Unsetenv("RELAY_CONFIG_DIR")
 	got, _ = GetProviderConfigDir()
-	if !strings.HasSuffix(got, filepath.Join("mux")) {
-		t.Errorf("expected path ending in mux, got %q", got)
+	if !strings.HasSuffix(got, filepath.Join("relay")) {
+		t.Errorf("expected path ending in relay, got %q", got)
 	}
 }
 
 func TestGetProviderConfigPath(t *testing.T) {
 	dir := t.TempDir()
-	os.Setenv("MUX_CONFIG_DIR", dir)
-	defer os.Unsetenv("MUX_CONFIG_DIR")
+	os.Setenv("RELAY_CONFIG_DIR", dir)
+	defer os.Unsetenv("RELAY_CONFIG_DIR")
 
 	got, err := GetProviderConfigPath()
 	if err != nil {

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/provider/resilience"
+	"github.com/GrayCodeAI/relay/provider/resilience"
 )
 
 func TestModerationProvider_AllowsSafe(t *testing.T) {
@@ -18,7 +18,7 @@ func TestModerationProvider_AllowsSafe(t *testing.T) {
 		resilience.WithModerationMaxTokens(1000),
 	)
 
-	msgs := []MuxMessage{{Role: "user", Content: "Hello, how are you?"}}
+	msgs := []RelayMessage{{Role: "user", Content: "Hello, how are you?"}}
 	resp, err := mp.Chat(context.Background(), msgs, ChatOptions{Model: "test"})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
@@ -39,7 +39,7 @@ func TestModerationProvider_BlocksPattern(t *testing.T) {
 		resilience.WithBlockedPatterns([]string{`(?i)\bforbidden\b`}),
 	)
 
-	msgs := []MuxMessage{{Role: "user", Content: "This contains forbidden content"}}
+	msgs := []RelayMessage{{Role: "user", Content: "This contains forbidden content"}}
 	_, err := mp.Chat(context.Background(), msgs, ChatOptions{Model: "test"})
 	if err == nil {
 		t.Fatal("expected error for blocked pattern, got nil")
@@ -61,7 +61,7 @@ func TestModerationProvider_TokenLimit(t *testing.T) {
 	)
 
 	// 10 words exceeds limit of 5
-	msgs := []MuxMessage{{Role: "user", Content: "one two three four five six seven eight nine ten"}}
+	msgs := []RelayMessage{{Role: "user", Content: "one two three four five six seven eight nine ten"}}
 	_, err := mp.Chat(context.Background(), msgs, ChatOptions{Model: "test"})
 	if err == nil {
 		t.Fatal("expected error for token limit, got nil")
@@ -82,7 +82,7 @@ func TestModerationProvider_TokenLimitAllowsUnderLimit(t *testing.T) {
 		resilience.WithModerationMaxTokens(100),
 	)
 
-	msgs := []MuxMessage{{Role: "user", Content: "short message"}}
+	msgs := []RelayMessage{{Role: "user", Content: "short message"}}
 	_, err := mp.Chat(context.Background(), msgs, ChatOptions{Model: "test"})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
@@ -105,7 +105,7 @@ func TestModerationProvider_CustomChecker(t *testing.T) {
 		}),
 	)
 
-	msgs := []MuxMessage{{Role: "user", Content: "This has a Banned word"}}
+	msgs := []RelayMessage{{Role: "user", Content: "This has a Banned word"}}
 	_, err := mp.Chat(context.Background(), msgs, ChatOptions{Model: "test"})
 	if err == nil {
 		t.Fatal("expected error from custom checker, got nil")
@@ -128,7 +128,7 @@ func TestModerationProvider_CustomCheckerAllows(t *testing.T) {
 		}),
 	)
 
-	msgs := []MuxMessage{{Role: "user", Content: "safe content"}}
+	msgs := []RelayMessage{{Role: "user", Content: "safe content"}}
 	_, err := mp.Chat(context.Background(), msgs, ChatOptions{Model: "test"})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
@@ -145,7 +145,7 @@ func TestModerationProvider_StreamChat(t *testing.T) {
 	)
 
 	// Safe message should pass through.
-	msgs := []MuxMessage{{Role: "user", Content: "Hello"}}
+	msgs := []RelayMessage{{Role: "user", Content: "Hello"}}
 	result, err := mp.StreamChat(context.Background(), msgs, ChatOptions{Model: "test"})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
@@ -174,7 +174,7 @@ func TestModerationProvider_StreamChatBlocked(t *testing.T) {
 		resilience.WithBlockedPatterns([]string{`(?i)forbidden`}),
 	)
 
-	msgs := []MuxMessage{{Role: "user", Content: "forbidden content"}}
+	msgs := []RelayMessage{{Role: "user", Content: "forbidden content"}}
 	_, err := mp.StreamChat(context.Background(), msgs, ChatOptions{Model: "test"})
 	if err == nil {
 		t.Fatal("expected error for blocked pattern in StreamChat, got nil")
@@ -192,7 +192,7 @@ func TestModerationProvider_ContentParts(t *testing.T) {
 		resilience.WithBlockedPatterns([]string{`(?i)secret`}),
 	)
 
-	msgs := []MuxMessage{{
+	msgs := []RelayMessage{{
 		Role: "user",
 		ContentParts: []ContentPart{
 			{Type: "text", Text: "this has secret info"},

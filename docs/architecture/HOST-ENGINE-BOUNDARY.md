@@ -1,4 +1,4 @@
-# Host–Mux Engine Boundary
+# Host–Relay Engine Boundary
 
 Status: accepted. The host-facing compatibility contract is
 `engine.ContractVersion == "2"`.
@@ -6,7 +6,7 @@ Status: accepted. The host-facing compatibility contract is
 ## Decision
 
 Decoder is the product face. It owns the terminal UI, agent loop, tool execution,
-permissions, conversation history, checkpoints, and product semantics. Mux is
+permissions, conversation history, checkpoints, and product semantics. Relay is
 the engine. It owns credentials, provider/deployment metadata, model discovery,
 catalog compilation, selection, transport construction, provider request and
 stream normalization, resilience, normalized usage, and provider telemetry.
@@ -19,7 +19,7 @@ Decoder (face: UX, session, tools, permissions)
   |
   | stable DTOs and methods
   v
-github.com/GrayCodeAI/mux/engine  [contract v2]
+github.com/GrayCodeAI/relay/engine  [contract v2]
   |
   +--> injected secret store
   +--> injected state paths
@@ -30,9 +30,9 @@ github.com/GrayCodeAI/mux/engine  [contract v2]
 Provider model APIs
 ```
 
-The dependency is one-way: Mux must not import Decoder. Decoder's integration layer
-may import `mux/engine`; Decoder command, conversation, and UI packages must not
-assemble Mux's `catalog`, `provider`, `config`, `credentials`, `router`,
+The dependency is one-way: Relay must not import Decoder. Decoder's integration layer
+may import `relay/engine`; Decoder command, conversation, and UI packages must not
+assemble Relay's `catalog`, `provider`, `config`, `credentials`, `router`,
 `runtime`, or `setup` packages.
 
 ## Composition root
@@ -100,7 +100,7 @@ hosts exactly like changing `engine` itself and needs a contract-version bump.
 
 Decoder uses `engine.MapStore`, `engine.DefaultStore`, `engine.SetDefaultStore`,
 `engine.OperationsGraphInput`, and `engine.BuildOperationsGraph` today, and its
-import-path boundary checks cannot see through the aliases. Mux therefore
+import-path boundary checks cannot see through the aliases. Relay therefore
 guards the set itself: `engine/host_surface_test.go` walks the exported surface
 of the four contract packages, follows every engine-internal symbol it reaches
 through struct fields, signatures, and exported methods, and fails when the
@@ -161,14 +161,14 @@ normal provider-state writes.
 
 Hosts express capabilities (`streaming`, `tools`, `vision`, structured JSON,
 reasoning, and context size) plus an intent or explicit provider/model. An
-explicit model is a hard constraint unless the host enables fallback. Mux
+explicit model is a hard constraint unless the host enables fallback. Relay
 owns canonicalization, gateway ownership, deployment routing, and capability
 matching.
 
-Mux generation is stateless from Decoder's point of view:
+Relay generation is stateless from Decoder's point of view:
 
 ```text
-Decoder owns                         Mux owns
+Decoder owns                         Relay owns
 ----------                        -----------
 conversation history              route decision
 tool permission and execution     provider transport
@@ -180,7 +180,7 @@ session lifecycle                 normalized usage/telemetry
 `Stream` is pull-based, cancellable, and must be closed. It emits the selected
 route before provider events and normalizes content, thinking, tool calls,
 usage, retry/continuation, TTFT, and completion. Unknown future event types are
-additive and must be ignored safely. Mux emits tool requests; Decoder authorizes
+additive and must be ignored safely. Relay emits tool requests; Decoder authorizes
 and executes tools, appends results to its history, and begins the next model
 turn.
 
@@ -218,25 +218,25 @@ diagnostics; live readiness is an explicit network operation.
 
 ## Release and sibling-repository order
 
-The boundary is delivered Mux-first:
+The boundary is delivered Relay-first:
 
 ```text
-1. Change and verify standalone Mux
-2. Commit Mux and publish a resolvable release/commit
-3. Update Decoder's Mux module version when required
-4. Update Decoder's Mux module pin to that exact published commit
+1. Change and verify standalone Relay
+2. Commit Relay and publish a resolvable release/commit
+3. Update Decoder's Relay module version when required
+4. Update Decoder's Relay module pin to that exact published commit
 5. Verify Decoder integration, boundary checks, and clean-clone/module builds
 6. Commit the Decoder module-pin update in Decoder's repository
 ```
 
-Decoder must never depend on an uncommitted Mux worktree. The parent workspace
+Decoder must never depend on an uncommitted Relay worktree. The parent workspace
 uses a sibling checkout for source identity during local development; a
 resolvable published module version is also required for workflows that build
 Decoder with `GOWORK=off`.
 
 ## Compatibility policy
 
-Lower-level Mux packages remain public for non-Decoder consumers and staged
+Lower-level Relay packages remain public for non-Decoder consumers and staged
 migration, but they are not part of Decoder's product boundary, apart from the
 frozen symbols listed above. Additive fields
 and stream events are allowed within contract v2. Removing or changing stable

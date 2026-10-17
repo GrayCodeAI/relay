@@ -1,6 +1,6 @@
 package config
 
-import "github.com/GrayCodeAI/mux/catalog/opencodego"
+import "github.com/GrayCodeAI/relay/catalog/opencodego"
 
 // APIProvider is the type for supported LLM providers.
 type APIProvider = string

@@ -3,7 +3,7 @@ package catalog_test
 import (
 	"testing"
 
-	"github.com/GrayCodeAI/mux/catalog"
+	"github.com/GrayCodeAI/relay/catalog"
 )
 
 func TestGatewayForModel_OpenRouterPrefix(t *testing.T) {

@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GrayCodeAI/mux/types"
+	"github.com/GrayCodeAI/relay/types"
 )
 
-// MuxError is a structured error that preserves provider context,
+// RelayError is a structured error that preserves provider context,
 // HTTP metadata, and request identification for debugging.
-type MuxError struct {
+type RelayError struct {
 	Provider   string
 	Op         string // operation that failed (e.g. "chat", "stream", "ping")
 	StatusCode int
@@ -19,8 +19,8 @@ type MuxError struct {
 	Err        error
 }
 
-func (e *MuxError) Error() string {
-	s := fmt.Sprintf("mux: %s %s failed", e.Provider, e.Op)
+func (e *RelayError) Error() string {
+	s := fmt.Sprintf("relay: %s %s failed", e.Provider, e.Op)
 	if e.StatusCode > 0 {
 		s += fmt.Sprintf(" (HTTP %d)", e.StatusCode)
 	}
@@ -36,10 +36,10 @@ func (e *MuxError) Error() string {
 	return s
 }
 
-func (e *MuxError) Unwrap() error { return e.Err }
+func (e *RelayError) Unwrap() error { return e.Err }
 
 // IsRetriable returns true if the error is likely transient and retrying may help.
-func (e *MuxError) IsRetriable() bool {
+func (e *RelayError) IsRetriable() bool {
 	switch e.StatusCode {
 	case 408, 429, 500, 502, 503, 504, 529:
 		return true
@@ -48,12 +48,12 @@ func (e *MuxError) IsRetriable() bool {
 }
 
 // IsAuthError returns true if the error indicates an authentication/authorization problem.
-func (e *MuxError) IsAuthError() bool {
+func (e *RelayError) IsAuthError() bool {
 	return e.StatusCode == 401 || e.StatusCode == 403
 }
 
 // IsRateLimited returns true if the error indicates rate limiting.
-func (e *MuxError) IsRateLimited() bool {
+func (e *RelayError) IsRateLimited() bool {
 	return e.StatusCode == 429
 }
 
@@ -77,7 +77,7 @@ var nonRetriableStatusCodes = map[int]bool{
 // In contrast, retry middleware (which uses IsTransient) should be conservative
 // to avoid wasting requests on errors that won't resolve with a retry.
 //
-// *MuxError (returned by FormatAPIError and friends) is preferred over
+// *RelayError (returned by FormatAPIError and friends) is preferred over
 // the string-based heuristic: it carries the structured status code so the
 // classification is exact rather than regex-parsed.
 func IsRetriableError(err error) bool {
@@ -90,12 +90,12 @@ func IsRetriableError(err error) bool {
 	if errors.Is(err, context.Canceled) {
 		return false
 	}
-	// Structured path: trust *MuxError's IsRetriable.
-	var muxErr *MuxError
-	if errors.As(err, &muxErr) {
-		return muxErr.IsRetriable()
+	// Structured path: trust *RelayError's IsRetriable.
+	var relayErr *RelayError
+	if errors.As(err, &relayErr) {
+		return relayErr.IsRetriable()
 	}
-	// Heuristic path for legacy errors that predate the MuxError migration.
+	// Heuristic path for legacy errors that predate the RelayError migration.
 	if types.IsTransient(err) {
 		return true
 	}

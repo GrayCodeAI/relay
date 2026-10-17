@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/credentials"
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/credentials"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 func TestGetOrCreateProvider_VertexUsesAnthropicVertexClient(t *testing.T) {
@@ -22,7 +22,7 @@ func TestGetOrCreateProvider_VertexUsesAnthropicVertexClient(t *testing.T) {
 		t.Fatalf("set VERTEX_REGION: %v", err)
 	}
 
-	c := Client(&core.MuxConfig{Provider: "vertex", APIKey: "test-bearer-token"})
+	c := Client(&core.RelayConfig{Provider: "vertex", APIKey: "test-bearer-token"})
 	p, err := c.getOrCreateProvider("vertex")
 	if err != nil {
 		t.Fatalf("getOrCreateProvider: %v", err)
@@ -46,7 +46,7 @@ func TestGetOrCreateProvider_VertexRegionDefaultsToUsCentral1(t *testing.T) {
 	if err := store.Set(context.Background(), credentials.AccountForEnv("VERTEX_PROJECT_ID"), "my-project"); err != nil {
 		t.Fatal(err)
 	}
-	c := Client(&core.MuxConfig{Provider: "vertex", APIKey: "test-token"})
+	c := Client(&core.RelayConfig{Provider: "vertex", APIKey: "test-token"})
 	p, err := c.getOrCreateProvider("vertex")
 	if err != nil {
 		t.Fatal(err)
@@ -64,17 +64,17 @@ func TestGetOrCreateProvider_VertexRequiresProjectID(t *testing.T) {
 	store := &credentials.MapStore{}
 	credentials.SetDefaultStore(store)
 	t.Cleanup(func() { credentials.SetDefaultStore(nil) })
-	c := Client(&core.MuxConfig{Provider: "vertex", APIKey: "test-token"})
+	c := Client(&core.RelayConfig{Provider: "vertex", APIKey: "test-token"})
 	_, err := c.getOrCreateProvider("vertex")
-	if err == nil || err.Error() != "mux: vertex requires VERTEX_PROJECT_ID" {
+	if err == nil || err.Error() != "relay: vertex requires VERTEX_PROJECT_ID" {
 		t.Fatalf("error = %v, want missing Vertex project", err)
 	}
 }
 
 func TestUnknownProviderIgnoresAmbientOpenAIBase(t *testing.T) {
-	t.Setenv("MUX_ALLOW_DYNAMIC_PROVIDERS", "1")
+	t.Setenv("RELAY_ALLOW_DYNAMIC_PROVIDERS", "1")
 	t.Setenv("OPENAI_API_BASE", "http://attacker.example/v1")
-	c := Client(&core.MuxConfig{Provider: "openai", APIKey: "test-key"})
+	c := Client(&core.RelayConfig{Provider: "openai", APIKey: "test-key"})
 	_, err := c.getOrCreateProvider("ghost")
 	if err == nil || !strings.Contains(err.Error(), "unknown provider") {
 		t.Fatalf("unknown provider error = %v", err)

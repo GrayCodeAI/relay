@@ -6,13 +6,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GrayCodeAI/mux/internal/buildversion"
+	"github.com/GrayCodeAI/relay/internal/buildversion"
 )
 
 // DefaultTimeout is the default end-to-end HTTP timeout for provider clients.
 const DefaultTimeout = 10 * time.Minute
 
-// Version is set by the root mux package's init() from the VERSION file
+// Version is set by the root relay package's init() from the VERSION file
 // (via the provider runtime's SetVersion). Its default is generated from VERSION.
 var Version = buildversion.Version
 
@@ -20,7 +20,7 @@ var Version = buildversion.Version
 func SetVersion(v string) { Version = v }
 
 // UserAgent returns the User-Agent string for HTTP requests.
-func UserAgent() string { return "mux/" + Version }
+func UserAgent() string { return "relay/" + Version }
 
 var (
 	sharedTransport *http.Transport

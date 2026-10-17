@@ -3,7 +3,7 @@ package catalog
 import (
 	"strings"
 
-	"github.com/GrayCodeAI/mux/catalog/registry"
+	"github.com/GrayCodeAI/relay/catalog/registry"
 )
 
 // IsSetupGateway reports whether id is a registered API-key gateway (not an aggregator owner slug).

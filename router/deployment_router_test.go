@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/llm"
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/llm"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 type deploymentMockProvider struct {
@@ -15,32 +15,32 @@ type deploymentMockProvider struct {
 	err        error
 	streamErr  error
 	lastModel  string
-	lastTools  []core.MuxTool
+	lastTools  []core.RelayTool
 	streamDone bool
 	callCount  int
 }
 
-func (m *deploymentMockProvider) Chat(_ context.Context, _ []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
+func (m *deploymentMockProvider) Chat(_ context.Context, _ []core.RelayMessage, opts core.ChatOptions) (*core.RelayResponse, error) {
 	m.lastModel = opts.Model
 	m.lastTools = opts.Tools
 	m.callCount++
 	if m.err != nil {
 		return nil, m.err
 	}
-	return &core.MuxResponse{Content: "from " + m.name}, nil
+	return &core.RelayResponse{Content: "from " + m.name}, nil
 }
 
-func (m *deploymentMockProvider) StreamChat(_ context.Context, _ []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (m *deploymentMockProvider) StreamChat(_ context.Context, _ []core.RelayMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	m.lastModel = opts.Model
 	if m.err != nil {
 		return nil, m.err
 	}
-	ch := make(chan core.MuxStreamEvent, 2)
+	ch := make(chan core.RelayStreamEvent, 2)
 	if m.streamErr != nil {
-		ch <- core.MuxStreamEvent{Type: "error", Error: m.streamErr.Error()}
+		ch <- core.RelayStreamEvent{Type: "error", Error: m.streamErr.Error()}
 	} else {
-		ch <- core.MuxStreamEvent{Type: "content", Content: "from " + m.name}
-		ch <- core.MuxStreamEvent{Type: "done"}
+		ch <- core.RelayStreamEvent{Type: "content", Content: "from " + m.name}
+		ch <- core.RelayStreamEvent{Type: "done"}
 		m.streamDone = true
 	}
 	close(ch)
@@ -74,7 +74,7 @@ func TestDeploymentRouterRewritesCanonicalModelToNativeModel(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err := r.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "anthropic/claude-sonnet-4-6"})
+	resp, err := r.Chat(context.Background(), []core.RelayMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "anthropic/claude-sonnet-4-6"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +110,7 @@ func TestDeploymentRouterFallsBackAcrossStages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err := r.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "anthropic/claude-sonnet-4-6"})
+	resp, err := r.Chat(context.Background(), []core.RelayMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "anthropic/claude-sonnet-4-6"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,7 +137,7 @@ func TestDeploymentRouterReportsActualRouteAndAttempts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err := r.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "anthropic/claude-sonnet-4-6"})
+	resp, err := r.Chat(context.Background(), []core.RelayMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "anthropic/claude-sonnet-4-6"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -164,7 +164,7 @@ func TestDeploymentRouterStreamReportsRouteEvents(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	stream, err := r.StreamChat(context.Background(), []core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "anthropic/claude-sonnet-4-6"})
+	stream, err := r.StreamChat(context.Background(), []core.RelayMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "anthropic/claude-sonnet-4-6"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +248,7 @@ func TestDeploymentRouterFallsBackOnInsufficientCredits(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err := r.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "moonshotai/kimi-k2.6"})
+	resp, err := r.Chat(context.Background(), []core.RelayMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "moonshotai/kimi-k2.6"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -278,7 +278,7 @@ func TestDeploymentRouterNonTransientDoesNotFallback(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = r.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "anthropic/claude-sonnet-4-6"})
+	_, err = r.Chat(context.Background(), []core.RelayMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "anthropic/claude-sonnet-4-6"})
 	if err == nil {
 		t.Fatal("expected auth error")
 	}
@@ -307,7 +307,7 @@ func TestDeploymentRouterMaterializesAzureModelMapping(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = r.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "openai/gpt-4o"})
+	_, err = r.Chat(context.Background(), []core.RelayMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "openai/gpt-4o"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -336,7 +336,7 @@ func TestDeploymentRouterModelMappingOverridesCatalogOffering(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = r.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "anthropic/claude-sonnet-4-6"})
+	_, err = r.Chat(context.Background(), []core.RelayMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "anthropic/claude-sonnet-4-6"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -363,7 +363,7 @@ func TestDeploymentRouterStreamFallbackBeforeOutput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	stream, err := r.StreamChat(context.Background(), []core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "anthropic/claude-sonnet-4-6"})
+	stream, err := r.StreamChat(context.Background(), []core.RelayMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "anthropic/claude-sonnet-4-6"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -426,7 +426,7 @@ func TestDeploymentRouterNativeMimoUsesConfiguredXiaomiDeployment(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = r.Chat(context.Background(), []core.MuxMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "mimo-v2.5-pro"})
+	_, err = r.Chat(context.Background(), []core.RelayMessage{{Role: "user", Content: "hi"}}, core.ChatOptions{Model: "mimo-v2.5-pro"})
 	if err != nil {
 		t.Fatalf("chat: %v", err)
 	}
@@ -463,7 +463,7 @@ func TestDeploymentRouterRetriesPreferDifferentEndpoint(t *testing.T) {
 	}
 
 	resp, err := r.Chat(context.Background(),
-		[]core.MuxMessage{{Role: "user", Content: "hi"}},
+		[]core.RelayMessage{{Role: "user", Content: "hi"}},
 		core.ChatOptions{Model: "anthropic/claude-sonnet-4-6"})
 	if err != nil {
 		t.Fatalf("Chat: %v", err)
@@ -495,11 +495,11 @@ func TestShouldRecordBreakerFailure(t *testing.T) {
 		{"stream timeout kind", &deploymentStreamError{message: "read timed out", info: &llm.StreamErrorInfo{Kind: llm.ErrKindTimeout}}, true},
 		{"stream auth kind", &deploymentStreamError{message: "HTTP 503 but auth", info: &llm.StreamErrorInfo{Kind: llm.ErrKindAuth}}, false},
 		{"stream internal kind uses message", &deploymentStreamError{message: "connection reset", info: &llm.StreamErrorInfo{Kind: llm.ErrKindInternal}}, true},
-		{"server error status", &core.MuxError{Provider: "p", Op: "chat", StatusCode: 503}, true},
-		{"overloaded status", &core.MuxError{Provider: "p", Op: "chat", StatusCode: 529}, true},
-		{"rate limited status", &core.MuxError{Provider: "p", Op: "chat", StatusCode: 429}, false},
-		{"bad request status", &core.MuxError{Provider: "p", Op: "chat", StatusCode: 400}, false},
-		{"transport error without status", &core.MuxError{Provider: "p", Op: "chat", Message: "dial tcp: connection refused"}, true},
+		{"server error status", &core.RelayError{Provider: "p", Op: "chat", StatusCode: 503}, true},
+		{"overloaded status", &core.RelayError{Provider: "p", Op: "chat", StatusCode: 529}, true},
+		{"rate limited status", &core.RelayError{Provider: "p", Op: "chat", StatusCode: 429}, false},
+		{"bad request status", &core.RelayError{Provider: "p", Op: "chat", StatusCode: 400}, false},
+		{"transport error without status", &core.RelayError{Provider: "p", Op: "chat", Message: "dial tcp: connection refused"}, true},
 		{"http 502 in message", fmt.Errorf("upstream returned HTTP 502"), true},
 		{"rate limit message", fmt.Errorf("429 rate limit exceeded"), false},
 		{"connection reset", fmt.Errorf("read: connection reset by peer"), true},

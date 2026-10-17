@@ -7,8 +7,8 @@ cd "$(dirname "$0")/.."
 
 fail=0
 
-# core must not import any mux/provider package.
-if grep -rn --include='*.go' '"github.com/GrayCodeAI/mux/provider' provider/core/ | grep -v '/provider/core"'; then
+# core must not import any relay/provider package.
+if grep -rn --include='*.go' '"github.com/GrayCodeAI/relay/provider' provider/core/ | grep -v '/provider/core"'; then
   echo "FAIL: provider/core must not import other provider packages" >&2
   fail=1
 fi
@@ -17,7 +17,7 @@ fi
 for dir in provider/*/; do
   name=$(basename "$dir")
   [ "$name" = "core" ] && continue
-  if grep -rn --include='*.go' '"github.com/GrayCodeAI/mux/provider' "$dir" | grep -v "/provider/core\""; then
+  if grep -rn --include='*.go' '"github.com/GrayCodeAI/relay/provider' "$dir" | grep -v "/provider/core\""; then
     echo "FAIL: provider/$name may import provider/core only (no facade, no siblings)" >&2
     fail=1
   fi

@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/conversation"
-	"github.com/GrayCodeAI/mux/provider/core"
-	"github.com/GrayCodeAI/mux/storage"
+	"github.com/GrayCodeAI/relay/conversation"
+	"github.com/GrayCodeAI/relay/provider/core"
+	"github.com/GrayCodeAI/relay/storage"
 )
 
 // TestEngineChatServiceContract verifies the constructor surface and the
@@ -32,22 +32,22 @@ func TestEngineChatServiceContract(t *testing.T) {
 
 // scriptedProvider streams a fixed event sequence and records the request.
 type scriptedProvider struct {
-	events []core.MuxStreamEvent
-	gotMsg chan []core.MuxMessage
+	events []core.RelayStreamEvent
+	gotMsg chan []core.RelayMessage
 	gotOpt chan core.ChatOptions
 }
 
 func (p *scriptedProvider) Name() string                 { return "scripted" }
 func (p *scriptedProvider) Ping(_ context.Context) error { return nil }
 
-func (p *scriptedProvider) Chat(context.Context, []core.MuxMessage, core.ChatOptions) (*core.MuxResponse, error) {
+func (p *scriptedProvider) Chat(context.Context, []core.RelayMessage, core.ChatOptions) (*core.RelayResponse, error) {
 	return nil, errors.New("scriptedProvider: Chat is not used by conversation.Engine")
 }
 
-func (p *scriptedProvider) StreamChat(_ context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (p *scriptedProvider) StreamChat(_ context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	p.gotMsg <- messages
 	p.gotOpt <- opts
-	ch := make(chan core.MuxStreamEvent, len(p.events))
+	ch := make(chan core.RelayStreamEvent, len(p.events))
 	for _, evt := range p.events {
 		ch <- evt
 	}
@@ -55,7 +55,7 @@ func (p *scriptedProvider) StreamChat(_ context.Context, messages []core.MuxMess
 	return &core.StreamResult{Events: ch}, nil
 }
 
-func newScriptedEngine(t *testing.T, events ...core.MuxStreamEvent) (*conversation.Engine, *scriptedProvider) {
+func newScriptedEngine(t *testing.T, events ...core.RelayStreamEvent) (*conversation.Engine, *scriptedProvider) {
 	t.Helper()
 	store, err := storage.Open(filepath.Join(t.TempDir(), "grpc.db"))
 	if err != nil {
@@ -64,7 +64,7 @@ func newScriptedEngine(t *testing.T, events ...core.MuxStreamEvent) (*conversati
 	t.Cleanup(func() { _ = store.Close() })
 	prov := &scriptedProvider{
 		events: events,
-		gotMsg: make(chan []core.MuxMessage, 1),
+		gotMsg: make(chan []core.RelayMessage, 1),
 		gotOpt: make(chan core.ChatOptions, 1),
 	}
 	return conversation.New(store, prov), prov
@@ -73,9 +73,9 @@ func newScriptedEngine(t *testing.T, events ...core.MuxStreamEvent) (*conversati
 func TestEngineChatServiceAggregatesEngineStream(t *testing.T) {
 	engine, prov := newScriptedEngine(
 		t,
-		core.MuxStreamEvent{Type: "content", Content: "hel"},
-		core.MuxStreamEvent{Type: "content", Content: "lo"},
-		core.MuxStreamEvent{Type: "done", StopReason: "end_turn", Usage: &core.MuxUsage{CompletionTokens: 2}},
+		core.RelayStreamEvent{Type: "content", Content: "hel"},
+		core.RelayStreamEvent{Type: "content", Content: "lo"},
+		core.RelayStreamEvent{Type: "done", StopReason: "end_turn", Usage: &core.RelayUsage{CompletionTokens: 2}},
 	)
 
 	resp, err := NewEngineChatService(engine).Chat(context.Background(), &ChatRequest{
@@ -110,8 +110,8 @@ func TestEngineChatServiceAggregatesEngineStream(t *testing.T) {
 func TestEngineChatServiceReturnsStreamError(t *testing.T) {
 	engine, _ := newScriptedEngine(
 		t,
-		core.MuxStreamEvent{Type: "content", Content: "partial"},
-		core.MuxStreamEvent{Type: "error", Error: "upstream failed"},
+		core.RelayStreamEvent{Type: "content", Content: "partial"},
+		core.RelayStreamEvent{Type: "error", Error: "upstream failed"},
 	)
 
 	resp, err := NewEngineChatService(engine).Chat(context.Background(), &ChatRequest{Message: "hi"})

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // UsageLimitProvider wraps any Provider and enforces token/cost budgets
@@ -29,10 +29,10 @@ var _ Provider = (*UsageLimitProvider)(nil)
 // Both arguments must be non-nil; an error is returned otherwise.
 func NewUsageLimitProvider(inner Provider, tracker *UsageTracker) (*UsageLimitProvider, error) {
 	if inner == nil {
-		return nil, errors.New("mux: NewUsageLimitProvider inner provider must not be nil")
+		return nil, errors.New("relay: NewUsageLimitProvider inner provider must not be nil")
 	}
 	if tracker == nil {
-		return nil, errors.New("mux: NewUsageLimitProvider tracker must not be nil")
+		return nil, errors.New("relay: NewUsageLimitProvider tracker must not be nil")
 	}
 	return &UsageLimitProvider{inner: inner, tracker: tracker}, nil
 }
@@ -55,9 +55,9 @@ func (u *UsageLimitProvider) Ping(ctx context.Context) error {
 // Chat sends a non-streaming chat request. The call is gated by the
 // usage tracker's CanProceed() and the response tokens are recorded on
 // success.
-func (u *UsageLimitProvider) Chat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*MuxResponse, error) {
+func (u *UsageLimitProvider) Chat(ctx context.Context, messages []RelayMessage, opts ChatOptions) (*RelayResponse, error) {
 	if ok, reason := u.tracker.CanProceed(); !ok {
-		return nil, fmt.Errorf("mux: usage limit exceeded: %s", reason)
+		return nil, fmt.Errorf("relay: usage limit exceeded: %s", reason)
 	}
 
 	resp, err := u.inner.Chat(ctx, messages, opts)
@@ -72,9 +72,9 @@ func (u *UsageLimitProvider) Chat(ctx context.Context, messages []MuxMessage, op
 // StreamChat sends a streaming chat request. The budget check happens
 // before the stream starts. Usage is recorded once the stream delivers
 // a "usage" event (typically the final chunk).
-func (u *UsageLimitProvider) StreamChat(ctx context.Context, messages []MuxMessage, opts ChatOptions) (*StreamResult, error) {
+func (u *UsageLimitProvider) StreamChat(ctx context.Context, messages []RelayMessage, opts ChatOptions) (*StreamResult, error) {
 	if ok, reason := u.tracker.CanProceed(); !ok {
-		return nil, fmt.Errorf("mux: usage limit exceeded: %s", reason)
+		return nil, fmt.Errorf("relay: usage limit exceeded: %s", reason)
 	}
 
 	result, err := u.inner.StreamChat(ctx, messages, opts)
@@ -82,8 +82,8 @@ func (u *UsageLimitProvider) StreamChat(ctx context.Context, messages []MuxMessa
 		return nil, err
 	}
 
-	var previousUsage *core.MuxUsage
-	return core.TransformStreamResult(ctx, result, func(_ context.Context, evt MuxStreamEvent) (MuxStreamEvent, error) {
+	var previousUsage *core.RelayUsage
+	return core.TransformStreamResult(ctx, result, func(_ context.Context, evt RelayStreamEvent) (RelayStreamEvent, error) {
 		if evt.Type == "continuation" {
 			previousUsage = nil
 			return evt, nil
@@ -103,8 +103,8 @@ func (u *UsageLimitProvider) StreamChat(ctx context.Context, messages []MuxMessa
 	}), nil
 }
 
-// recordUsage extracts token count from an MuxResponse and records it.
-func (u *UsageLimitProvider) recordUsage(usage *MuxUsage, opts ChatOptions) {
+// recordUsage extracts token count from an RelayResponse and records it.
+func (u *UsageLimitProvider) recordUsage(usage *RelayUsage, opts ChatOptions) {
 	if usage == nil {
 		return
 	}

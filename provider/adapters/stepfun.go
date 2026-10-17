@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // StepFunClient uses the OpenAI-compatible StepFun endpoint.
@@ -25,11 +25,11 @@ func NewStepFunClient(apiKey, openAIBase string, compat *OpenAICompatConfig, opt
 
 func (c *StepFunClient) Name() string { return "stepfun" }
 
-func (c *StepFunClient) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
+func (c *StepFunClient) Chat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.RelayResponse, error) {
 	return c.openAI.Chat(ctx, messages, opts)
 }
 
-func (c *StepFunClient) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (c *StepFunClient) StreamChat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	return c.openAI.StreamChat(ctx, messages, opts)
 }
 

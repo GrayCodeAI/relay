@@ -7,16 +7,16 @@ branch. References below to `RegisterDynamicProvider` and alias-based
 compatibility describe the old design, not the current API.
 **Author:** Claude (architecture review session)
 **Date:** 2026-07-12
-**Repos affected:** mux (all changes), decoder (no code changes required; update
-the published Mux module pin)
+**Repos affected:** relay (all changes), decoder (no code changes required; update
+the published Relay module pin)
 
 ## Problem Statement
 
-`mux/provider` is a 63-file, ~14k-line (source, excluding tests) single package that
+`relay/provider` is a 63-file, ~14k-line (source, excluding tests) single package that
 mixes at least six distinct concerns:
 
-1. **Core contract & types** — `Provider` interface, `MuxMessage`, `MuxResponse`,
-   `MuxStreamEvent`, `StreamResult`, `ChatOptions`, `MuxClient` (`provider.go`,
+1. **Core contract & types** — `Provider` interface, `RelayMessage`, `RelayResponse`,
+   `RelayStreamEvent`, `StreamResult`, `ChatOptions`, `RelayClient` (`provider.go`,
    `options.go`, `chat.go`, `errors.go`, `retry.go`, `transport.go`, `stream.go`,
    `continuation.go`, `roles.go`, `merge.go`, `extract.go`)
 2. **Protocol adapters** — `anthropic.go`, `openai.go`, `gemini.go`, `azure.go`,
@@ -46,17 +46,17 @@ and a public API surface far larger than what consumers use.
   `buildAnthropicCachedRequest`, `defaultTimeout`, `emit`, `openAIImageURL`,
   `parseImageString`, `parseSSEStream`, `processAnthropicStream`,
   `processOpenAIStream`, `userAgent`.
-- decoder (the primary consumer) accesses `mux/provider` from **4 files only** —
+- decoder (the primary consumer) accesses `relay/provider` from **4 files only** —
   it maintains its own DTO layer (`decoder/internal/types/provider.go`) and converts
-  at the boundary. Entry points consumed: `Client`, `MuxClient` methods
+  at the boundary. Entry points consumed: `Client`, `RelayClient` methods
   (`Chat`, `StreamChat`, `StreamChatContinue`, `SetAPIKey`, `Ping`,
   `GetProviders`), `StreamChatWithContinuation`, `ParseInlineToolCalls`,
   `DetectProvider`, `RegisterDynamicProvider`, `DefaultContinuationConfig`,
   `NewMockProvider`/`MockModeFixed`, `Provider`, and the DTO types
-  (`MuxMessage`, `MuxResponse`, `MuxStreamEvent`, `MuxUsage`,
+  (`RelayMessage`, `RelayResponse`, `RelayStreamEvent`, `RelayUsage`,
   `StreamResult`, `ChatOptions`, `ContinuationConfig`, `ContentPart`,
-  `ImageURLPart`, `InputAudioPart`, `ToolCall`, `ToolResult`, `MuxTool`,
-  `MuxConfig`, `ResponseFormat`, `ToolChoiceOption`).
+  `ImageURLPart`, `InputAudioPart`, `ToolCall`, `ToolResult`, `RelayTool`,
+  `RelayConfig`, `ResponseFormat`, `ToolChoiceOption`).
 
 The narrow consumed surface makes a **non-breaking, alias-based decomposition**
 practical.
@@ -66,14 +66,14 @@ practical.
 Extract a leaf `core` package holding the contract and wire-level plumbing, then
 move each concern into its own subpackage that imports `core`. The `client`
 package remains as a compatibility facade: every moved type becomes a Go type
-alias (`type MuxMessage = core.MuxMessage`), every moved function a thin
+alias (`type RelayMessage = core.RelayMessage`), every moved function a thin
 wrapper or function variable. Type aliases preserve type identity, so **no
 consumer code changes and no version bump semantics change**.
 
 Target layout:
 
 ```
-mux/
+relay/
   provider/            // facade: aliases + wrappers (shrinks each phase)
     core/            // Provider, messages, options, errors, retry, transport, SSE
     adapters/        // one file per protocol family; imports core only
@@ -105,20 +105,20 @@ inside the tree.
 Phase 1 is DONE (2026-07-12):
 - [x] Created `provider/core` with `Provider`, message/response/stream/usage/tool
       types, `ChatOptions`, `ResponseFormat`, `ToolChoiceOption`,
-      `ContinuationConfig`, `MuxConfig`, `MuxError`, `RetryConfig` +
+      `ContinuationConfig`, `RelayConfig`, `RelayError`, `RetryConfig` +
       `DoWithRetry`, `ParseProviderError`/`FormatAPIError`, `CopyResponse`.
       (SSE parsing, transport, `userAgent`, `defaultTimeout` deferred to the
       adapters phase — embeddings did not need them.)
 - [x] Internal call sites use explicit `provider/core` imports; production
       aliases are not retained.
-- [x] `go test ./...` green in mux; decoder builds + tests green.
+- [x] `go test ./...` green in relay; decoder builds + tests green.
 
 ### Phase 2: embeddings (smallest proven cluster, 4 deps)
 
 Phase 2 is DONE (2026-07-12):
 - [x] Moved embedding DTOs, `Embedder`, defaults, and `EmbeddingCachedProvider`
       to `provider/embeddings` (imports `core` only).
-- [x] `OpenAIClient.CreateEmbedding` / `MuxClient.CreateEmbedding` stayed in
+- [x] `OpenAIClient.CreateEmbedding` / `RelayClient.CreateEmbedding` stayed in
       `client` (`embedding_methods.go`) — methods must live with their
       receiver's package; they implement `embeddings.Embedder`.
 - [x] Embedding API is owned by `provider/embeddings`; the composition root
@@ -180,9 +180,9 @@ Learned in Phases 1–2 (apply to later phases):
 
 ### Phase 5: enforcement + deprecation
 - [x] Add `scripts/check-provider-layering.sh` (mirror of decoder's
-      `check-mux-client-imports.sh`) to CI: fail on any sibling→sibling import
+      `check-relay-client-imports.sh`) to CI: fail on any sibling→sibling import
       that bypasses `core`, and on any in-tree import of the facade.
-- [x] Removed facade aliases and migrated mux-internal callers
+- [x] Removed facade aliases and migrated relay-internal callers
       (`conversation`, `router`, `runtime`, `setup`,
       examples) to the subpackages; external callers must migrate explicitly.
 
@@ -202,11 +202,11 @@ Learned in Phases 1–2 (apply to later phases):
 | Hidden unexported coupling beyond the measured sets | med | Phases are one-cluster-at-a-time; the compiler finds every missed reference at move time; abort/expand `core` rather than weaken boundaries |
 | Type identity breakage for consumers doing type switches | high | Keep one canonical type in `provider/core`; make breaking ownership changes explicit |
 | Method sets split from their types | high | Methods move with their receiver's file into the same subpackage — never leave methods behind |
-| Mux module-pin drift in Decoder during the refactor | low | Land phases as individual PRs; update Decoder after each; `make sync` reports drift |
+| Relay module-pin drift in Decoder during the refactor | low | Land phases as individual PRs; update Decoder after each; `make sync` reports drift |
 | A new feature leaks into the composition root | low | Phase 5 CI boundary check and package ownership review |
 
 ## References
 
-- decoder's boundary script: `decoder/scripts/check-mux-client-imports.sh`
+- decoder's boundary script: `decoder/scripts/check-relay-client-imports.sh`
 - decoder's DTO layer (proof the consumer surface is narrow): `decoder/internal/types/provider.go`
 - Session decomposition precedent: `decoder/docs/session-decomposition.md`

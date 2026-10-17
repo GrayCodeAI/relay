@@ -1,6 +1,6 @@
 package router
 
-import "github.com/GrayCodeAI/mux/provider/core"
+import "github.com/GrayCodeAI/relay/provider/core"
 
 type ToolFilter struct {
 	modelTools map[string][]string
@@ -10,7 +10,7 @@ func NewToolFilter(modelTools map[string][]string) *ToolFilter {
 	return &ToolFilter{modelTools: modelTools}
 }
 
-func (f *ToolFilter) FilterTools(model string, tools []core.MuxTool) []core.MuxTool {
+func (f *ToolFilter) FilterTools(model string, tools []core.RelayTool) []core.RelayTool {
 	if f == nil || len(f.modelTools) == 0 {
 		return tools
 	}
@@ -22,7 +22,7 @@ func (f *ToolFilter) FilterTools(model string, tools []core.MuxTool) []core.MuxT
 	for _, t := range supported {
 		supportedSet[t] = true
 	}
-	var filtered []core.MuxTool
+	var filtered []core.RelayTool
 	for _, t := range tools {
 		if len(t.Parameters) > 0 {
 			filtered = append(filtered, t)

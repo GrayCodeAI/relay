@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/encoding"
 )
 
-// JSONCodec is the wire codec used by Mux's dependency-light gRPC surface.
+// JSONCodec is the wire codec used by Relay's dependency-light gRPC surface.
 // Clients select it with grpc.CallContentSubtype("json").
 type JSONCodec struct{}
 
@@ -32,7 +32,7 @@ func init() {
 // NewServer creates a gRPC server and registers the supplied ChatService.
 func NewServer(svc ChatService, opts ...googlegrpc.ServerOption) (*googlegrpc.Server, error) {
 	if svc == nil {
-		return nil, fmt.Errorf("mux/grpc: chat service is required")
+		return nil, fmt.Errorf("relay/grpc: chat service is required")
 	}
 	server := googlegrpc.NewServer(opts...)
 	server.RegisterService(&chatServiceDesc, svc)
@@ -43,7 +43,7 @@ func NewServer(svc ChatService, opts ...googlegrpc.ServerOption) (*googlegrpc.Se
 // server is stopped.
 func Serve(lis net.Listener, svc ChatService, opts ...googlegrpc.ServerOption) error {
 	if lis == nil {
-		return fmt.Errorf("mux/grpc: listener is required")
+		return fmt.Errorf("relay/grpc: listener is required")
 	}
 	server, err := NewServer(svc, opts...)
 	if err != nil {
@@ -60,7 +60,7 @@ func chatHandler(srv interface{}, ctx context.Context, decode func(interface{}) 
 	if interceptor == nil {
 		return srv.(ChatService).Chat(ctx, req)
 	}
-	info := &googlegrpc.UnaryServerInfo{Server: srv, FullMethod: "/mux.v1.ChatService/Chat"}
+	info := &googlegrpc.UnaryServerInfo{Server: srv, FullMethod: "/relay.v1.ChatService/Chat"}
 	handler := func(ctx context.Context, request interface{}) (interface{}, error) {
 		return srv.(ChatService).Chat(ctx, request.(*ChatRequest))
 	}
@@ -68,11 +68,11 @@ func chatHandler(srv interface{}, ctx context.Context, decode func(interface{}) 
 }
 
 var chatServiceDesc = googlegrpc.ServiceDesc{
-	ServiceName: "mux.v1.ChatService",
+	ServiceName: "relay.v1.ChatService",
 	HandlerType: (*ChatService)(nil),
 	Methods: []googlegrpc.MethodDesc{{
 		MethodName: "Chat",
 		Handler:    chatHandler,
 	}},
-	Metadata: "mux/v1/chat.json",
+	Metadata: "relay/v1/chat.json",
 }

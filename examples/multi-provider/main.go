@@ -12,19 +12,19 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GrayCodeAI/mux/provider"
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/provider"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 func main() {
-	primary := provider.Client(&core.MuxConfig{
+	primary := provider.Client(&core.RelayConfig{
 		Provider: "anthropic",
 	})
-	secondary := provider.Client(&core.MuxConfig{
+	secondary := provider.Client(&core.RelayConfig{
 		Provider: "openai",
 	})
 
-	messages := []core.MuxMessage{
+	messages := []core.RelayMessage{
 		{Role: "user", Content: "Explain what a fallback chain is in one sentence."},
 	}
 

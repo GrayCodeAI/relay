@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 type liveReplyProvider struct {
@@ -16,7 +16,7 @@ type liveReplyProvider struct {
 
 func (p *liveReplyProvider) Name() string               { return p.reply }
 func (p *liveReplyProvider) Ping(context.Context) error { return nil }
-func (p *liveReplyProvider) Chat(ctx context.Context, _ []core.MuxMessage, _ core.ChatOptions) (*core.MuxResponse, error) {
+func (p *liveReplyProvider) Chat(ctx context.Context, _ []core.RelayMessage, _ core.ChatOptions) (*core.RelayResponse, error) {
 	if p.started != nil {
 		close(p.started)
 		select {
@@ -25,10 +25,10 @@ func (p *liveReplyProvider) Chat(ctx context.Context, _ []core.MuxMessage, _ cor
 			return nil, ctx.Err()
 		}
 	}
-	return &core.MuxResponse{Content: p.reply}, nil
+	return &core.RelayResponse{Content: p.reply}, nil
 }
 
-func (p *liveReplyProvider) StreamChat(context.Context, []core.MuxMessage, core.ChatOptions) (*core.StreamResult, error) {
+func (p *liveReplyProvider) StreamChat(context.Context, []core.RelayMessage, core.ChatOptions) (*core.StreamResult, error) {
 	return nil, nil
 }
 
@@ -49,9 +49,9 @@ func TestLiveDeploymentRouterAtomicReplace(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx := context.Background()
-	messages := []core.MuxMessage{{Role: "user", Content: "hello"}}
+	messages := []core.RelayMessage{{Role: "user", Content: "hello"}}
 	opts := core.ChatOptions{Model: "anthropic/claude-sonnet-4-6"}
-	oldResult := make(chan *core.MuxResponse, 1)
+	oldResult := make(chan *core.RelayResponse, 1)
 	go func() {
 		resp, _ := live.Chat(ctx, messages, opts)
 		oldResult <- resp

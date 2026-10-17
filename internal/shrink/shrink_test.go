@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GrayCodeAI/mux/internal/shrink"
-	"github.com/GrayCodeAI/mux/types"
+	"github.com/GrayCodeAI/relay/internal/shrink"
+	"github.com/GrayCodeAI/relay/types"
 )
 
 func TestShrinkDescription_Basic(t *testing.T) {

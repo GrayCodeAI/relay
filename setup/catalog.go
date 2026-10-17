@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/catalog/discover"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/catalog/discover"
 )
 
 // DiscoverModelCatalogOptions controls catalog discovery behavior.
@@ -14,8 +14,8 @@ type DiscoverModelCatalogOptions struct {
 	ForceRefresh bool
 }
 
-// DiscoverModelCatalog refreshes the remote mux catalog and enriches it using the supplied API keys.
-// Pass config.DiscoveryCredentials(ctx) or explicit keys; mux owns all model metadata.
+// DiscoverModelCatalog refreshes the remote relay catalog and enriches it using the supplied API keys.
+// Pass config.DiscoveryCredentials(ctx) or explicit keys; relay owns all model metadata.
 func DiscoverModelCatalog(ctx context.Context, creds catalog.Credentials) (*catalog.RefreshResult, error) {
 	return DiscoverModelCatalogWithOptions(ctx, creds, DiscoverModelCatalogOptions{})
 }

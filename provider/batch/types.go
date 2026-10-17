@@ -1,9 +1,9 @@
 package batch
 
-import "github.com/GrayCodeAI/mux/provider/core"
+import "github.com/GrayCodeAI/relay/provider/core"
 
 type (
-	MuxMessage  = core.MuxMessage
-	ChatOptions = core.ChatOptions
-	MuxResponse = core.MuxResponse
+	RelayMessage  = core.RelayMessage
+	ChatOptions   = core.ChatOptions
+	RelayResponse = core.RelayResponse
 )

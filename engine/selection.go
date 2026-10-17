@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/config"
-	"github.com/GrayCodeAI/mux/runtime"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/config"
+	"github.com/GrayCodeAI/relay/runtime"
 )
 
-// NormalizeProviderID resolves provider aliases to Mux's runtime identifier.
+// NormalizeProviderID resolves provider aliases to Relay's runtime identifier.
 func NormalizeProviderID(providerID string) string {
 	return runtime.NormalizeProviderID(providerID)
 }
@@ -117,7 +117,7 @@ func (e *Engine) SetActiveProvider(ctx context.Context, providerID string) error
 	ctx = nonNilContext(ctx)
 	providerID = NormalizeProviderID(providerID)
 	if providerID == "" {
-		return invalid("set_active_provider", "mux engine: provider id is required")
+		return invalid("set_active_provider", "relay engine: provider id is required")
 	}
 	unlock := lockProviderStatePath(e.providerConfigPath)
 	defer unlock()
@@ -145,7 +145,7 @@ func (e *Engine) SetSelection(ctx context.Context, providerID, modelID string) e
 	providerID = NormalizeProviderID(providerID)
 	modelID = strings.TrimSpace(modelID)
 	if modelID == "" {
-		return invalid("set_selection", "mux engine: model id is required")
+		return invalid("set_selection", "relay engine: model id is required")
 	}
 	unlock := lockProviderStatePath(e.providerConfigPath)
 	defer unlock()
@@ -217,9 +217,9 @@ func canonicalSelectionModel(compiled *catalog.CompiledCatalog, providerID, mode
 }
 
 func selectionModelUnavailable(providerID, modelID string) error {
-	message := fmt.Sprintf("mux engine: model %q is not available", modelID)
+	message := fmt.Sprintf("relay engine: model %q is not available", modelID)
 	if providerID != "" {
-		message = fmt.Sprintf("mux engine: model %q is not available through %q", modelID, providerID)
+		message = fmt.Sprintf("relay engine: model %q is not available through %q", modelID, providerID)
 	}
 	return &Error{Code: ErrorModelUnavailable, Operation: "set_selection", Provider: providerID, Model: modelID, Message: message}
 }

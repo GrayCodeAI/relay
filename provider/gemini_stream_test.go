@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/mux/llm"
+	"github.com/GrayCodeAI/relay/llm"
 )
 
 // slogDiscard returns a *slog.Logger that discards all output. Used
@@ -58,9 +58,9 @@ func geminiSSEServer(t *testing.T, frames []string) *httptest.Server {
 
 // drainGeminiStream consumes the full event stream with a deadline and
 // returns the collected events. Used by all the streaming tests.
-func drainGeminiStream(t *testing.T, sr *StreamResult, timeout time.Duration) []MuxStreamEvent {
+func drainGeminiStream(t *testing.T, sr *StreamResult, timeout time.Duration) []RelayStreamEvent {
 	t.Helper()
-	var out []MuxStreamEvent
+	var out []RelayStreamEvent
 	deadline := time.NewTimer(timeout)
 	defer deadline.Stop()
 	for {
@@ -89,7 +89,7 @@ func TestGemini_Stream_SharedParser_Text(t *testing.T) {
 	defer srv.Close()
 
 	c := NewGeminiClient("test-key", srv.URL)
-	sr, err := c.StreamChat(context.Background(), []MuxMessage{
+	sr, err := c.StreamChat(context.Background(), []RelayMessage{
 		{Role: "user", Content: "hi"},
 	}, ChatOptions{Model: "gemini-test"})
 	if err != nil {
@@ -138,7 +138,7 @@ func TestGemini_Stream_SharedParser_ToolCall(t *testing.T) {
 	defer srv.Close()
 
 	c := NewGeminiClient("test-key", srv.URL)
-	sr, err := c.StreamChat(context.Background(), []MuxMessage{
+	sr, err := c.StreamChat(context.Background(), []RelayMessage{
 		{Role: "user", Content: "weather?"},
 	}, ChatOptions{Model: "gemini-test"})
 	if err != nil {
@@ -148,8 +148,8 @@ func TestGemini_Stream_SharedParser_ToolCall(t *testing.T) {
 
 	events := drainGeminiStream(t, sr, 5*time.Second)
 
-	var toolEvts []MuxStreamEvent
-	var doneEvt *MuxStreamEvent
+	var toolEvts []RelayStreamEvent
+	var doneEvt *RelayStreamEvent
 	for i := range events {
 		if events[i].Type == "tool_call" {
 			toolEvts = append(toolEvts, events[i])
@@ -195,7 +195,7 @@ func TestGemini_Stream_SharedParser_DoneWithUsage(t *testing.T) {
 	defer srv.Close()
 
 	c := NewGeminiClient("test-key", srv.URL)
-	sr, err := c.StreamChat(context.Background(), []MuxMessage{
+	sr, err := c.StreamChat(context.Background(), []RelayMessage{
 		{Role: "user", Content: "go"},
 	}, ChatOptions{Model: "gemini-test"})
 	if err != nil {
@@ -204,7 +204,7 @@ func TestGemini_Stream_SharedParser_DoneWithUsage(t *testing.T) {
 	defer sr.Close()
 	events := drainGeminiStream(t, sr, 5*time.Second)
 
-	var doneEvt *MuxStreamEvent
+	var doneEvt *RelayStreamEvent
 	for i := range events {
 		if events[i].Type == "done" {
 			doneEvt = &events[i]
@@ -232,7 +232,7 @@ func TestGemini_Stream_SharedParser_EmptyStream(t *testing.T) {
 	defer srv.Close()
 
 	c := NewGeminiClient("test-key", srv.URL)
-	sr, err := c.StreamChat(context.Background(), []MuxMessage{
+	sr, err := c.StreamChat(context.Background(), []RelayMessage{
 		{Role: "user", Content: "x"},
 	}, ChatOptions{Model: "gemini-test"})
 	if err != nil {
@@ -268,7 +268,7 @@ func TestGemini_Stream_SharedParser_ContextCancel(t *testing.T) {
 
 	c := NewGeminiClient("test-key", srv.URL)
 	ctx, cancel := context.WithCancel(context.Background())
-	sr, err := c.StreamChat(ctx, []MuxMessage{
+	sr, err := c.StreamChat(ctx, []RelayMessage{
 		{Role: "user", Content: "x"},
 	}, ChatOptions{Model: "gemini-test"})
 	if err != nil {
@@ -315,7 +315,7 @@ func TestGemini_Stream_SharedParser_LargeEvent(t *testing.T) {
 	defer srv.Close()
 
 	c := NewGeminiClient("test-key", srv.URL)
-	sr, err := c.StreamChat(context.Background(), []MuxMessage{
+	sr, err := c.StreamChat(context.Background(), []RelayMessage{
 		{Role: "user", Content: "x"},
 	}, ChatOptions{Model: "gemini-test"})
 	if err != nil {
@@ -324,7 +324,7 @@ func TestGemini_Stream_SharedParser_LargeEvent(t *testing.T) {
 	defer sr.Close()
 	events := drainGeminiStream(t, sr, 10*time.Second)
 
-	var contentEvt *MuxStreamEvent
+	var contentEvt *RelayStreamEvent
 	for i := range events {
 		if events[i].Type == "content" {
 			contentEvt = &events[i]
@@ -340,7 +340,7 @@ func TestGemini_Stream_SharedParser_LargeEvent(t *testing.T) {
 }
 
 // TestGemini_Stream_SharedParser_FeatureFlag: when
-// MUX_GEMINI_SHARED_PARSER=0, the old streamLoop path is used.
+// RELAY_GEMINI_SHARED_PARSER=0, the old streamLoop path is used.
 func TestGemini_Stream_SharedParser_FeatureFlag(t *testing.T) {
 	frames := []string{
 		`{"candidates":[{"content":{"parts":[{"text":"shared-on"}],"role":"model"},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":1,"candidatesTokenCount":1,"totalTokenCount":2}}`,
@@ -352,7 +352,7 @@ func TestGemini_Stream_SharedParser_FeatureFlag(t *testing.T) {
 
 	t.Run("shared-on-by-default", func(t *testing.T) {
 		_ = os.Unsetenv(geminiSharedParserEnvVar)
-		sr, err := c.StreamChat(context.Background(), []MuxMessage{
+		sr, err := c.StreamChat(context.Background(), []RelayMessage{
 			{Role: "user", Content: "x"},
 		}, ChatOptions{Model: "gemini-test"})
 		if err != nil {
@@ -370,7 +370,7 @@ func TestGemini_Stream_SharedParser_FeatureFlag(t *testing.T) {
 
 	t.Run("opt-out-with-0", func(t *testing.T) {
 		t.Setenv(geminiSharedParserEnvVar, "0")
-		sr, err := c.StreamChat(context.Background(), []MuxMessage{
+		sr, err := c.StreamChat(context.Background(), []RelayMessage{
 			{Role: "user", Content: "x"},
 		}, ChatOptions{Model: "gemini-test"})
 		if err != nil {
@@ -388,7 +388,7 @@ func TestGemini_Stream_SharedParser_FeatureFlag(t *testing.T) {
 
 	t.Run("opt-out-with-false", func(t *testing.T) {
 		t.Setenv(geminiSharedParserEnvVar, "false")
-		sr, err := c.StreamChat(context.Background(), []MuxMessage{
+		sr, err := c.StreamChat(context.Background(), []RelayMessage{
 			{Role: "user", Content: "x"},
 		}, ChatOptions{Model: "gemini-test"})
 		if err != nil {
@@ -400,7 +400,7 @@ func TestGemini_Stream_SharedParser_FeatureFlag(t *testing.T) {
 
 	t.Run("explicit-1-stays-on", func(t *testing.T) {
 		t.Setenv(geminiSharedParserEnvVar, "1")
-		sr, err := c.StreamChat(context.Background(), []MuxMessage{
+		sr, err := c.StreamChat(context.Background(), []RelayMessage{
 			{Role: "user", Content: "x"},
 		}, ChatOptions{Model: "gemini-test"})
 		if err != nil {
@@ -429,7 +429,7 @@ func TestProcessGeminiStream_PreservesDoneWithUsage(t *testing.T) {
 	out := processGeminiStream(ctx, sseCh, slogDiscard())
 	close(sseCh)
 
-	events := collectMuxStreamEvents(t, out, 2*time.Second)
+	events := collectRelayStreamEvents(t, out, 2*time.Second)
 	if len(events) != 1 {
 		t.Fatalf("expected 1 event, got %d: %+v", len(events), events)
 	}
@@ -460,7 +460,7 @@ func TestProcessGeminiStream_DoneWithoutUsage(t *testing.T) {
 	close(sseCh)
 
 	out := processGeminiStream(ctx, sseCh, slogDiscard())
-	events := collectMuxStreamEvents(t, out, 2*time.Second)
+	events := collectRelayStreamEvents(t, out, 2*time.Second)
 	if len(events) != 2 {
 		t.Fatalf("expected 2 events, got %d: %+v", len(events), events)
 	}
@@ -485,19 +485,19 @@ func TestProcessGeminiStream_EmptyStream_HasNoTerminal(t *testing.T) {
 	close(sseCh)
 
 	out := processGeminiStream(ctx, sseCh, slogDiscard())
-	events := collectMuxStreamEvents(t, out, 2*time.Second)
+	events := collectRelayStreamEvents(t, out, 2*time.Second)
 	if len(events) != 0 {
 		t.Fatalf("events = %+v, want none", events)
 	}
 }
 
-// collectMuxStreamEvents reads events until the channel closes
+// collectRelayStreamEvents reads events until the channel closes
 // or the deadline fires. Used by the processGeminiStream direct tests.
-func collectMuxStreamEvents(t *testing.T, ch <-chan MuxStreamEvent, timeout time.Duration) []MuxStreamEvent {
+func collectRelayStreamEvents(t *testing.T, ch <-chan RelayStreamEvent, timeout time.Duration) []RelayStreamEvent {
 	t.Helper()
 	deadline := time.NewTimer(timeout)
 	defer deadline.Stop()
-	var out []MuxStreamEvent
+	var out []RelayStreamEvent
 	for {
 		select {
 		case <-deadline.C:
@@ -527,7 +527,7 @@ func TestGemini_Stream_SharedParser_PreservesClientState(t *testing.T) {
 		t.Fatal("retry config not initialized")
 	}
 
-	sr, err := c.StreamChat(context.Background(), []MuxMessage{
+	sr, err := c.StreamChat(context.Background(), []RelayMessage{
 		{Role: "user", Content: "x"},
 	}, ChatOptions{Model: "gemini-test"})
 	if err != nil {

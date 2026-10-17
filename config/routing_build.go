@@ -1,11 +1,11 @@
 package config
 
 import (
-	"github.com/GrayCodeAI/mux/catalog/registry"
+	"github.com/GrayCodeAI/relay/catalog/registry"
 )
 
 // BuildRoutingPolicyFromDeployments builds deployment routing from configured deployments.
-// Decoder should not author routing rules — consume this JSON from mux only.
+// Decoder should not author routing rules — consume this JSON from relay only.
 func BuildRoutingPolicyFromDeployments(deployments map[string]DeploymentConfig) *RoutingPolicy {
 	if len(deployments) == 0 {
 		return &RoutingPolicy{}

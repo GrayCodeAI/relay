@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GrayCodeAI/mux/provider/core"
-	"github.com/GrayCodeAI/mux/types"
+	"github.com/GrayCodeAI/relay/provider/core"
+	"github.com/GrayCodeAI/relay/types"
 )
 
 type (

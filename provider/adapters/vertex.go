@@ -9,8 +9,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GrayCodeAI/mux/llm"
-	"github.com/GrayCodeAI/mux/provider/core"
+	"github.com/GrayCodeAI/relay/llm"
+	"github.com/GrayCodeAI/relay/provider/core"
 )
 
 // maxVertexRequestSize is the maximum request body size for Vertex AI (30 MB).
@@ -45,10 +45,10 @@ func (c *VertexClient) baseURL() string {
 	return fmt.Sprintf("https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/anthropic/models", c.region, c.projectID, c.region)
 }
 
-func (c *VertexClient) Chat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.MuxResponse, error) {
+func (c *VertexClient) Chat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.RelayResponse, error) {
 	messages = core.SanitizeMessages(messages)
 	if opts.Model == "" {
-		return nil, fmt.Errorf("mux: model is required for vertex")
+		return nil, fmt.Errorf("relay: model is required for vertex")
 	}
 	body, err := c.buildBody(messages, opts, false)
 	if err != nil {
@@ -57,20 +57,20 @@ func (c *VertexClient) Chat(ctx context.Context, messages []core.MuxMessage, opt
 
 	// Check request size (30 MB Vertex limit)
 	if len(body) > maxVertexRequestSize {
-		return nil, fmt.Errorf("mux: request size %d bytes exceeds Vertex limit of %d bytes", len(body), maxVertexRequestSize)
+		return nil, fmt.Errorf("relay: request size %d bytes exceeds Vertex limit of %d bytes", len(body), maxVertexRequestSize)
 	}
 
 	url := fmt.Sprintf("%s/%s:rawPredict", c.baseURL(), opts.Model)
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("mux: vertex request creation failed: %w", err)
+		return nil, fmt.Errorf("relay: vertex request creation failed: %w", err)
 	}
 	c.setHeaders(req)
 	req.GetBody = func() (io.ReadCloser, error) { return io.NopCloser(bytes.NewReader(body)), nil }
 
 	resp, err := core.DoWithRetry(ctx, c.httpClient, req, c.retry, c.logger)
 	if err != nil {
-		return nil, fmt.Errorf("mux: vertex request failed: %w", err)
+		return nil, fmt.Errorf("relay: vertex request failed: %w", err)
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -87,22 +87,22 @@ func (c *VertexClient) Chat(ctx context.Context, messages []core.MuxMessage, opt
 
 	var ar anthropicResponse
 	if err := json.NewDecoder(resp.Body).Decode(&ar); err != nil {
-		return nil, fmt.Errorf("mux: vertex decode failed: %w", err)
+		return nil, fmt.Errorf("relay: vertex decode failed: %w", err)
 	}
 
-	muxResp := ParseAnthropicResponse(ar, requestID, "")
+	relayResp := ParseAnthropicResponse(ar, requestID, "")
 
-	if err := core.ApplyGuardrails(ctx, muxResp, c.guardrails); err != nil {
+	if err := core.ApplyGuardrails(ctx, relayResp, c.guardrails); err != nil {
 		return nil, err
 	}
 
-	return muxResp, nil
+	return relayResp, nil
 }
 
-func (c *VertexClient) StreamChat(ctx context.Context, messages []core.MuxMessage, opts core.ChatOptions) (*core.StreamResult, error) {
+func (c *VertexClient) StreamChat(ctx context.Context, messages []core.RelayMessage, opts core.ChatOptions) (*core.StreamResult, error) {
 	messages = core.SanitizeMessages(messages)
 	if opts.Model == "" {
-		return nil, fmt.Errorf("mux: model is required for vertex")
+		return nil, fmt.Errorf("relay: model is required for vertex")
 	}
 	streamCtx, cancel := context.WithCancel(ctx)
 	body, err := c.buildBody(messages, opts, true)
@@ -114,14 +114,14 @@ func (c *VertexClient) StreamChat(ctx context.Context, messages []core.MuxMessag
 	// Check request size (30 MB Vertex limit)
 	if len(body) > maxVertexRequestSize {
 		cancel()
-		return nil, fmt.Errorf("mux: request size %d bytes exceeds Vertex limit of %d bytes", len(body), maxVertexRequestSize)
+		return nil, fmt.Errorf("relay: request size %d bytes exceeds Vertex limit of %d bytes", len(body), maxVertexRequestSize)
 	}
 
 	url := fmt.Sprintf("%s/%s:streamRawPredict", c.baseURL(), opts.Model)
 	req, err := http.NewRequestWithContext(streamCtx, "POST", url, bytes.NewReader(body))
 	if err != nil {
 		cancel()
-		return nil, fmt.Errorf("mux: vertex stream request failed: %w", err)
+		return nil, fmt.Errorf("relay: vertex stream request failed: %w", err)
 	}
 	c.setHeaders(req)
 	req.Header.Set("Accept", "text/event-stream")
@@ -130,7 +130,7 @@ func (c *VertexClient) StreamChat(ctx context.Context, messages []core.MuxMessag
 	resp, err := core.DoWithRetry(streamCtx, c.httpClient, req, c.retry, c.logger)
 	if err != nil {
 		cancel()
-		return nil, fmt.Errorf("mux: vertex stream request failed: %w", err)
+		return nil, fmt.Errorf("relay: vertex stream request failed: %w", err)
 	}
 
 	if resp.StatusCode != 200 {
@@ -158,11 +158,11 @@ func (c *VertexClient) Ping(ctx context.Context) error {
 	c.setHeaders(req)
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("mux: vertex ping failed: %w", err)
+		return fmt.Errorf("relay: vertex ping failed: %w", err)
 	}
 	_ = resp.Body.Close()
 	if resp.StatusCode == 401 || resp.StatusCode == 403 {
-		return fmt.Errorf("mux: vertex: invalid credentials")
+		return fmt.Errorf("relay: vertex: invalid credentials")
 	}
 	return nil
 }
@@ -173,7 +173,7 @@ func (c *VertexClient) setHeaders(req *http.Request) {
 	req.Header.Set("User-Agent", core.UserAgent())
 }
 
-func (c *VertexClient) buildBody(messages []core.MuxMessage, opts core.ChatOptions, stream bool) ([]byte, error) {
+func (c *VertexClient) buildBody(messages []core.RelayMessage, opts core.ChatOptions, stream bool) ([]byte, error) {
 	msgs, system := buildAnthropicMessages(messages)
 	if opts.System != "" {
 		if system != "" {
@@ -233,7 +233,7 @@ func (c *VertexClient) HTTPClient() *http.Client { return c.httpClient }
 func (c *VertexClient) BaseURL() string { return c.baseURL() }
 
 // BuildBody constructs the request body for Vertex API calls.
-func (c *VertexClient) BuildBody(messages []core.MuxMessage, opts core.ChatOptions, stream bool) ([]byte, error) {
+func (c *VertexClient) BuildBody(messages []core.RelayMessage, opts core.ChatOptions, stream bool) ([]byte, error) {
 	return c.buildBody(messages, opts, stream)
 }
 

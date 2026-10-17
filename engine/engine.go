@@ -8,21 +8,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/catalog/registry"
-	"github.com/GrayCodeAI/mux/config"
-	"github.com/GrayCodeAI/mux/credentials"
-	"github.com/GrayCodeAI/mux/llm"
-	providercache "github.com/GrayCodeAI/mux/provider/cache"
-	"github.com/GrayCodeAI/mux/provider/core"
-	"github.com/GrayCodeAI/mux/provider/resilience"
-	"github.com/GrayCodeAI/mux/setup"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/catalog/registry"
+	"github.com/GrayCodeAI/relay/config"
+	"github.com/GrayCodeAI/relay/credentials"
+	"github.com/GrayCodeAI/relay/llm"
+	providercache "github.com/GrayCodeAI/relay/provider/cache"
+	"github.com/GrayCodeAI/relay/provider/core"
+	"github.com/GrayCodeAI/relay/provider/resilience"
+	"github.com/GrayCodeAI/relay/setup"
 )
 
 // ContractVersion is the compatibility version of the host-facing API.
 const ContractVersion = "2"
 
-// Options supplies host-owned dependencies. A zero value uses Mux's safe
+// Options supplies host-owned dependencies. A zero value uses Relay's safe
 // defaults. Product-specific paths are deliberately not inferred here.
 type Options struct {
 	SecretStore        credentials.Store
@@ -30,7 +30,7 @@ type Options struct {
 	CatalogPath        string
 	ProviderConfigPath string
 	// RemoteCatalogURL is the trusted published catalog source used by full
-	// refreshes. Empty selects Mux's compiled-in HTTPS catalog URL, never a
+	// refreshes. Empty selects Relay's compiled-in HTTPS catalog URL, never a
 	// process-environment override.
 	RemoteCatalogURL string
 	// CustomGateways is snapshotted per Engine. A non-nil empty slice
@@ -51,7 +51,7 @@ type Options struct {
 	CacheConfig providercache.CacheConfig
 }
 
-// Engine is Mux's narrow host facade. It is safe for concurrent use when
+// Engine is Relay's narrow host facade. It is safe for concurrent use when
 // the configured SecretStore is safe for concurrent use.
 type Engine struct {
 	secretStore        credentials.Store
@@ -67,7 +67,7 @@ type Engine struct {
 	cacheConfig        providercache.CacheConfig
 }
 
-// New constructs a host-facing Mux engine.
+// New constructs a host-facing Relay engine.
 func New(opts Options) (*Engine, error) {
 	usesDefaultStore := opts.SecretStore == nil
 	store := opts.SecretStore
@@ -75,7 +75,7 @@ func New(opts Options) (*Engine, error) {
 		store = credentials.DefaultStore()
 	}
 	if store == nil {
-		return nil, &Error{Code: ErrorInternal, Operation: "new", Message: "mux engine: credential store unavailable"}
+		return nil, &Error{Code: ErrorInternal, Operation: "new", Message: "relay engine: credential store unavailable"}
 	}
 	stateDir := strings.TrimSpace(opts.StateDir)
 	catalogPath := strings.TrimSpace(opts.CatalogPath)
@@ -117,7 +117,7 @@ func New(opts Options) (*Engine, error) {
 	return engine, nil
 }
 
-// SelectionRequest asks Mux to resolve a concrete provider/model route.
+// SelectionRequest asks Relay to resolve a concrete provider/model route.
 type SelectionRequest struct {
 	Requirements Requirements
 	Preference   Preference
@@ -134,7 +134,7 @@ func (e *Engine) Resolve(ctx context.Context, req SelectionRequest) (Route, erro
 	return selection, nil
 }
 
-// Generate performs a blocking generation through Mux's resolved transport.
+// Generate performs a blocking generation through Relay's resolved transport.
 func (e *Engine) Generate(ctx context.Context, req GenerateRequest) (*GenerateResponse, error) {
 	ctx = nonNilContext(ctx)
 	if err := validateGenerateRequest(req); err != nil {
@@ -365,7 +365,7 @@ func (e *Engine) resolveSelection(ctx context.Context, req SelectionRequest) (Ro
 	}
 	modelID, providerID := selectCompatibleModel(compiled, req)
 	if modelID == "" {
-		return Route{}, &Error{Code: ErrorCapabilityMismatch, Operation: "resolve", Message: "mux engine: no catalog model satisfies the requested capabilities"}
+		return Route{}, &Error{Code: ErrorCapabilityMismatch, Operation: "resolve", Message: "relay engine: no catalog model satisfies the requested capabilities"}
 	}
 	selection.Model = modelID
 	selection.Provider = providerID
@@ -436,21 +436,21 @@ func selectCompatibleModel(compiled *catalog.CompiledCatalog, req SelectionReque
 
 func validateGenerateRequest(req GenerateRequest) error {
 	if len(req.Messages) == 0 {
-		return invalid("generate", "mux engine: at least one message is required")
+		return invalid("generate", "relay engine: at least one message is required")
 	}
 	for _, message := range req.Messages {
 		if strings.TrimSpace(message.Role) == "" {
-			return invalid("generate", "mux engine: every message requires a role")
+			return invalid("generate", "relay engine: every message requires a role")
 		}
 	}
 	if req.Limits.MaxOutputTokens < 0 {
-		return invalid("generate", "mux engine: max output tokens cannot be negative")
+		return invalid("generate", "relay engine: max output tokens cannot be negative")
 	}
 	if req.Limits.MaxContinuations < 0 || req.Limits.MaxTotalOutputTokens < 0 {
-		return invalid("generate", "mux engine: continuation limits cannot be negative")
+		return invalid("generate", "relay engine: continuation limits cannot be negative")
 	}
 	if req.Requirements.MinimumContext < 0 {
-		return invalid("generate", "mux engine: minimum context cannot be negative")
+		return invalid("generate", "relay engine: minimum context cannot be negative")
 	}
 	return nil
 }
@@ -460,7 +460,7 @@ func validateRequirementsFromCatalog(compiled *catalog.CompiledCatalog, modelID 
 		return nil
 	}
 	if compiled == nil {
-		return &Error{Code: ErrorCatalogUnavailable, Operation: "validate_capabilities", Model: modelID, Message: "mux engine: catalog unavailable for capability validation"}
+		return &Error{Code: ErrorCatalogUnavailable, Operation: "validate_capabilities", Model: modelID, Message: "relay engine: catalog unavailable for capability validation"}
 	}
 	canonical, ok := compiled.CanonicalModelForAliasOrID(modelID)
 	if !ok {
@@ -468,14 +468,14 @@ func validateRequirementsFromCatalog(compiled *catalog.CompiledCatalog, modelID 
 	}
 	model, ok := compiled.ModelsByID[canonical]
 	if !ok {
-		return &Error{Code: ErrorModelUnavailable, Operation: "validate_capabilities", Model: modelID, Message: fmt.Sprintf("mux engine: model %q is not in the catalog", modelID)}
+		return &Error{Code: ErrorModelUnavailable, Operation: "validate_capabilities", Model: modelID, Message: fmt.Sprintf("relay engine: model %q is not in the catalog", modelID)}
 	}
 	if req.MinimumContext > 0 && model.ContextWindow < req.MinimumContext {
-		return &Error{Code: ErrorCapabilityMismatch, Operation: "validate_capabilities", Model: canonical, Message: fmt.Sprintf("mux engine: model %q has context window %d, need at least %d", canonical, model.ContextWindow, req.MinimumContext)}
+		return &Error{Code: ErrorCapabilityMismatch, Operation: "validate_capabilities", Model: canonical, Message: fmt.Sprintf("relay engine: model %q has context window %d, need at least %d", canonical, model.ContextWindow, req.MinimumContext)}
 	}
 	if req.Tools || req.Vision || req.StructuredJSON || req.Reasoning {
 		if !offeringSupports(compiled, canonical, req) {
-			return &Error{Code: ErrorCapabilityMismatch, Operation: "validate_capabilities", Model: canonical, Message: fmt.Sprintf("mux engine: model %q does not satisfy requested capabilities", canonical)}
+			return &Error{Code: ErrorCapabilityMismatch, Operation: "validate_capabilities", Model: canonical, Message: fmt.Sprintf("relay engine: model %q does not satisfy requested capabilities", canonical)}
 		}
 	}
 	return nil

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GrayCodeAI/mux/catalog"
-	"github.com/GrayCodeAI/mux/setup"
+	"github.com/GrayCodeAI/relay/catalog"
+	"github.com/GrayCodeAI/relay/setup"
 )
 
 // ModelEntriesForProvider returns models for a provider from this runtime's catalog snapshot.
@@ -40,7 +40,7 @@ func ModelsForProvider(ctx context.Context, provider string) ([]catalog.ModelCat
 	}
 	entries := rt.ModelEntriesForProvider(provider)
 	if len(entries) == 0 {
-		return nil, fmt.Errorf("runtime: no models for provider %q in mux catalog (add deployment/model in mux catalog source)", provider)
+		return nil, fmt.Errorf("runtime: no models for provider %q in relay catalog (add deployment/model in relay catalog source)", provider)
 	}
 	return entries, nil
 }
