@@ -165,3 +165,7 @@ This is an independent repository consumed by Decoder. In the local
 `graycode-eco` parent workspace it is checked out beside `decoder` as `../relay`
 and connected through the parent `go.work`; publish changes here, then update
 Decoder's module pin through a separate PR.
+
+## Cloudflare
+
+This repo has no Cloudflare deployment. If one is added it must follow the Vaultly-only policy (vault `cf-graycodeai`, account f4b522a3ebdf147fa6d51fa475331b1c) used by graycode-platform.
