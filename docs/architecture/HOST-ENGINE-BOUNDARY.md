@@ -5,7 +5,7 @@ Status: accepted. The host-facing compatibility contract is
 
 ## Decision
 
-Decoder is the product face. It owns the terminal UI, agent loop, tool execution,
+Reflect is the product face. It owns the terminal UI, agent loop, tool execution,
 permissions, conversation history, checkpoints, and product semantics. Relay is
 the engine. It owns credentials, provider/deployment metadata, model discovery,
 catalog compilation, selection, transport construction, provider request and
@@ -15,7 +15,7 @@ stream normalization, resilience, normalized usage, and provider telemetry.
 User
   |
   v
-Decoder (face: UX, session, tools, permissions)
+Reflect (face: UX, session, tools, permissions)
   |
   | stable DTOs and methods
   v
@@ -30,14 +30,14 @@ github.com/GrayCodeAI/relay/engine  [contract v2]
 Provider model APIs
 ```
 
-The dependency is one-way: Relay must not import Decoder. Decoder's integration layer
-may import `relay/engine`; Decoder command, conversation, and UI packages must not
+The dependency is one-way: Relay must not import Reflect. Reflect's integration layer
+may import `relay/engine`; Reflect command, conversation, and UI packages must not
 assemble Relay's `catalog`, `provider`, `config`, `credentials`, `router`,
 `runtime`, or `setup` packages.
 
 ## Composition root
 
-Decoder constructs one `engine.Engine` from host-owned dependencies:
+Reflect constructs one `engine.Engine` from host-owned dependencies:
 
 ```go
 e, err := engine.New(engine.Options{
@@ -53,7 +53,7 @@ e, err := engine.New(engine.Options{
 `StateDir` derives `model_catalog.json` and `provider.json` when explicit paths
 are absent. Explicit paths win. The store, paths, remote catalog URL, and custom
 gateways belong to the Engine instance; behavior does not depend on ambient
-Decoder paths or a process-global custom-gateway registry.
+Reflect paths or a process-global custom-gateway registry.
 
 ## Stable contract
 
@@ -75,7 +75,7 @@ MigrateProviderSecretsContext
 Provider-specific wire types, authentication headers, retry behavior, and raw
 stream events do not cross this boundary. `Model` keeps distinct `Owner`,
 `ProviderID`, `GatewayID`, `CanonicalID`, `Source`, and `LiveMetadata` fields so
-Decoder does not reconstruct catalog meaning.
+Reflect does not reconstruct catalog meaning.
 
 ## Frozen engine-internal types
 
@@ -98,7 +98,7 @@ hosts exactly like changing `engine` itself and needs a contract-version bump.
 | `provider/resilience.RateLimitHeaders` | result of `HeaderExtractor` |
 | `provider/cache.CacheConfig` | `Options.CacheConfig` |
 
-Decoder uses `engine.MapStore`, `engine.DefaultStore`, `engine.SetDefaultStore`,
+Reflect uses `engine.MapStore`, `engine.DefaultStore`, `engine.SetDefaultStore`,
 `engine.OperationsGraphInput`, and `engine.BuildOperationsGraph` today, and its
 import-path boundary checks cannot see through the aliases. Relay therefore
 guards the set itself: `engine/host_surface_test.go` walks the exported surface
@@ -127,10 +127,10 @@ Engine.ApplyCredentials / ListLiveModels
   +--> pass a provider-scoped environment to its live fetcher
   +--> merge/compile catalog and atomically update model_catalog.json
   v
-Engine.ListModels --> Decoder picker --> Engine.SetSelection
+Engine.ListModels --> Reflect picker --> Engine.SetSelection
   |
   v
-Decoder builds provider-neutral GenerateRequest from its conversation
+Reflect builds provider-neutral GenerateRequest from its conversation
   |
   +--> Engine.Generate
   `--> Engine.Stream --> normalized route/content/thinking/tool/usage events
@@ -154,7 +154,7 @@ Legacy provider files may contain credential-shaped fields. The explicit
 `MigrateProviderSecretsContext` flow maps every recognized secret to the
 injected store before writing a sanitized provider file. An unmapped secret or
 store failure aborts the migration and restores the original state; no
-plaintext backup is created. Decoder should run security status/migration before
+plaintext backup is created. Reflect should run security status/migration before
 normal provider-state writes.
 
 ## Selection and generation
@@ -165,10 +165,10 @@ explicit model is a hard constraint unless the host enables fallback. Relay
 owns canonicalization, gateway ownership, deployment routing, and capability
 matching.
 
-Relay generation is stateless from Decoder's point of view:
+Relay generation is stateless from Reflect's point of view:
 
 ```text
-Decoder owns                         Relay owns
+Reflect owns                         Relay owns
 ----------                        -----------
 conversation history              route decision
 tool permission and execution     provider transport
@@ -180,7 +180,7 @@ session lifecycle                 normalized usage/telemetry
 `Stream` is pull-based, cancellable, and must be closed. It emits the selected
 route before provider events and normalizes content, thinking, tool calls,
 usage, retry/continuation, TTFT, and completion. Unknown future event types are
-additive and must be ignored safely. Relay emits tool requests; Decoder authorizes
+additive and must be ignored safely. Relay emits tool requests; Reflect authorizes
 and executes tools, appends results to its history, and begins the next model
 turn.
 
@@ -223,21 +223,21 @@ The boundary is delivered Relay-first:
 ```text
 1. Change and verify standalone Relay
 2. Commit Relay and publish a resolvable release/commit
-3. Update Decoder's Relay module version when required
-4. Update Decoder's Relay module pin to that exact published commit
-5. Verify Decoder integration, boundary checks, and clean-clone/module builds
-6. Commit the Decoder module-pin update in Decoder's repository
+3. Update Reflect's Relay module version when required
+4. Update Reflect's Relay module pin to that exact published commit
+5. Verify Reflect integration, boundary checks, and clean-clone/module builds
+6. Commit the Reflect module-pin update in Reflect's repository
 ```
 
-Decoder must never depend on an uncommitted Relay worktree. The parent workspace
+Reflect must never depend on an uncommitted Relay worktree. The parent workspace
 uses a sibling checkout for source identity during local development; a
 resolvable published module version is also required for workflows that build
-Decoder with `GOWORK=off`.
+Reflect with `GOWORK=off`.
 
 ## Compatibility policy
 
-Lower-level Relay packages remain public for non-Decoder consumers and staged
-migration, but they are not part of Decoder's product boundary, apart from the
+Lower-level Relay packages remain public for non-Reflect consumers and staged
+migration, but they are not part of Reflect's product boundary, apart from the
 frozen symbols listed above. Additive fields
 and stream events are allowed within contract v2. Removing or changing stable
 DTO semantics requires a contract-version and semantic-version boundary.

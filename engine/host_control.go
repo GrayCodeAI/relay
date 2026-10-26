@@ -439,9 +439,41 @@ func (e *Engine) PreflightWithOptions(ctx context.Context, opts PreflightOptions
 	default:
 		checks = append(checks, PreflightCheck{Name: "model", Status: CheckFail, Detail: modelDetail + " is not available through " + providerID})
 	}
+	toolsReady := true
+	if opts.RequireTools && activeModel != "" {
+		state := catalog.CapabilityUnknown
+		if custom {
+			if customGateway.Capabilities != nil {
+				state = catalog.CapabilityUnsupported
+				if customGateway.Capabilities.Tools {
+					state = catalog.CapabilitySupported
+				}
+			}
+		} else {
+			state = selectedModelToolsState(compiled, providerID, activeModel)
+		}
+		switch state {
+		case catalog.CapabilitySupported:
+			checks = append(checks, PreflightCheck{Name: "model_tools", Status: CheckOK, Detail: activeModel + " supports coding tools"})
+		case catalog.CapabilityUnsupported:
+			toolsReady = false
+			detail := activeModel + " does not support tools; select another model"
+			if custom {
+				detail = activeModel + " custom gateway declares tools unsupported; update its capability setting or select another gateway"
+			}
+			checks = append(checks, PreflightCheck{Name: "model_tools", Status: CheckFail, Detail: detail})
+		default:
+			toolsReady = false
+			detail := activeModel + " tool support is unknown; refresh the catalog or select a verified model"
+			if custom {
+				detail = activeModel + " tool support is unknown; declare tools capability for the custom gateway"
+			}
+			checks = append(checks, PreflightCheck{Name: "model_tools", Status: CheckFail, Detail: detail})
+		}
+	}
 	localReady := true
 	for _, check := range checks {
-		if check.Status == CheckFail {
+		if check.Status == CheckFail && check.Name != "model_tools" {
 			localReady = false
 		}
 	}
@@ -472,11 +504,44 @@ func (e *Engine) PreflightWithOptions(ctx context.Context, opts PreflightOptions
 			checks = append(checks, PreflightCheck{Name: "provider_live", Status: CheckOK, Detail: providerID + " connectivity and authentication verified"})
 		}
 	}
-	ready := localReady
+	ready := localReady && toolsReady
 	if opts.VerifyLive && !liveVerified {
 		ready = false
 	}
 	return PreflightReport{Ready: ready, LiveVerified: liveVerified, Checks: checks}
+}
+
+func selectedModelToolsState(compiled *catalog.CompiledCatalog, providerID, modelID string) catalog.CapabilityState {
+	if compiled == nil {
+		return catalog.CapabilityUnknown
+	}
+	spec, ok := registry.SpecByProviderID(providerID)
+	if !ok {
+		return catalog.CapabilityUnknown
+	}
+	canonical, ok := catalog.CanonicalModelForProviderNative(compiled, providerID, modelID)
+	if !ok {
+		canonical, _ = compiled.CanonicalModelForAliasOrID(modelID)
+	}
+	state := catalog.CapabilityUnsupported
+	matched := false
+	for _, offering := range compiled.OfferingsByDeployment[spec.DeploymentID] {
+		if offering.CanonicalModelID != canonical && offering.NativeModelID != modelID {
+			continue
+		}
+		matched = true
+		switch offering.Capabilities.FunctionCalling {
+		case catalog.CapabilitySupported:
+			return catalog.CapabilitySupported
+		case catalog.CapabilityUnsupported:
+		default:
+			state = catalog.CapabilityUnknown
+		}
+	}
+	if !matched {
+		return catalog.CapabilityUnknown
+	}
+	return state
 }
 
 func modelListContains(models []Model, modelID string) bool {
@@ -516,9 +581,9 @@ func FormatPreflight(report PreflightReport) string {
 	var b strings.Builder
 	switch {
 	case report.Ready && report.LiveVerified:
-		b.WriteString("Preflight: ready to chat (live verified)\n")
+		b.WriteString("Preflight: provider access verified (chat not tested)\n")
 	case report.Ready:
-		b.WriteString("Preflight: locally ready to chat\n")
+		b.WriteString("Preflight: local checks passed (chat not tested)\n")
 	default:
 		b.WriteString("Preflight: setup incomplete\n")
 	}

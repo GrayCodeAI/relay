@@ -1,7 +1,7 @@
 # Feature-oriented Relay architecture
 
 Status: active refactor. This is a feature-oriented Go module, not a monorepo;
-Decoder remains a separate repository in the parent workspace.
+Reflect remains a separate repository in the parent workspace.
 
 Relay is one Go module with explicit feature packages. A feature owns its
 contract, implementation, tests, and documentation in one directory. Packages

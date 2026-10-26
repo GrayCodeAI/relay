@@ -387,6 +387,7 @@ func FetchAnthropic(env map[string]string) ([]Entry, error) {
 			ContextWindow:  m.MaxInputTokens, // maps to ModelCatalogEntry.ContextWindow via LiveEntriesToCatalog
 			MaxInputTokens: m.MaxInputTokens,
 			MaxOutput:      m.MaxTokens,
+			Features:       []string{"function_calling"},
 			RawJSON:        append(json.RawMessage(nil), raw...),
 		}
 		// Extract capabilities

@@ -13,7 +13,7 @@ Status: implemented foundation, not a finished distributed control plane.
 | Credentials | Local config/store | Manifests contain no secrets; `runtime.NewReplicaFromState` resolves explicit local credentials | Secret rotation without replacing the host's replica reference |
 
 Relay remains **one Go module in its own repository**. Feature-owned folders are
-useful boundaries, but calling this a monorepo would be inaccurate: Decoder is a
+useful boundaries, but calling this a monorepo would be inaccurate: Reflect is a
 separate repository in the parent workspace.
 
 ## Data and control flow

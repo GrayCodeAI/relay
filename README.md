@@ -30,22 +30,22 @@
 
 ## What is relay
 
-relay is the LLM provider runtime that powers the [decoder](https://github.com/GrayCodeAI/decoder) coding agent. It handles everything between your application and LLM APIs — authentication, model resolution, streaming, retries, rate limiting, and caching.
+relay is the LLM provider runtime that powers the [reflect](https://github.com/GrayCodeAI/reflect) coding agent. It handles everything between your application and LLM APIs — authentication, model resolution, streaming, retries, rate limiting, and caching.
 
 When your app calls a model, relay figures out which provider to use, how to talk to it, and how to stream the response back. Switch from Anthropic to Ollama? relay handles the translation. API returns 529? relay retries with backoff. Response hits `max_tokens`? relay continues automatically.
 
 **Your app never talks to an LLM API directly. relay does.**
 
-Decoder is the product face: it owns UX, agent orchestration, tools, permissions,
+Reflect is the product face: it owns UX, agent orchestration, tools, permissions,
 sessions, and product semantics. Relay is the provider engine: it owns
 credentials, catalog and route resolution, provider transports, normalized
-streams, retry/fallback, usage, and provider telemetry. Decoder integrates through
+streams, retry/fallback, usage, and provider telemetry. Reflect integrates through
 the stable [`engine`](engine/) facade rather than assembling Relay's internal
 provider packages.
 
 ## Ecosystem Boundaries
 
-relay is a Decoder support engine. Keep the dependency edge one-way.
+relay is a Reflect support engine. Keep the dependency edge one-way.
 
 Hosts may import exactly four packages:
 
@@ -58,8 +58,8 @@ Hosts may import exactly four packages:
 
 Everything else is engine-internal: `provider`, `catalog`, `config`,
 `credentials`, `router`, `runtime`, and their subpackages are not shared
-contracts. Enforced by `decoder/scripts/check-relay-engine-boundary.sh`
-and two Go AST tests in `decoder/internal/testaudit/`.
+contracts. Enforced by `reflect/scripts/check-relay-engine-boundary.sh`
+and two Go AST tests in `reflect/internal/testaudit/`.
 
 Exception: a fixed set of engine-internal symbols is reachable through the
 facade (for example `credentials.Store` behind `engine.Options.SecretStore`
@@ -68,7 +68,7 @@ symbols are frozen as part of the contract; see
 [Frozen engine-internal types](docs/architecture/HOST-ENGINE-BOUNDARY.md#frozen-engine-internal-types).
 `engine/host_surface_test.go` fails when that set changes.
 
-- do not import `decoder/internal/*`
+- do not import `reflect/internal/*`
 - do not import the removed legacy path `decoder/shared/types`
 
 ## Quick Start
@@ -92,7 +92,7 @@ import (
     "github.com/GrayCodeAI/relay/engine"
 )
 
-// Hosts (like decoder) must use the stable engine facade
+// Hosts (like reflect) must use the stable engine facade
 eng, err := engine.New(engine.Options{})
 if err != nil { panic(err) }
 
@@ -210,7 +210,7 @@ ANTHROPIC_API_KEY=sk-... go run ./examples/basic/
 
 ## Supported Providers
 
-28 provider gateways in `catalog/registry/providers.go` (decoder `/config` uses the same list), listed in registry `SortOrder`. `catalog/registry/docs_test.go` fails when this table, the count, or `.env.example` drift from the registry.
+28 provider gateways in `catalog/registry/providers.go` (reflect `/config` uses the same list), listed in registry `SortOrder`. `catalog/registry/docs_test.go` fails when this table, the count, or `.env.example` drift from the registry.
 
 | Provider | ID | Env variable |
 |---|---|---|
@@ -364,7 +364,7 @@ relay is part of the graycode-eco:
 
 | Component | Repository | Purpose |
 |---|---|---|
-| **decoder** | [GrayCodeAI/decoder](https://github.com/GrayCodeAI/decoder) | AI coding agent |
+| **reflect** | [GrayCodeAI/reflect](https://github.com/GrayCodeAI/reflect) | AI coding agent |
 | **relay** | This repo | LLM provider runtime |
 
 ## Development
