@@ -353,7 +353,8 @@ type StatePaths struct {
 
 // PreflightOptions configures a preflight check.
 type PreflightOptions struct {
-	VerifyLive bool `json:"verify_live,omitempty"`
+	VerifyLive   bool `json:"verify_live,omitempty"`
+	RequireTools bool `json:"require_tools,omitempty"`
 }
 
 // PreflightReport is the result of a preflight check.

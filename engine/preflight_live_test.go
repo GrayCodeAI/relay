@@ -22,7 +22,7 @@ func TestPreflightDistinguishesLocalAndLiveReadiness(t *testing.T) {
 	if !local.Ready || local.LiveVerified {
 		t.Fatalf("local preflight = %+v", local)
 	}
-	if formatted := FormatPreflight(local); !strings.Contains(formatted, "locally ready") || !strings.Contains(formatted, "not checked") {
+	if formatted := FormatPreflight(local); !strings.Contains(formatted, "local checks passed") || !strings.Contains(formatted, "not checked") {
 		t.Fatalf("local readiness label is ambiguous: %q", formatted)
 	}
 
@@ -30,8 +30,95 @@ func TestPreflightDistinguishesLocalAndLiveReadiness(t *testing.T) {
 	if !live.Ready || !live.LiveVerified {
 		t.Fatalf("live preflight = %+v", live)
 	}
-	if formatted := FormatPreflight(live); !strings.Contains(formatted, "live verified") {
+	if formatted := FormatPreflight(live); !strings.Contains(formatted, "provider access verified") || !strings.Contains(formatted, "chat not tested") {
 		t.Fatalf("live readiness label missing: %q", formatted)
+	}
+}
+
+func TestPreflightChecksSelectedProviderToolCapability(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		capability catalog.CapabilityState
+		ready      bool
+		detail     string
+	}{
+		{"supported", catalog.CapabilitySupported, true, "openai/gpt-4o supports coding tools"},
+		{"unsupported", catalog.CapabilityUnsupported, false, "openai/gpt-4o does not support tools; select another model"},
+		{"unknown", catalog.CapabilityUnknown, false, "openai/gpt-4o tool support is unknown; refresh the catalog or select a verified model"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			eng := readyPreflightEngine(t, ctx)
+			seed := catalog.SeedCatalog()
+			for i := range seed.Offerings {
+				if seed.Offerings[i].DeploymentID == "openai-direct" && seed.Offerings[i].CanonicalModelID == "openai/"+catalog.GPT_4o {
+					seed.Offerings[i].Capabilities.FunctionCalling = test.capability
+				}
+			}
+			if err := catalog.WriteCatalogCache(eng.catalogPath, &seed); err != nil {
+				t.Fatal(err)
+			}
+			report := eng.PreflightWithOptions(ctx, PreflightOptions{RequireTools: true})
+			if report.Ready != test.ready {
+				t.Fatalf("ready = %v, want %v: %+v", report.Ready, test.ready, report)
+			}
+			status := CheckFail
+			if test.ready {
+				status = CheckOK
+			}
+			assertPreflightCheck(t, report, "model_tools", status, test.detail)
+		})
+	}
+}
+
+func TestSelectedModelToolsStateUsesActiveDeployment(t *testing.T) {
+	compiled := &catalog.CompiledCatalog{
+		ModelsByID: map[string]catalog.Model{
+			"openai/shared": {ID: "openai/shared", ProviderID: "openai"},
+		},
+		OfferingsByDeployment: map[string][]catalog.ModelOffering{
+			"openai-direct":    {{CanonicalModelID: "openai/shared", NativeModelID: "shared", Capabilities: catalog.CapabilitySet{FunctionCalling: catalog.CapabilityUnsupported}}},
+			"anthropic-direct": {{CanonicalModelID: "openai/shared", NativeModelID: "shared", Capabilities: catalog.CapabilitySet{FunctionCalling: catalog.CapabilitySupported}}},
+		},
+	}
+	if got := selectedModelToolsState(compiled, "openai", "openai/shared"); got != catalog.CapabilityUnsupported {
+		t.Fatalf("active deployment tool state = %q, want unsupported", got)
+	}
+}
+
+func TestCustomGatewayPreflightChecksDeclaredToolCapability(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		capabilities *CustomGatewayCapabilities
+		ready        bool
+		detail       string
+	}{
+		{"supported", &CustomGatewayCapabilities{Tools: true}, true, "private/model supports coding tools"},
+		{"unsupported", &CustomGatewayCapabilities{Tools: false}, false, "private/model custom gateway declares tools unsupported; update its capability setting or select another gateway"},
+		{"unknown", nil, false, "private/model tool support is unknown; declare tools capability for the custom gateway"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			eng, err := New(Options{
+				SecretStore: &credentials.MapStore{}, StateDir: t.TempDir(),
+				CustomGateways: []CustomGateway{{ID: "private", BaseURL: "https://private.example.test/v1", DefaultModel: "private/model", Capabilities: test.capabilities}},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := eng.SetSelection(ctx, "private", "private/model"); err != nil {
+				t.Fatal(err)
+			}
+			report := eng.PreflightWithOptions(ctx, PreflightOptions{RequireTools: true})
+			if report.Ready != test.ready {
+				t.Fatalf("ready = %v, want %v: %+v", report.Ready, test.ready, report)
+			}
+			status := CheckFail
+			if test.ready {
+				status = CheckOK
+			}
+			assertPreflightCheck(t, report, "model_tools", status, test.detail)
+		})
 	}
 }
 
