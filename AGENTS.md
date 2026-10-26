@@ -16,7 +16,7 @@ When starting any new work (feature, fix, refactor, chore), always create a feat
 
 ## Observability
 
-See [decoder/docs/OTEL-CONVENTIONS.md](https://github.com/GrayCodeAI/decoder/blob/main/docs/OTEL-CONVENTIONS.md) for the shared OpenTelemetry attribute vocabulary (`gen_ai.*`, `cost.usd`, etc.) used across all GrayCodeAI repos.
+See [reflect/docs/OTEL-CONVENTIONS.md](https://github.com/GrayCodeAI/reflect/blob/main/docs/OTEL-CONVENTIONS.md) for the shared OpenTelemetry attribute vocabulary (`gen_ai.*`, `cost.usd`, etc.) used across all GrayCodeAI repos.
 
 ## Build & Test
 
@@ -50,9 +50,9 @@ make ci                          # Full CI suite
 
 ## Common Pitfalls
 
-- `engine`, `llm`, `graph` and `tools` are the host contract surface. Decoder
+- `engine`, `llm`, `graph` and `tools` are the host contract surface. Reflect
   must not assemble `provider`, `catalog`, `config`, `credentials`, `router` or
-  `runtime`. Six symbols Decoder needs (`ChatOptions`, `ContinuationConfig`,
+  `runtime`. Six symbols Reflect needs (`ChatOptions`, `ContinuationConfig`,
   `StreamResult`, `ResponseFormat`, `ImageURLPart`, `InputAudioPart`) live in
   `llm` with no `engine` alias; widening the facade to cover them is a
   deliberate API change, not an incidental one.
@@ -66,17 +66,17 @@ make ci                          # Full CI suite
   method set stable and use it across feature packages
 - Streaming tests need careful goroutine management
 - `go.work` here should stay minimal; the `graycode-eco` workspace connects
-  this independent `relay` checkout beside Decoder for local development.
+  this independent `relay` checkout beside Reflect for local development.
   Do not add extra local `replace` directives here without coordinating with
   the parent workspace.
 - There is usually **no** `go.work` in the parent folder, and that is expected.
   A parent `go.work` breaks every sibling it does not list, and exporting
-  `GOWORK` is worse: it is inherited by child `go` processes, so decoder's own
+  `GOWORK` is worse: it is inherited by child `go` processes, so reflect's own
   tests that shell out to `go test` in temporary projects fail. To exercise
-  decoder against this checkout, use a gitignored module overlay in decoder instead —
-  `go test -modfile=go.local.mod ./...`. See decoder/AGENTS.md
-  "Workspace workflow" for the setup. Without that overlay, decoder compiles
-  against the *published* relay from the module cache, so a green decoder suite
+  reflect against this checkout, use a gitignored module overlay in reflect instead —
+  `go test -modfile=go.local.mod ./...`. See reflect/AGENTS.md
+  "Workspace workflow" for the setup. Without that overlay, reflect compiles
+  against the *published* relay from the module cache, so a green reflect suite
   does not exercise local relay changes at all.
 
 ## Naming Conventions
@@ -161,10 +161,10 @@ make ci                          # Full CI suite
 | Main test file | `provider/client_test.go` (httptest servers, provider detection) |
 | Linter config | `.golangci.yml` (govet, ineffassign, misspell — minimal) |
 
-This is an independent repository consumed by Decoder. In the local
-`graycode-eco` parent workspace it is checked out beside `decoder` as `../relay`
+This is an independent repository consumed by Reflect. In the local
+`graycode-eco` parent workspace it is checked out beside `reflect` as `../relay`
 and connected through the parent `go.work`; publish changes here, then update
-Decoder's module pin through a separate PR.
+Reflect's module pin through a separate PR.
 
 ## Cloudflare
 
