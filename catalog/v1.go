@@ -602,6 +602,12 @@ func CompileCatalog(c *Catalog) (*CompiledCatalog, error) {
 		compiled.Diagnostics = append(compiled.Diagnostics, CatalogDiagnostic{Code: "stale_catalog", Message: "catalog is stale"})
 	}
 	for _, offering := range c.Offerings {
+		// Older Anthropic model-list caches omit client tool support, even though
+		// the Messages API supports tools for Claude models. Preserve an explicit
+		// unsupported value if a catalog supplies one.
+		if offering.DeploymentID == "anthropic-direct" && offering.Capabilities.FunctionCalling == "" {
+			offering.Capabilities.FunctionCalling = CapabilitySupported
+		}
 		compiled.OfferingsByID[offering.ID] = offering
 		compiled.OfferingsByCanonicalModel[offering.CanonicalModelID] = append(compiled.OfferingsByCanonicalModel[offering.CanonicalModelID], offering)
 		compiled.OfferingsByDeployment[offering.DeploymentID] = append(compiled.OfferingsByDeployment[offering.DeploymentID], offering)

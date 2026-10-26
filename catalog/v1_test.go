@@ -35,6 +35,36 @@ func TestCatalogFromLegacyCompiles(t *testing.T) {
 	}
 }
 
+func TestCompileCatalogBackfillsAnthropicDirectToolSupport(t *testing.T) {
+	c := SeedCatalog()
+	const modelID = "anthropic/claude-sonnet-4-6"
+	for i := range c.Offerings {
+		if c.Offerings[i].CanonicalModelID == modelID && c.Offerings[i].DeploymentID == "anthropic-direct" {
+			c.Offerings[i].Capabilities.FunctionCalling = ""
+		}
+	}
+	compiled, err := CompileCatalog(&c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := compiled.CapabilitiesForModel(modelID, "anthropic-direct").FunctionCalling; got != CapabilitySupported {
+		t.Fatalf("cached Anthropic tool support = %q, want supported", got)
+	}
+
+	for i := range c.Offerings {
+		if c.Offerings[i].CanonicalModelID == modelID && c.Offerings[i].DeploymentID == "anthropic-direct" {
+			c.Offerings[i].Capabilities.FunctionCalling = CapabilityUnsupported
+		}
+	}
+	compiled, err = CompileCatalog(&c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := compiled.CapabilitiesForModel(modelID, "anthropic-direct").FunctionCalling; got != CapabilityUnsupported {
+		t.Fatalf("explicit Anthropic tool support = %q, want unsupported", got)
+	}
+}
+
 func TestValidateCatalogRejectsBadReferences(t *testing.T) {
 	t.Parallel()
 	c := SeedCatalog()
