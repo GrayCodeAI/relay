@@ -134,12 +134,12 @@ var (
 	// ReflectionCompat: OpenAI-compatible; requires reasoning_content passback
 	// in multi-turn conversations (HTTP 400 otherwise).
 	ReflectionCompat = OpenAICompatConfig{
-		SupportsStore:              false,
-		SupportsDeveloperRole:      true,
-		SupportsReasoningEffort:    true,
-		SupportsUsageInStreaming:   true,
+		SupportsStore:             false,
+		SupportsDeveloperRole:     true,
+		SupportsReasoningEffort:   true,
+		SupportsUsageInStreaming:  true,
 		MaxTokensField:            "max_completion_tokens",
-		RequiresReasoningPassback:  true,
+		RequiresReasoningPassback: true,
 	}
 	StepFunCompat = OpenAICompatConfig{
 		MaxTokensField: "max_tokens",
