@@ -210,7 +210,7 @@ ANTHROPIC_API_KEY=sk-... go run ./examples/basic/
 
 ## Supported Providers
 
-28 provider gateways in `catalog/registry/providers.go` (reflect `/config` uses the same list), listed in registry `SortOrder`. `catalog/registry/docs_test.go` fails when this table, the count, or `.env.example` drift from the registry.
+29 provider gateways in `catalog/registry/providers.go` (reflect `/config` uses the same list), listed in registry `SortOrder`. `catalog/registry/docs_test.go` fails when this table, the count, or `.env.example` drift from the registry.
 
 | Provider | ID | Env variable |
 |---|---|---|
@@ -242,7 +242,7 @@ ANTHROPIC_API_KEY=sk-... go run ./examples/basic/
 | **StepFun** | `stepfun` | `STEP_API_KEY` (+ region `global` / `cn`) |
 | **OpenGateway** | `opengateway` | `OPENGATEWAY_API_KEY` |
 | **Fireworks AI** | `fireworks` | `FIREWORKS_API_KEY` |
-
+| **Reflection AI** | `reflection` | `REFLECTION_API_KEY` |
 Runtime auto-detection uses a separate priority order (`config.APIProviderDetectionOrder`) when no deployment is pinned.
 
 ## Usage

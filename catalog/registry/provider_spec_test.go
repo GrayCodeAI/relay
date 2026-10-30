@@ -9,8 +9,8 @@ import (
 
 func TestAllProviders_Count(t *testing.T) {
 	t.Parallel()
-	if n := len(registry.All()); n != 28 {
-		t.Fatalf("expected 28 providers, got %d", n)
+	if n := len(registry.All()); n != 29 {
+		t.Fatalf("expected 29 providers, got %d", n)
 	}
 }
 
@@ -39,7 +39,7 @@ func TestProviderSpecs_AgnesOpenAIOnlyLongCatOpenAIPrimary(t *testing.T) {
 func TestLiveFetcherKeys_AllProviders(t *testing.T) {
 	t.Parallel()
 	keys := registry.LiveFetcherKeys()
-	if len(keys) != 28 {
+	if len(keys) != 29 {
 		t.Fatalf("expected 28 live fetcher keys, got %d", len(keys))
 	}
 }

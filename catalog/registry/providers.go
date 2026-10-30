@@ -269,6 +269,15 @@ func providerSpecs() []ProviderSpec {
 			ProtocolID: "openai-chat-completions", AdapterID: "fireworks", RuntimeProfileKey: "fireworks",
 			DNSHost: "api.fireworks.ai",
 		},
+		{
+			ProviderID: "reflection", DisplayName: "Reflection AI", DeploymentID: "reflection-direct", SortOrder: 29, ChatPreference: 29,
+			RequiresKey: true, CredentialEnv: "REFLECTION_API_KEY",
+			BaseURLEnv: []string{"REFLECTION_BASE_URL"},
+			ProbeKind:  ProbeOpenAIModels, ProbeBaseURL: "https://api.reflection.ai/openai/v1",
+			LiveFetcherKey: "reflection", LiveCatalogKey: "reflection",
+			ProtocolID: "openai-chat-completions", AdapterID: "openai", RuntimeProfileKey: "reflection",
+			DNSHost: "api.reflection.ai",
+		},
 
 		// ── Niche ─────────────────────────────────────────────────────────
 		{

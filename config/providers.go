@@ -43,6 +43,7 @@ const (
 	DefaultLongCatOpenAIBaseURL     = "https://api.longcat.chat/openai/v1"
 	DefaultLongCatAnthropicBaseURL  = "https://api.longcat.chat/anthropic"
 	DefaultFireworksOpenAIBaseURL   = "https://api.fireworks.ai/inference/v1"
+	DefaultReflectionOpenAIBaseURL  = "https://api.reflection.ai/openai/v1"
 )
 
 // ProviderTransport is the transport type for provider requests.

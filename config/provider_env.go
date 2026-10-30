@@ -67,6 +67,9 @@ type ProviderConfig struct {
 	StepFunAPIKey              string                      `json:"stepfun_api_key,omitempty"`
 	StepFunBaseURL             string                      `json:"stepfun_base_url,omitempty"`
 	StepFunModel               string                      `json:"stepfun_model,omitempty"`
+	ReflectionAPIKey           string                      `json:"reflection_api_key,omitempty"`
+	ReflectionBaseURL          string                      `json:"reflection_base_url,omitempty"`
+	ReflectionModel            string                      `json:"reflection_model,omitempty"`
 	MiniMaxModel               string                      `json:"minimax_model,omitempty"`
 	AnthropicModel             string                      `json:"anthropic_model,omitempty"`
 	OpenAIModel                string                      `json:"openai_model,omitempty"`
@@ -255,6 +258,11 @@ var providerFields = map[string]providerFieldMap{
 		APIKeys: func(c *ProviderConfig) []string { return []string{c.StepFunAPIKey} },
 		Models:  func(c *ProviderConfig) []string { return []string{c.StepFunModel} },
 		BaseURL: func(c *ProviderConfig) string { return c.StepFunBaseURL },
+	},
+	ProviderReflection: {
+		APIKeys: func(c *ProviderConfig) []string { return []string{c.ReflectionAPIKey} },
+		Models:  func(c *ProviderConfig) []string { return []string{c.ReflectionModel} },
+		BaseURL: func(c *ProviderConfig) string { return c.ReflectionBaseURL },
 	},
 	ProviderOpenGateway: {
 		APIKeys: func(c *ProviderConfig) []string { return []string{c.OpenGatewayAPIKey} },
@@ -639,6 +647,7 @@ func ClearProviderRuntimeEnv() {
 		"CLINE_API_KEY", "CLINE_MODEL", "CLINE_API_BASE",
 		"MOONSHOT_API_KEY", "MOONSHOT_MODEL", "MOONSHOT_BASE_URL",
 		"STEP_API_KEY", "STEP_MODEL", "STEP_BASE_URL",
+		"REFLECTION_API_KEY", "REFLECTION_MODEL", "REFLECTION_BASE_URL",
 		"XIAOMI_MIMO_PAYG_API_KEY", "XIAOMI_MIMO_TOKEN_PLAN_API_KEY",
 		"XIAOMI_MIMO_TOKEN_PLAN_REGION", "XIAOMI_MODEL", "XIAOMI_BASE_URL",
 		"XIAOMI_MIMO_PAYG_BASE_URL", "XIAOMI_MIMO_TOKEN_PLAN_BASE_URL",
@@ -899,6 +908,14 @@ func ApplyProviderEnv(provider string, config *ProviderConfig, activeModel strin
 			m = catalog.GetProviderDefaultModel("stepfun", cat)
 		}
 		collectOpenAICompatibleProvider(env, "STEP", apiKey, m, base, overwrite)
+	case ProviderReflection:
+		apiKey := AsNonEmptyString(config.ReflectionAPIKey)
+		base := firstNonEmpty(config.ReflectionBaseURL, DefaultReflectionOpenAIBaseURL)
+		m := activeModel
+		if m == "" {
+			m = catalog.GetProviderDefaultModel("reflection", cat)
+		}
+		collectOpenAICompatibleProvider(env, "REFLECTION", apiKey, m, base, overwrite)
 	}
 	return env
 }
