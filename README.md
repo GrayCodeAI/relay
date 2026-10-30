@@ -243,6 +243,7 @@ ANTHROPIC_API_KEY=sk-... go run ./examples/basic/
 | **OpenGateway** | `opengateway` | `OPENGATEWAY_API_KEY` |
 | **Fireworks AI** | `fireworks` | `FIREWORKS_API_KEY` |
 | **Reflection AI** | `reflection` | `REFLECTION_API_KEY` |
+
 Runtime auto-detection uses a separate priority order (`config.APIProviderDetectionOrder`) when no deployment is pinned.
 
 ## Usage
