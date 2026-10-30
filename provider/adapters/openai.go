@@ -8,7 +8,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/GrayCodeAI/relay/llm"
 	"github.com/GrayCodeAI/relay/provider/core"
@@ -212,7 +211,7 @@ func buildRequestBase(messages []core.RelayMessage, opts core.ChatOptions, strea
 		// Forward the prior assistant turn's reasoning_content back to providers
 		// that require it (DeepSeek tool-call round-trips), as an assistant field.
 		if compat != nil && compat.RequiresReasoningPassback &&
-			m.Role == "assistant" && strings.TrimSpace(m.Thinking) != "" {
+			m.Role == "assistant" && m.Thinking != "" {
 			msg["reasoning_content"] = m.Thinking
 		}
 		// Handle ContentParts (multi-modal): takes precedence over Content/Images
