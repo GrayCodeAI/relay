@@ -348,7 +348,7 @@ func providerForDeployment(id string, deployment config.DeploymentConfig, cfg *c
 		if apiKey == "" {
 			return nil, false
 		}
-		return adapters.NewOpenAIClient(apiKey, FirstNonEmpty(deployment.BaseURL, config.DefaultReflectionOpenAIBaseURL), &adapters.OpenAICompat), true
+		return adapters.NewOpenAIClient(apiKey, FirstNonEmpty(deployment.BaseURL, config.DefaultReflectionOpenAIBaseURL), &adapters.ReflectionCompat), true
 	case "longcat-direct":
 		apiKey := FirstNonEmpty(deployment.APIKey, lookup("LONGCAT_API_KEY"))
 		if apiKey == "" {
