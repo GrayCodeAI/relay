@@ -131,6 +131,16 @@ var (
 		MaxTokensField:           "max_tokens",
 		SupportsUsageInStreaming: true,
 	}
+	// ReflectionCompat: OpenAI-compatible; requires reasoning_content passback
+	// in multi-turn conversations (HTTP 400 otherwise).
+	ReflectionCompat = OpenAICompatConfig{
+		SupportsStore:             false,
+		SupportsDeveloperRole:     true,
+		SupportsReasoningEffort:   true,
+		SupportsUsageInStreaming:  true,
+		MaxTokensField:            "max_completion_tokens",
+		RequiresReasoningPassback: true,
+	}
 	StepFunCompat = OpenAICompatConfig{
 		MaxTokensField: "max_tokens",
 	}
@@ -150,7 +160,7 @@ func init() {
 		"longcat":            &LongCatCompat,
 		"minimax_token_plan": &MiniMaxCompat, "minimax_payg": &MiniMaxCompat,
 		"stepfun": &StepFunCompat, "concentrate": &ConcentrateCompat,
-		"agnes": &AgnesCompat,
+		"agnes": &AgnesCompat, "reflection": &ReflectionCompat,
 	}
 	for id, compat := range compatible {
 		if provider, ok := OpenAICompatibleProviders[id]; ok {

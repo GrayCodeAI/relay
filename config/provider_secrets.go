@@ -143,6 +143,11 @@ var providerCredentialFields = []providerCredentialField{
 		value: func(c *ProviderConfig) string { return c.FireworksAPIKey },
 		clear: func(c *ProviderConfig) { c.FireworksAPIKey = "" },
 	},
+	{
+		label: "reflection_api_key", env: "REFLECTION_API_KEY",
+		value: func(c *ProviderConfig) string { return c.ReflectionAPIKey },
+		clear: func(c *ProviderConfig) { c.ReflectionAPIKey = "" },
+	},
 }
 
 // ProviderConfigContainsSecrets reports whether provider state contains
@@ -306,6 +311,7 @@ var providerBaseURLEnv = map[string]func(*ProviderConfig) string{
 	"STEP_BASE_URL":         func(c *ProviderConfig) string { return c.StepFunBaseURL },
 	"AGNES_BASE_URL":        func(c *ProviderConfig) string { return c.AgnesBaseURL },
 	"FIREWORKS_BASE_URL":    func(c *ProviderConfig) string { return c.FireworksBaseURL },
+	"REFLECTION_BASE_URL":   func(c *ProviderConfig) string { return c.ReflectionBaseURL },
 	"CANOPYWAVE_BASE_URL":   func(c *ProviderConfig) string { return c.CanopyWaveBaseURL },
 	"POOLSIDE_BASE_URL":     func(c *ProviderConfig) string { return c.PoolsideBaseURL },
 	"GROQ_BASE_URL":         func(c *ProviderConfig) string { return c.GroqBaseURL },

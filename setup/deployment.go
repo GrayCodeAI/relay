@@ -343,6 +343,12 @@ func providerForDeployment(id string, deployment config.DeploymentConfig, cfg *c
 			return nil, false
 		}
 		return adapters.NewAgnesClient(apiKey, FirstNonEmpty(deployment.BaseURL, config.DefaultAgnesOpenAIBaseURL), &adapters.AgnesCompat), true
+	case "reflection-direct":
+		apiKey := FirstNonEmpty(deployment.APIKey, lookup("REFLECTION_API_KEY"))
+		if apiKey == "" {
+			return nil, false
+		}
+		return adapters.NewOpenAIClient(apiKey, FirstNonEmpty(deployment.BaseURL, config.DefaultReflectionOpenAIBaseURL), &adapters.ReflectionCompat), true
 	case "longcat-direct":
 		apiKey := FirstNonEmpty(deployment.APIKey, lookup("LONGCAT_API_KEY"))
 		if apiKey == "" {

@@ -1212,3 +1212,22 @@ func enrichStepFunEntry(e Entry) Entry {
 	}
 	return e
 }
+
+// FetchReflection lists models from the Reflection AI OpenAI-compatible API.
+func FetchReflection(env map[string]string) ([]Entry, error) {
+	entries, err := fetchOpenAICompatModels(
+		context.Background(),
+		envOr(env, "REFLECTION_BASE_URL", "https://api.reflection.ai/openai/v1"),
+		env["REFLECTION_API_KEY"], "Bearer",
+	)
+	if err != nil {
+		return nil, err
+	}
+	for i := range entries {
+		entries[i].ThinkingEnabled = true
+		entries[i].Features = appendUnique(entries[i].Features, "tools")
+		entries[i].Features = appendUnique(entries[i].Features, "structured_output")
+		entries[i].Features = appendUnique(entries[i].Features, "thinking:enabled")
+	}
+	return entries, nil
+}

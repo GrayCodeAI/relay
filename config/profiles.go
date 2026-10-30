@@ -34,6 +34,7 @@ const (
 	ProviderGroq                APIProvider = "groq"
 	ProviderClinePass           APIProvider = "clinepass"
 	ProviderStepFun             APIProvider = "stepfun"
+	ProviderReflection          APIProvider = "reflection"
 )
 
 // RuntimeProviderProfile defines how a provider is detected and configured at runtime.
@@ -251,13 +252,20 @@ var (
 		BaseURLEnv:   []string{"STEP_BASE_URL"},
 		APIKeys:      []APIKeyDef{{Env: "STEP_API_KEY", Source: "stepfun"}},
 	}
+	ReflectionRuntimeProfile = RuntimeProviderProfile{
+		Mode: "openai", DefaultBaseURL: DefaultReflectionOpenAIBaseURL,
+		DetectionEnv: []string{"REFLECTION_API_KEY"},
+		ModelEnv:     []string{"REFLECTION_MODEL", "OPENAI_MODEL"},
+		BaseURLEnv:   []string{"REFLECTION_BASE_URL"},
+		APIKeys:      []APIKeyDef{{Env: "REFLECTION_API_KEY", Source: "reflection"}},
+	}
 )
 
 // APIProviderDetectionOrder is the priority order for provider detection.
 var APIProviderDetectionOrder = []APIProvider{
 	ProviderAnthropic, ProviderConcentrate, ProviderAgnes, ProviderLongCat, ProviderFireworks, ProviderOpenRouter, ProviderGrok, ProviderGemini,
 	ProviderVertex, ProviderBedrock, ProviderZAICoding, ProviderZAIPayg, ProviderCanopyWave, ProviderDeepSeek, ProviderPoolside, ProviderGroq, ProviderClinePass, ProviderAzure, ProviderOpenAI, ProviderOpenCodeGo,
-	ProviderKimi, ProviderXiaomiMimoPayg, ProviderXiaomiMimoTokenPlan, ProviderMiniMaxTokenPlan, ProviderMiniMaxPayg, ProviderOllama, ProviderStepFun, ProviderOpenGateway,
+	ProviderKimi, ProviderXiaomiMimoPayg, ProviderXiaomiMimoTokenPlan, ProviderMiniMaxTokenPlan, ProviderMiniMaxPayg, ProviderOllama, ProviderStepFun, ProviderOpenGateway, ProviderReflection,
 }
 
 // ProviderModelEnvKeys maps each provider to its model env var keys.
@@ -288,6 +296,7 @@ var ProviderModelEnvKeys = map[APIProvider][]string{
 	ProviderStepFun:             StepFunRuntimeProfile.ModelEnv,
 	ProviderOpenGateway:         OpenGatewayRuntimeProfile.ModelEnv,
 	ProviderFireworks:           FireworksRuntimeProfile.ModelEnv,
+	ProviderReflection:          ReflectionRuntimeProfile.ModelEnv,
 }
 
 const (
@@ -297,7 +306,7 @@ const (
 
 // OpenAICompatibleRuntimeProfileOrder is the detection order for runtime profiles.
 var OpenAICompatibleRuntimeProfileOrder = []string{
-	"concentrate", "agnes", "longcat", "fireworks", "openrouter", "grok", "gemini", "anthropic", "zai_coding", "zai_payg", "canopywave", "deepseek", "poolside", "groq", "clinepass", "openai", "opencodego", "kimi", "xiaomi_mimo_payg", "xiaomi_mimo_token_plan", "minimax_token_plan", "minimax_payg", "stepfun", "opengateway",
+	"concentrate", "agnes", "longcat", "fireworks", "openrouter", "grok", "gemini", "anthropic", "zai_coding", "zai_payg", "canopywave", "deepseek", "poolside", "groq", "clinepass", "openai", "opencodego", "kimi", "xiaomi_mimo_payg", "xiaomi_mimo_token_plan", "minimax_token_plan", "minimax_payg", "stepfun", "opengateway", "reflection",
 }
 
 // OpenAICompatibleRuntimeProfiles maps profile key to its runtime profile.
@@ -326,6 +335,7 @@ var OpenAICompatibleRuntimeProfiles = map[string]RuntimeProviderProfile{
 	"minimax_token_plan":     MiniMaxTokenPlanRuntimeProfile,
 	"minimax_payg":           MiniMaxPaygRuntimeProfile,
 	"stepfun":                StepFunRuntimeProfile,
+	"reflection":             ReflectionRuntimeProfile,
 }
 
 // RuntimeProviderProfiles maps provider/profile keys to runtime detection profiles.
@@ -357,6 +367,7 @@ var RuntimeProviderProfiles = map[string]RuntimeProviderProfile{
 	"minimax_token_plan":     MiniMaxTokenPlanRuntimeProfile,
 	"minimax_payg":           MiniMaxPaygRuntimeProfile,
 	"stepfun":                StepFunRuntimeProfile,
+	"reflection":             ReflectionRuntimeProfile,
 	"ollama":                 OllamaRuntimeProfile,
 }
 
