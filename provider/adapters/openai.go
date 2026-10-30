@@ -204,9 +204,6 @@ func buildRequestBase(messages []core.RelayMessage, opts core.ChatOptions, strea
 					"content":      tr.Content,
 					"tool_call_id": tr.ToolUseID,
 				}
-				if tr.IsError {
-					toolMsg["is_error"] = true
-				}
 				msgs = append(msgs, toolMsg)
 			}
 			continue
