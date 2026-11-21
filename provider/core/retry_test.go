@@ -1,11 +1,14 @@
 package core
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -13,6 +16,49 @@ import (
 
 	"github.com/GrayCodeAI/relay/types"
 )
+
+type retryTestTransport func(*http.Request) (*http.Response, error)
+
+func (f retryTestTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func TestRetryDiagnosticsOmitPrivateURLParts(t *testing.T) {
+	t.Parallel()
+	offline := errors.New("transport offline")
+	for _, status := range []bool{false, true} {
+		var logs bytes.Buffer
+		logger := slog.New(slog.NewTextHandler(&logs, &slog.HandlerOptions{Level: slog.LevelDebug}))
+		ctx := context.Background()
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet,
+			"https://private-user:private-password@provider.test/private-path?key=private-query", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		client := &http.Client{Transport: retryTestTransport(func(r *http.Request) (*http.Response, error) {
+			if r.URL.RawQuery != "key=private-query" {
+				t.Fatal("request sent to the provider lost its query")
+			}
+			if status {
+				return &http.Response{StatusCode: http.StatusServiceUnavailable, Body: http.NoBody}, nil
+			}
+			return nil, offline
+		})}
+		_, err = DoWithRetry(ctx, client, req, NewRetryConfig(1, 0, 0, http.StatusServiceUnavailable), logger)
+		if err == nil {
+			t.Fatal("expected exhausted retries")
+		}
+		if !status {
+			var urlErr *url.Error
+			if !errors.Is(err, offline) || !errors.As(err, &urlErr) {
+				t.Fatal("lost transport error details")
+			}
+		}
+		if strings.Contains(logs.String()+err.Error(), "private-") {
+			t.Error("private URL data appeared in retry diagnostics")
+		}
+	}
+}
 
 func TestRetryDefaultRetryConfig(t *testing.T) {
 	t.Parallel()
@@ -103,6 +149,17 @@ func TestRetryParseRetryAfterHeader(t *testing.T) {
 	}
 }
 
+func TestRetryAfterAvoidsDurationOverflow(t *testing.T) {
+	t.Parallel()
+	cfg := NewRetryConfig(1, 0, 1500*time.Millisecond)
+	for _, seconds := range []string{"10000000000", "1234567890123456789012345"} {
+		resp := &http.Response{Header: http.Header{"Retry-After": {seconds}}}
+		if got := cfg.backoffDelay(0, resp); got != cfg.MaxDelay {
+			t.Errorf("Retry-After %s gave %v, want %v", seconds, got, cfg.MaxDelay)
+		}
+	}
+}
+
 func TestRetryParseRetryDelayFromMessage(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -111,11 +168,13 @@ func TestRetryParseRetryDelayFromMessage(t *testing.T) {
 	}{
 		{"retry after 2 seconds", 2 * time.Second},
 		{"try again in 500 ms", 500 * time.Millisecond},
+		{"try again in 500 MS", 500 * time.Millisecond},
 		{"retry in 1.5 seconds", 1500 * time.Millisecond},
+		{"retry in 99999999999 seconds", time.Minute},
 		{"no delay hint here", 0},
 	}
 	for _, tc := range tests {
-		got := parseRetryDelay(tc.msg)
+		got := parseRetryDelay(tc.msg, time.Minute)
 		if got != tc.want {
 			t.Errorf("parseRetryDelay(%q) = %v, want %v", tc.msg, got, tc.want)
 		}

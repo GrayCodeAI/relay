@@ -50,9 +50,7 @@ func defaultTransport() *http.Transport {
 // CloseIdleConnections closes idle connections in the shared pool.
 // Call during graceful shutdown.
 func CloseIdleConnections() {
-	if sharedTransport != nil {
-		sharedTransport.CloseIdleConnections()
-	}
+	defaultTransport().CloseIdleConnections()
 }
 
 // NewPooledHTTPClient creates an *http.Client with the shared connection pool
