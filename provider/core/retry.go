@@ -2,11 +2,14 @@ package core
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GrayCodeAI/relay/types"
@@ -50,15 +53,17 @@ func (rc RetryConfig) ShouldRetry(statusCode int) bool {
 // backoffDelay calculates delay with exponential backoff + jitter.
 // Respects Retry-After headers from HTTP responses when present.
 func (rc RetryConfig) backoffDelay(attempt int, resp *http.Response) time.Duration {
+	if rc.MaxDelay <= 0 {
+		return 0
+	}
 	// Respect Retry-After header if present
 	if resp != nil {
 		if ra := resp.Header.Get("Retry-After"); ra != "" {
-			if secs, err := strconv.Atoi(ra); err == nil {
-				d := time.Duration(secs) * time.Second
-				if d > rc.MaxDelay {
-					d = rc.MaxDelay
+			if secs, err := strconv.ParseUint(ra, 10, 64); err == nil || errors.Is(err, strconv.ErrRange) {
+				if secs > uint64(rc.MaxDelay/time.Second) {
+					return rc.MaxDelay
 				}
-				return d
+				return time.Duration(secs) * time.Second
 			}
 			if t, err := http.ParseTime(ra); err == nil {
 				d := time.Until(t)
@@ -78,22 +83,24 @@ func (rc RetryConfig) backoffDelay(attempt int, resp *http.Response) time.Durati
 
 var retryDelayRe = regexp.MustCompile(`(?i)(?:retry|try again)\s+(?:in|after)\s+(\d+(?:\.\d+)?)\s*(ms|milliseconds?|s|seconds?)`)
 
-// parseRetryDelay extracts a delay hint from an error message.
-func parseRetryDelay(errMsg string) time.Duration {
+// parseRetryDelay extracts a delay hint bounded by the configured backoff limit.
+func parseRetryDelay(errMsg string, maxDelay time.Duration) time.Duration {
 	m := retryDelayRe.FindStringSubmatch(errMsg)
-	if m == nil {
+	if m == nil || maxDelay <= 0 {
 		return 0
 	}
 	val, err := strconv.ParseFloat(m[1], 64)
+	unit := time.Second
+	if strings.EqualFold(m[2][:1], "m") {
+		unit = time.Millisecond
+	}
+	if val >= float64(maxDelay)/float64(unit) {
+		return maxDelay
+	}
 	if err != nil {
 		return 0
 	}
-	switch {
-	case len(m[2]) > 0 && m[2][0] == 'm':
-		return time.Duration(val * float64(time.Millisecond))
-	default:
-		return time.Duration(val * float64(time.Second))
-	}
+	return time.Duration(val * float64(unit))
 }
 
 // DoWithRetry executes an HTTP request with retry logic.
@@ -113,14 +120,12 @@ func DoWithRetry(ctx context.Context, httpClient *http.Client, req *http.Request
 		if attempt > 0 {
 			delay := rc.backoffDelay(attempt-1, lastResp)
 			if lastErr != nil {
-				if parsed := parseRetryDelay(lastErr.Error()); parsed > delay {
-					delay = parsed
-				}
+				delay = max(delay, parseRetryDelay(lastErr.Error(), rc.MaxDelay))
 			}
 			logger.Debug(
 				"retrying request",
 				"attempt", attempt, "max", rc.MaxRetries,
-				"delay", delay, "url", req.URL.String(),
+				"delay", delay, "host", req.URL.Host,
 			)
 			// Use time.NewTimer + Stop instead of time.After to avoid leaking
 			// the timer in the runtime when ctx is cancelled before the delay
@@ -153,6 +158,18 @@ func DoWithRetry(ctx context.Context, httpClient *http.Client, req *http.Request
 
 		resp, err := httpClient.Do(retryReq)
 		if err != nil {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			// net/http includes the request URL in transport errors. Keep the
+			// error type and cause, but omit private paths and credentials.
+			var urlErr *url.Error
+			if errors.As(err, &urlErr) {
+				safe := *urlErr
+				safe.URL = req.URL.Scheme + "://" + req.URL.Host
+				err = &safe
+			}
+			lastResp = nil
 			lastErr = err
 			logger.Warn("request failed", "attempt", attempt, "error", err)
 			continue
@@ -163,10 +180,10 @@ func DoWithRetry(ctx context.Context, httpClient *http.Client, req *http.Request
 		}
 
 		lastResp = resp
-		lastErr = fmt.Errorf("HTTP %d from %s", resp.StatusCode, req.URL.String())
+		lastErr = fmt.Errorf("HTTP %d", resp.StatusCode)
 		logger.Warn("retryable status", "attempt", attempt, "status", resp.StatusCode)
 		_ = resp.Body.Close()
 	}
 
-	return nil, fmt.Errorf("relay: %s: max retries (%d) exceeded for %s: %w", req.URL.Host, rc.MaxRetries, req.URL.Path, lastErr)
+	return nil, fmt.Errorf("relay: %s: max retries (%d) exceeded: %w", req.URL.Host, rc.MaxRetries, lastErr)
 }

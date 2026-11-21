@@ -15,12 +15,16 @@ import (
 //   - baseDelay: the base delay duration
 //   - maxDelay: the maximum delay duration cap
 func BackoffDelay(attempt int, baseDelay, maxDelay time.Duration) time.Duration {
-	exp := math.Pow(2, float64(attempt))
-	delay := time.Duration(float64(baseDelay) * exp)
-	if delay > maxDelay {
-		delay = maxDelay
+	if baseDelay <= 0 || maxDelay <= 0 {
+		return 0
 	}
-	return CryptoRandDuration(delay)
+	// Cap before converting to nanoseconds so a large exponent cannot
+	// overflow time.Duration and turn a long backoff into an immediate retry.
+	delay := float64(baseDelay) * math.Exp2(float64(attempt))
+	if delay >= float64(maxDelay) {
+		return CryptoRandDuration(maxDelay)
+	}
+	return CryptoRandDuration(time.Duration(delay))
 }
 
 // CryptoRandDuration returns a cryptographically random duration in [0, max).

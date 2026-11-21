@@ -4,9 +4,24 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"testing"
+	"testing/cryptotest"
+	"time"
 )
+
+func TestBackoffDelayCapsBeforeDurationConversion(t *testing.T) {
+	const capDelay = time.Hour
+	cryptotest.SetGlobalRandom(t, 1)
+	want := CryptoRandDuration(capDelay)
+	for _, attempt := range []int{40, math.MaxInt} {
+		cryptotest.SetGlobalRandom(t, 1)
+		if got := BackoffDelay(attempt, time.Second, capDelay); got != want {
+			t.Errorf("attempt %d: delay %v, want jitter from capped interval %v", attempt, got, want)
+		}
+	}
+}
 
 func TestSessionIdAndAgentId(t *testing.T) {
 	t.Parallel()

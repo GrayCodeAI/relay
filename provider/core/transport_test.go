@@ -2,9 +2,25 @@ package core
 
 import (
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 )
+
+func TestCloseIdleConnectionsDuringClientCreation(t *testing.T) {
+	var group sync.WaitGroup
+	start := make(chan struct{})
+	group.Go(func() {
+		<-start
+		NewPooledHTTPClient(time.Second)
+	})
+	group.Go(func() {
+		<-start
+		CloseIdleConnections()
+	})
+	close(start)
+	group.Wait()
+}
 
 func TestDefaultTransportReturnsNonNil(t *testing.T) {
 	t.Parallel()

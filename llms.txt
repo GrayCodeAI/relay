@@ -1,30 +1,180 @@
-# Relay — LLM provider runtime for Go
+# Relay
 
-Relay is a host-neutral provider runtime. It owns credentials, catalog/route
-resolution, provider transports, normalized request/response streams, retries,
-fallback and usage. Hosts (Decoder, etc.) import exactly four packages:
-engine, llm, graph, tools. Everything else is engine-internal.
+> Relay is GrayCodeAI's universal LLM provider runtime: one interface for
+> every model. Authentication, routing, streaming, retries, rate limiting, and
+> caching are handled — your app never talks to an LLM API directly; relay
+> does. It is an independent, host-neutral open-source Go library, consumed as
+> the module `github.com/GrayCodeAI/relay`. Hosts own product UX and semantics;
+> relay owns credentials, catalog and route resolution, provider transports,
+> normalized streams, retry/fallback, usage, and provider telemetry. Read this
+> file first, then AGENTS.md for working conventions and pitfalls.
 
-## Start here
-- README.md — overview, supported providers, architecture
-- AGENTS.md — design principles, conventions, pitfalls, API patterns, testing
-- docs/architecture/HOST-ENGINE-BOUNDARY.md — frozen host-facing contract
-- docs/guides/CREDENTIAL-SETUP-FLOW.md — API keys and credentials store
-- engine/ — stable host facade (engine/provider.go re-exports llm types)
-- llm/ — host-facing DTOs (RelayMessage, RelayResponse, RelayTool, RelayUsage)
-- graph/ — portable execution graph vocabulary
-- tools/ — tool call/result contracts
-- provider/ — runtime composition root (internal)
-- catalog/ — model catalog, discovery, pricing
-- credentials/ — API key storage and safe projection
-- router/, runtime/ — route policy and resolution
+## When to use Relay
 
-## Tests and CI
-- `go test ./...` (46 packages)
-- `make ci` — gofmt, goimports, vet, golangci-lint, boundary checks, race tests, govulncheck
-- provider/testkit — mock providers for offline tests (needs multi-turn scripted recorder, see Decoder adoption plan PR3)
+- Reach for Relay when a Go application needs model access: credentials,
+  routing, streaming, retries, rate limiting and caching handled behind one
+  interface, across many providers.
+- When you are building a host product (an agent, an IDE, a pipeline) and
+  want provider choice to be a config change, not a refactor — hosts stay on
+  the stable `engine/` facade.
+- When you need normalized usage and cost telemetry across providers that
+  each report differently.
+
+Not the right tool for: a coding agent or any product UX — hosts own those
+(Reflect is one host); or a hosted multi-tenant LLM gateway — Relay is a Go
+library you embed, with your keys, in your process (an optional HTTP API
+server exists under `internal/api` for embedding scenarios).
+
+## Host boundary
+
+- Hosts use the `engine/` facade ONLY (`engine.ContractVersion == "2"`) plus
+  three sibling contract packages: hosts may import exactly `engine`, `llm`,
+  `graph`, and `tools`. Everything else is engine-internal.
+- Hosts must never assemble `provider`, `catalog`, `config`, `credentials`,
+  `router`, `runtime` (or `setup`) directly. Lower-level packages stay public
+  for non-host consumers and staged migration, but they are not the host
+  contract.
+- The frozen set of engine-internal symbols reachable through the facade
+  (`credentials.Store`/`MapStore`, `operationsgraph.Input`/`Export`, the
+  `provider/resilience` rate-limit config, `provider/cache.CacheConfig`) is
+  listed in docs/architecture/HOST-ENGINE-BOUNDARY.md and enforced by
+  `engine/host_surface_test.go`: the test fails whenever the reachable set
+  changes. Changing that set is a deliberate API change — update the test's
+  list and the doc together, deliberately.
+- Six symbols hosts need (`ChatOptions`, `ContinuationConfig`, `StreamResult`,
+  `ResponseFormat`, `ImageURLPart`, `InputAudioPart`) live in `llm` with no
+  `engine` alias; widening the facade to cover them is likewise a deliberate
+  API change, not an incidental one.
+- The dependency is one-way: relay never imports its hosts. Reflect
+  (github.com/GrayCodeAI/reflect) is one host, with its own repo, build, and
+  release.
+
+## Repository map
+
+- `engine/` — stable host facade: `engine.New(engine.Options{...})`, Resolve,
+  Generate/Stream, catalog, credentials, selection, health, preflight;
+  re-exports `llm` types.
+- `llm/` — host-facing DTOs and the `llm.Provider` port (a composition of role
+  interfaces) that `engine` re-exports.
+- `graph/` — portable execution-graph vocabulary.
+- `tools/` — tool-call and tool-result contracts.
+- `provider/` — provider runtime composition root: `RelayClient` construction,
+  chat orchestration, options; subpackages below.
+- `provider/core/` — provider-neutral wire types, transport, SSE stream, and
+  retry primitives (`Provider`, `RelayConfig`, `RelayMessage`, `RelayError`).
+- `provider/adapters/` — per-provider protocol adapters (anthropic, openai,
+  gemini, bedrock, vertex, azure, ollama, ...) plus the construction registry
+  (`provider_registry.go`) and compat configs (`OpenAICompat`, `GrokCompat`,
+  `OpenRouterCompat`).
+- `credentials/` — API key storage and lookup (OS keyring, env, in-memory
+  stores), OIDC keyless auth, safe status projection.
+- `catalog/` — model catalog: pricing, context windows, capabilities, tiers,
+  deprecation; `catalog/registry/providers.go` is the single source of truth
+  for the 29 provider gateways.
+- `router/`, `runtime/` — routing strategies, deployment fallback chains,
+  circuit breakers, controlplane; engine-internal provider/model/credential
+  resolution and preflight.
+- `types/` — shared message types and API error constants.
+- `operationsgraph/` — privacy-safe route and generation telemetry projection
+  (SHA-256 digests only).
+- `internal/` — helpers hosts cannot import: HTTP API server (`internal/api`),
+  optional gRPC transport (build tag `grpc`), health, cache, observability,
+  language SDKs.
+
+## Provider surface
+
+- Provider interface: `provider/core.Provider` with `Chat()`, `StreamChat()`,
+  `Ping()`, `Name()`.
+- Client creation: `provider.NewRelayClient(&core.RelayConfig{...})` or
+  `provider.Client(...)`; `RelayConfig` carries `Provider`, `APIKey`,
+  `BaseURL`, `Model`, `MaxRetries`.
+- Auto-detection: `DetectProvider()` picks a provider from env vars in
+  priority order (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, ...) when none is
+  pinned.
+- Streaming: `c.StreamChat(ctx, messages, opts)` returns `*StreamResult`; the
+  caller must `defer sr.Close()`. Streaming is SSE-based (`parseSSEStream()`).
+- Auto-continuation: `StreamChatContinue()` transparently continues when
+  `stop_reason == max_tokens`; also `ChatWithContinuation(...,
+  core.DefaultContinuationConfig())`.
+- Fallback chains: `router/router.go` (provider fallback) and
+  `router/deployment_router.go` (deployment stages) for high availability.
+- Rate limiting: token bucket per provider (`provider/resilience/ratelimit.go`)
+  to stay under API limits.
+- Caching: response cache with configurable TTL plus semantic-similarity
+  caching (`provider/cache/semantic_cache.go`).
+- Retry: `provider/core/retry.go` — exponential backoff with jitter, honors
+  `Retry-After`, retries on 429/500/502/503/529.
+- Errors: `RelayError` (`Provider`, `Op`, `StatusCode`, `RequestID`,
+  `Message`, `Err`) with `IsRetriable()`, `IsAuthError()`, `IsRateLimited()`.
+- Adding a provider: implement `Provider`, add the adapter under
+  `provider/adapters/`, register it in
+  `provider/adapters/provider_registry.go`, and add the gateway to
+  `catalog/registry/providers.go` (README and `.env.example` must match;
+  `catalog/registry/docs_test.go` fails on drift).
+- Mocks: `provider/testkit/mock.go` provides offline mock providers for tests.
+
+## Verification
+
+- `go test ./...` — all tests; `go test -race ./...` adds the race detector.
+- `go vet ./...` — static analysis.
+- `gofumpt` (plus `goimports`) formatting is enforced in CI; run `make fmt`.
+- `make ci` — the full gate: version-check, tidy, fmt, vet, golangci-lint,
+  boundary scripts, replace-directive check, race tests, govulncheck.
+- Tests are table-driven; provider tests use `httptest.NewServer` mock LLM
+  APIs (create mock server, point the client at it, call Chat/StreamChat,
+  assert headers and events). Streaming tests need careful goroutine
+  management.
+- `make check-replace` runs `scripts/check-no-replace-directives.sh`: no
+  local `replace` directives in go.mod.
+
+## Guardrails
+
+Do not touch (breaking for every consumer):
+- The `Provider` interface (`Chat`, `StreamChat`, `Ping`, `Name`).
+- `RelayMessage` / `RelayResponse` / `ChatOptions` field names — serialization
+  contract.
+- The `RelayError` struct — consumers assert on its type.
+- `provider/core.RelayConfig` — constructor contract for all consumers.
+- The frozen engine-internal symbols and `llm`-only symbols listed under
+  Host boundary.
+
+Safe to extend: new provider adapters, new SSE event types, new cache and
+routing strategies. Internal infrastructure (`retry.go`, `ratelimit.go`,
+`cache.go`, SSE parsing, fallback/weighted routing) is safe to refactor.
+
+## Docs
+
+- docs/README.md — documentation index.
+- docs/ARCHITECTURE.md — system design, data flow, reliability features.
+- docs/architecture/HOST-ENGINE-BOUNDARY.md — the frozen host-facing contract
+  (v2): composition root, frozen symbols, credential flow, release order.
+- docs/architecture/FEATURE-MONOREPO.md — feature-oriented package layout and
+  layering rules.
+- docs/architecture/DECENTRALIZED-RELAY.md — instance-local routing and signed
+  peer manifests.
+- docs/guides/CREDENTIAL-SETUP-FLOW.md — API keys, the credentials store, and
+  provider setup.
+- docs/guides/DYNAMIC-MODEL-DISCOVERY.md — live model discovery architecture.
+- docs/design/RELAY-ENTERPRISE.md — draft enterprise gateway design.
+- docs/plans/ — audit and review remediation plans from the 2026 code audit.
 
 ## Conventions
-- Go 1.27.2+, pure Go, no CGO
-- gofumpt formatting, Conventional Commits
-- boundary protected by engine/host_surface_test.go (touching unreachable set breaks CI)
+
+- Go 1.27.2+, pure Go, no CGO.
+- Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`); no
+  `Co-authored-by:` trailers (auto-stripped by githook).
+- Branch from `main` (`feat/…`, `fix/…`, `chore/…`); never commit directly to
+  `main`; PRs must be CI-green before merge.
+- `VERSION` is the single version source; `make version-sync` regenerates
+  derived metadata.
+
+## Links
+
+- Repository: https://github.com/GrayCodeAI/relay
+- Organization: https://github.com/GrayCodeAI
+- README.md — overview, quick start, the 29 supported providers, usage
+- pkg.go.dev: https://pkg.go.dev/github.com/GrayCodeAI/relay
+- CONTRIBUTING.md — development setup, commit conventions, PR process
+- SECURITY.md — report privately (GitHub Security Advisory or
+  security@decoder.ai), never a public issue
+- Example host: https://github.com/GrayCodeAI/reflect
